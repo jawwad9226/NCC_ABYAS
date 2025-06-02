@@ -1,25 +1,51 @@
 import os
 import google.generativeai as genai
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Dict, Optional, Tuple, Any, Union
 import re
 import streamlit as st
 import logging
+import json
+import csv
+from dataclasses import dataclass
+from pathlib import Path
 
-# --- Constants ---
-GEMINI_MODEL_NAME = 'gemini-1.5-flash'
-DEFAULT_TEMPERATURE_CHAT = 0.3
-DEFAULT_TEMPERATURE_QUIZ = 0.4
-MAX_OUTPUT_TOKENS_CHAT = 1000
-MAX_OUTPUT_TOKENS_QUIZ = 2000
-API_CALL_COOLDOWN_MINUTES = 1
+# --- Configuration ---
+@dataclass
+class Config:
+    # File Paths
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    CHAT_HISTORY_FILE = os.path.join(BASE_DIR, "data", "chat_history.json")
+    QUIZ_LOG_FILE = os.path.join(BASE_DIR, "data", "quiz_log.json")
+    
+    # Model Settings
+    MODEL_NAME = 'gemini-1.5-flash'
+    TEMP_CHAT = 0.3
+    TEMP_QUIZ = 0.4
+    MAX_TOKENS_CHAT = 1000
+    MAX_TOKENS_QUIZ = 2000
+    COOLDOWN_MIN = 1
+    
+    # Quiz Settings
+    QUESTION_COUNTS = {"Easy": 3, "Medium": 5, "Hard": 8}
+    
+    # Ensure data directory exists
+    @classmethod
+    def ensure_data_dir(cls):
+        os.makedirs(os.path.join(cls.BASE_DIR, "data"), exist_ok=True)
 
-CHAT_HISTORY_FILE = "chat_history.txt"
-QUIZ_LOG_FILE = "quiz_log.txt"
+# Initialize data directory
+Config.ensure_data_dir()
 
 # --- Logging Configuration ---
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(os.path.join(Config.BASE_DIR, "app.log")),
+        logging.StreamHandler()
+    ]
+)
 
 # --- Gemini API Setup ---
 @st.cache_resource
@@ -40,13 +66,147 @@ def setup_gemini() -> Tuple[Optional[genai.GenerativeModel], Optional[str]]:
             return None, error_msg
             
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(GEMINI_MODEL_NAME)
+        model = genai.GenerativeModel(Config.MODEL_NAME)
         return model, None
     except Exception as e:
         error_msg = f"Failed to initialize Gemini model: {str(e)}"
         logging.exception(error_msg)
-        return None, error_msg
+        return None, "Apologies, we're experiencing technical difficulties. Please try again later."
 
+# --- File Operations ---
+def _load_json_file(file_path: str, default: Any = None) -> Any:
+    """Safely load JSON data from a file."""
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        logging.error(f"Error loading {file_path}: {str(e)}")
+    return default if default is not None else []
+
+def _save_json_file(file_path: str, data: Any) -> bool:
+    """Safely save data as JSON to a file."""
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        logging.error(f"Error saving to {file_path}: {str(e)}")
+        return False
+
+def _save_chat_to_file(prompt: str, response: str) -> None:
+    """Save chat interaction to history file."""
+    try:
+        history = _load_json_file(Config.CHAT_HISTORY_FILE, [])
+        history.append({
+            "timestamp": datetime.now().isoformat(),
+            "prompt": prompt,
+            "response": response
+        })
+        _save_json_file(Config.CHAT_HISTORY_FILE, history)
+    except Exception as e:
+        logging.error(f"Failed to save chat history: {str(e)}")
+
+def _save_quiz_to_file(topic: str, questions: List[Dict[str, Any]]) -> None:
+    """Save quiz questions to history file."""
+    try:
+        history = _load_json_file(Config.QUIZ_LOG_FILE, [])
+        history.append({
+            "timestamp": datetime.now().isoformat(),
+            "topic": topic,
+            "questions": questions
+        })
+        _save_json_file(Config.QUIZ_LOG_FILE, history)
+    except Exception as e:
+        logging.error(f"Failed to save quiz: {str(e)}")
+
+# --- Public API ---
+def clear_history(file_type: str = "chat") -> bool:
+    """Clear history for the specified type.
+    
+    Args:
+        file_type: Type of history to clear ('chat' or 'quiz')
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        file_path = {
+            "chat": Config.CHAT_HISTORY_FILE,
+            "quiz": Config.QUIZ_LOG_FILE
+        }.get(file_type)
+        
+        if not file_path:
+            return False
+            
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        return True
+    except Exception as e:
+        logging.error(f"Failed to clear {file_type} history: {str(e)}")
+        return False
+
+def read_history(file_type: str = "chat") -> List[Dict]:
+    """Read history for the specified type.
+    
+    Args:
+        file_type: Type of history to read ('chat' or 'quiz')
+    
+    Returns:
+        List of history items
+    """
+    file_path = {
+        "chat": Config.CHAT_HISTORY_FILE,
+        "quiz": Config.QUIZ_LOG_FILE
+    }.get(file_type)
+    
+    if not file_path:
+        return []
+        
+    return _load_json_file(file_path, [])
+
+def export_flashcards(questions: List[Dict], format: str = "csv") -> Union[str, bytes]:
+    """Export quiz questions as flashcards.
+    
+    Args:
+        questions: List of question dictionaries
+        format: Export format ('csv' or 'json')
+        
+    Returns:
+        str or bytes: Exported data in requested format
+    """
+    try:
+        if format.lower() == "json":
+            return json.dumps(questions, indent=2, ensure_ascii=False)
+            
+        # Default to CSV
+        output = []
+        for i, q in enumerate(questions, 1):
+            output.append({"#": i, "Type": "Question", "Content": q["question"]})
+            for opt, text in q["options"].items():
+                output.append({"#": "", "Type": f"Option {opt}", "Content": text})
+            output.append({"#": "", "Type": "Answer", "Content": q["answer"]})
+            output.append({"#": "", "Type": "Explanation", "Content": q["explanation"]})
+            output.append({})  # Empty row between questions
+        
+        # Convert to CSV
+        if not output:
+            return ""
+            
+        # Remove last empty row if exists
+        if not any(output[-1].values()):
+            output = output[:-1]
+            
+        csv_output = []
+        writer = csv.DictWriter(csv_output, fieldnames=["#", "Type", "Content"])
+        writer.writeheader()
+        writer.writerows(output)
+        
+        return "\n".join(csv_output)
+        
+    except Exception as e:
+        logging.error(f"Failed to export flashcards: {str(e)}")
+        return ""
 
 # --- Chat Function ---
 def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], prompt: str) -> str:
@@ -73,8 +233,8 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
         response = model.generate_content(
             prompt,
             generation_config=genai.GenerationConfig(
-                temperature=DEFAULT_TEMPERATURE_CHAT,
-                max_output_tokens=MAX_OUTPUT_TOKENS_CHAT
+                temperature=Config.TEMP_CHAT,
+                max_output_tokens=Config.MAX_TOKENS_CHAT
             )
         )
         st.session_state.last_api_call_time = datetime.now()
@@ -82,13 +242,12 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
         _save_chat_to_file(prompt, response_text)
         return response_text
     except Exception as e:
-        error_msg = f"Error generating response: {str(e)}"
-        logging.exception(error_msg)
+        error_msg = "Apologies, I'm having trouble processing your request. Please try again in a moment."
+        logging.exception(f"Error in get_ncc_response: {str(e)}")
         return error_msg
 
-
 # --- Quiz Generator ---
-def generate_quiz_questions(model, model_error, st_session_state, topic: str, num_questions: int):
+def generate_quiz_questions(model, model_error, st_session_state, topic: str, num_questions: int) -> None:
     """Generate quiz questions using the Gemini model.
     
     Args:
@@ -119,8 +278,7 @@ def generate_quiz_questions(model, model_error, st_session_state, topic: str, nu
     st_session_state.current_quiz_difficulty = difficulty
 
     # Adjust number of questions based on difficulty
-    question_count_map = {"Easy": 3, "Medium": 5, "Hard": 8}
-    actual_num_questions = min(num_questions, question_count_map[difficulty])
+    actual_num_questions = min(num_questions, Config.QUESTION_COUNTS[difficulty])
 
     # Build smart prompt
     prompt = build_prompt(topic, actual_num_questions, difficulty)
@@ -129,8 +287,8 @@ def generate_quiz_questions(model, model_error, st_session_state, topic: str, nu
         response = model.generate_content(
             prompt,
             generation_config=genai.GenerationConfig(
-                temperature=DEFAULT_TEMPERATURE_QUIZ,
-                max_output_tokens=MAX_OUTPUT_TOKENS_QUIZ
+                temperature=Config.TEMP_QUIZ,
+                max_output_tokens=Config.MAX_TOKENS_QUIZ
             )
         )
         raw = response.text
@@ -145,13 +303,20 @@ def generate_quiz_questions(model, model_error, st_session_state, topic: str, nu
             st_session_state.quiz_generation_error = "Failed to generate valid quiz questions. Please try again."
             logging.error(f"Failed to parse quiz response: {raw}")
     except Exception as e:
-        error_msg = f"Error generating quiz: {str(e)}"
-        logging.exception(error_msg)
+        error_msg = "Apologies, we're having trouble generating your quiz. Please try again in a moment."
+        logging.exception(f"Error in generate_quiz_questions: {str(e)}")
         st_session_state.quiz_generation_error = error_msg
-
 
 # --- Quiz Parser ---
 def parse_quiz_response(response_text: str) -> List[Dict[str, Any]]:
+    """Parse raw quiz response into structured format.
+    
+    Args:
+        response_text: Raw text response from the model
+        
+    Returns:
+        List of parsed question dictionaries
+    """
     parsed_questions = []
     blocks = response_text.strip().split("---")
 
@@ -161,9 +326,14 @@ def parse_quiz_response(response_text: str) -> List[Dict[str, Any]]:
     exp_re = re.compile(r'EXPLANATION:\s*(.*)')
 
     for block in blocks:
-        question = {"question": "", "options": {}, "answer": "", "explanation": ""}
+        question = {
+            "question": "", 
+            "options": {}, 
+            "answer": "", 
+            "explanation": "",
+            "timestamp": datetime.now().isoformat()
+        }
         lines = block.strip().splitlines()
-        section = None
 
         for line in lines:
             if match := q_re.match(line):
@@ -175,79 +345,54 @@ def parse_quiz_response(response_text: str) -> List[Dict[str, Any]]:
             elif match := exp_re.match(line):
                 question["explanation"] = match.group(1).strip()
 
-        if (
-            question["question"]
-            and len(question["options"]) == 4
-            and question["answer"] in question["options"]
-            and question["explanation"]
-        ):
+        if (question["question"] and 
+            len(question["options"]) == 4 and 
+            question["answer"] in question["options"] and 
+            question["explanation"]):
             parsed_questions.append(question)
-        else:
-            logging.warning(f"Invalid question block skipped:\n{block}")
+        elif question["question"]:  # Only log if we have at least a question
+            logging.warning(f"Invalid question block skipped: {question}")
 
     return parsed_questions
 
-
 # --- Cooldown Helpers ---
 def _is_in_cooldown(time_key: str) -> bool:
+    """Check if an action is in cooldown period."""
     if time_key in st.session_state:
         elapsed = datetime.now() - st.session_state[time_key]
-        return elapsed < timedelta(minutes=API_CALL_COOLDOWN_MINUTES)
+        return elapsed < timedelta(minutes=Config.COOLDOWN_MIN)
     return False
 
 def _cooldown_message(scope: str) -> str:
+    """Generate cooldown message for the given scope."""
     return f"🕒 Cooldown active. Please wait before generating another {scope}."
-
-
-# --- History Saving ---
-def _save_chat_to_file(prompt: str, response: str):
-    with open(CHAT_HISTORY_FILE, "a", encoding="utf-8") as f:
-        f.write(f"\nUser: {prompt}\nAssistant: {response}\n{'-'*50}\n")
-
-def _save_quiz_to_file(topic: str, questions: List[Dict[str, Any]]):
-    with open(QUIZ_LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"\n🧠 Quiz Topic: {topic} @ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        for idx, q in enumerate(questions, 1):
-            f.write(f"Q{idx}: {q['question']}\n")
-            for opt in ['A', 'B', 'C', 'D']:
-                f.write(f"{opt}) {q['options'][opt]}\n")
-            f.write(f"ANSWER: {q['answer']}\nEXPLANATION: {q['explanation']}\n---\n")
-
-
-# --- Utility Exposed to Other Modules ---
-def clear_history(file_type: str = "chat"):
-    file_path = CHAT_HISTORY_FILE if file_type == "chat" else QUIZ_LOG_FILE
-    if os.path.exists(file_path):
-        os.remove(file_path)
-
-def read_history(file_type: str = "chat") -> str:
-    file_path = CHAT_HISTORY_FILE if file_type == "chat" else QUIZ_LOG_FILE
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "No history available."
-
 
 # --- Adaptive Difficulty & Prompting Helpers ---
 
 def get_difficulty_level(score_history: List[float]) -> str:
     """
     Determines the current difficulty level based on user's score history.
-    Returns: 'Easy', 'Medium', or 'Hard'
+    
+    Args:
+        score_history: List of previous quiz scores (0-1)
+        
+    Returns:
+        str: 'Easy', 'Medium', or 'Hard'
     """
     if not score_history:
         return "Medium"
-    avg = sum(score_history) / len(score_history)
-    if avg < 50:
+        
+    avg_score = sum(score_history) / len(score_history)
+    
+    if avg_score < 0.4:
         return "Easy"
-    elif avg < 80:
-        return "Medium"
-    else:
+    elif avg_score > 0.7:
         return "Hard"
-
+    return "Medium"
 
 def build_prompt(topic: str, num_q: int, difficulty: str) -> str:
-    """Builds a Gemini prompt for quiz generation based on difficulty level and topic.
+    """
+    Builds a Gemini prompt for quiz generation based on difficulty level and topic.
     
     Args:
         topic: The topic for the quiz
@@ -257,32 +402,33 @@ def build_prompt(topic: str, num_q: int, difficulty: str) -> str:
     Returns:
         Formatted prompt string for the Gemini model
     """
-    difficulty_instructions = {
-        'Easy': 'suitable for beginners with basic knowledge',
-        'Medium': 'moderately challenging for those with some experience',
-        'Hard': 'challenging questions that test in-depth understanding'
+    difficulty_map = {
+        "Easy": "basic concepts and definitions",
+        "Medium": "intermediate concepts with some application",
+        "Hard": "advanced concepts requiring analysis and critical thinking"
     }
     
     return f"""Generate {num_q} multiple-choice questions about {topic}.
-Difficulty Level: {difficulty} ({difficulty_instructions.get(difficulty, '')})
-
-For each question, follow this format exactly:
-
-Q: [Your question]
-A) [Option A]
-B) [Option B]
-C) [Option C]
-D) [Option D]
-ANSWER: [Correct letter A-D]
-EXPLANATION: [Brief explanation of the answer]
-
-Make sure to:
-1. Include exactly 4 options (A-D) for each question
-2. Mark the correct answer with ANSWER: [letter]
-3. Provide a clear explanation for each answer
-4. Vary the position of the correct answer randomly
-5. Ensure questions are {difficulty.lower()} difficulty
-6. Cover different aspects of {topic}
-
----
-"""
+    Difficulty: {difficulty_map.get(difficulty, 'Medium')}
+    
+    For each question, follow this exact format:
+    
+    Q: [Your question here]
+    A) [Option A]
+    B) [Option B]
+    C) [Option C]
+    D) [Option D]
+    ANSWER: [Correct letter A-D]
+    EXPLANATION: [Brief explanation of the answer]
+    
+    ---
+    
+    Important:
+    - Each question must be separated by '---' on a new line
+    - Include exactly 4 options (A-D) for each question
+    - Only one correct answer per question
+    - Keep explanations concise but informative
+    - Questions should test {difficulty_map.get(difficulty, 'a good understanding')} of {topic}
+    - Avoid using 'All of the above' or 'None of the above' as options
+    - Ensure questions are clear and unambiguous
+    """
