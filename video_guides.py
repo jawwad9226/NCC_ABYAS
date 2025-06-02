@@ -1,52 +1,30 @@
 import streamlit as st
-import json
-import os
-
-# Define the path to the videos.json file
-VIDEO_DATA_PATH = os.path.join("data", "videos.json")
+from utils import load_videos_json
 
 def video_guides():
     st.title("🎥 NCC Video Guides")
     st.write("Explore a collection of helpful videos related to NCC topics.")
 
-    videos_data = {}
-    file_version = None # Initialize version
+    raw_data = load_videos_json()
+    if not raw_data:
+        st.error("Video guide data not found or failed to load. Please ensure 'data/videos.json' exists and is valid.")
+        st.info("Example structure for data/videos.json: {'version': '1.0', 'Drill': [{'title': 'Basic Drill', 'url': 'https://www.youtube.com/watch?v=example1', 'description': 'Learn basic drill movements.'}]}")
+        return
 
-    try:
-        # Construct the absolute path to the JSON file
-        script_dir = os.path.dirname(__file__)
-        full_path = os.path.join(script_dir, VIDEO_DATA_PATH)
+    # --- Versioning Check ---
+    file_version = raw_data.get("version")
+    expected_version = "1.0" # Define your expected version
+    if file_version != expected_version:
+        st.warning(f"Video data file version mismatch. Expected '{expected_version}', but found '{file_version}'. "
+                   "Functionality might be limited or incorrect. Please update your data/videos.json.")
+        # You could add logic here to adapt to older versions if needed
+        # For now, we'll proceed with the data as is, but warn the user.
 
-        if not os.path.exists(full_path):
-            st.error(f"Video guide data not found at '{VIDEO_DATA_PATH}'. Please ensure the file exists.")
-            st.info("Example structure for data/videos.json: {'version': '1.0', 'Drill': [{'title': 'Basic Drill', 'url': 'https://www.youtube.com/watch?v=example1', 'description': 'Learn basic drill movements.'}]}")
-            return # Exit if data file is missing
+    # Extract actual video categories data (excluding 'version' key)
+    videos_data = {k: v for k, v in raw_data.items() if k != "version"}
 
-        with open(full_path, "r", encoding="utf-8") as f:
-            raw_data = json.load(f)
-
-        # --- Versioning Check ---
-        file_version = raw_data.get("version")
-        expected_version = "1.0" # Define your expected version
-        if file_version != expected_version:
-            st.warning(f"Video data file version mismatch. Expected '{expected_version}', but found '{file_version}'. "
-                       "Functionality might be limited or incorrect. Please update your data/videos.json.")
-            # You could add logic here to adapt to older versions if needed
-            # For now, we'll proceed with the data as is, but warn the user.
-
-        # Extract actual video categories data (excluding 'version' key)
-        videos_data = {k: v for k, v in raw_data.items() if k != "version"}
-
-        if not videos_data:
-            st.warning("The video data file is empty or only contains version information. Please add video entries to data/videos.json.")
-            return # Exit if data file is empty but exists
-
-    except json.JSONDecodeError:
-        st.error("Unable to parse video guide data. Please check if data/videos.json is a valid JSON file.")
-        st.info("Ensure the JSON is correctly formatted, e.g., no trailing commas or syntax errors.")
-        return # Exit if JSON is corrupt
-    except Exception as e:
-        st.error(f"An unexpected error occurred while loading video data: {e}")
+    if not videos_data:
+        st.warning("The video data file is empty or only contains version information. Please add video entries to data/videos.json.")
         return
 
     # --- Category Selector ---

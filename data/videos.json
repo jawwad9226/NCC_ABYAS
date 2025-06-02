@@ -82,12 +82,9 @@
     },
     {
       "id": "disaster_mgmt",
+      "youtube_id": "1xRCa6Gs1LQ",
       "title": "Fire Drill & Earthquake Tips",
-      "url": "https://www.youtube.com/embed/1xRCa6Gs1LQ",
-      "description": "Emergency response training for fire drills and earthquakes.",
-      "duration": "19:30",
       "category": "Disaster Management",
-      "thumbnail": "https://img.youtube.com/vi/1xRCa6Gs1LQ/maxresdefault.jpg",
       "tags": ["disaster", "safety", "emergency"]
     }
   ]

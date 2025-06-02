@@ -1,61 +1,64 @@
 import streamlit as st
 from datetime import datetime
-import time # For simulating cooldown display
+import time  # For simulating cooldown display
+import os
+from pathlib import Path
 
-# Assuming these functions are available in utils.py
-# You would typically import them like this:
-# from utils import get_response_func, read_history, append_message, clear_history
+# Import from utils
+from utils import (
+    get_ncc_response,
+    read_history,
+    _save_chat_to_file,
+    clear_history,
+    setup_gemini,
+    Config
+)
 
-# Mock functions for demonstration purposes if utils.py is not available
-# In a real scenario, these would come from your actual utils.py file.
-def get_response_func(chat_type, prompt):
+# Initialize Gemini model
+model, model_error = setup_gemini()
+
+def get_response_func(chat_type: str, prompt: str) -> str:
     """
-    Mocks a function that gets a response from a model.
-    Includes a mock cooldown mechanism for demonstration.
+    Get response from the Gemini model with cooldown handling.
+    
+    Args:
+        chat_type: Type of chat (not used currently, kept for compatibility)
+        prompt: User's input prompt
+        
+    Returns:
+        str: Generated response or cooldown message
     """
-    # Simulate a cooldown
+    # Check cooldown (keeping the existing cooldown logic)
     if "last_chat_time" not in st.session_state:
         st.session_state.last_chat_time = time.time()
-        st.session_state.cooldown_duration = 5 # seconds
+        st.session_state.cooldown_duration = 5  # seconds
 
     time_since_last_chat = time.time() - st.session_state.last_chat_time
 
     if time_since_last_chat < st.session_state.cooldown_duration:
         remaining_time = int(st.session_state.cooldown_duration - time_since_last_chat)
         return f"Please wait {remaining_time} seconds before sending another message."
-    else:
-        st.session_state.last_chat_time = time.time() # Reset cooldown timer
-        # Simulate a response
-        if "hello" in prompt.lower():
-            return "Hello! How can I assist you with NCC today?"
-        elif "syllabus" in prompt.lower():
-            return "The NCC syllabus covers topics like drill, weapon training, map reading, and field craft. Would you like more details on a specific topic?"
-        elif "cadet" in prompt.lower():
-            return "An NCC cadet is a young individual enrolled in the National Cadet Corps, undergoing training in various military and social service activities."
-        else:
-            return "I am an AI assistant for NCC. Please ask me a question related to NCC."
+    
+    # Get response from the model
+    response = get_ncc_response(model, model_error, prompt)
+    
+    # Save chat to history
+    _save_chat_to_file(prompt, response)
+    
+    # Update cooldown timer
+    st.session_state.last_chat_time = time.time()
+    
+    return response
 
-def read_history(history_type):
-    """Mocks reading chat history from a file."""
-    try:
-        with open(f"{history_type}_history.txt", "r") as f:
-            return f.read()
-    except FileNotFoundError:
-        return ""
-
-def append_message(history_type, message):
-    """Mocks appending a message to chat history."""
-    with open(f"{history_type}_history.txt", "a") as f:
-        f.write(message + "\n")
-
-def clear_history(history_type):
-    """Mocks clearing chat history."""
-    try:
-        open(f"{history_type}_history.txt", "w").close()
-    except FileNotFoundError:
-        pass # File doesn't exist, nothing to clear
-
-# --- End of Mock Functions ---
+def append_message(history_type: str, message: str) -> None:
+    """
+    Append a message to the chat history.
+    
+    Note: This is now handled by _save_chat_to_file in utils.py,
+    but keeping for backward compatibility.
+    """
+    if history_type == "chat":
+        _save_chat_to_file("", message)  # Empty prompt since we already have the full message
 
 def chat_interface():
     st.title("🤖 NCC AI Assistant Chat")
@@ -196,3 +199,4 @@ def chat_interface():
         # You could also disable the input here, but Streamlit's chat_input doesn't directly support `disabled`
         # A more advanced approach would be to use a regular text_input and a button, and control their disabled state.
 
+chat_interface()

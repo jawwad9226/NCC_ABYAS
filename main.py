@@ -3,6 +3,8 @@ import os
 from functools import partial
 import json
 from utils import setup_gemini, get_ncc_response, generate_quiz_questions, API_CALL_COOLDOWN_MINUTES, clear_history, read_history
+from video_guides import display_video_guides
+from quiz_interface import display_quiz_interface, initialize_quiz_state
 
 def main():
     """
@@ -155,9 +157,9 @@ def main():
     st.markdown("<h1 style='text-align: center;'>NCC AI Assistant</h1>", unsafe_allow_html=True)
 
     if app_mode == "💬 Chat Assistant":
-        from chat_interface import display_chat_interface # Lazy import
+        from chat_interface import chat_interface # Lazy import
         chat_func = partial(get_ncc_response, model, model_error)
-        display_chat_interface(chat_func, st.session_state)
+        chat_interface()
 
     elif app_mode == "🎯 Knowledge Quiz":
         from quiz_interface import initialize_quiz_state, display_quiz_interface # Lazy imports
@@ -184,9 +186,9 @@ def main():
 
             found_results = False
             if "chapters" in syllabus_data:
-                for chapter in syllabus_data["chapters"]:
+                for chapter_key, chapter in syllabus_data["chapters"].items():
                     chapter_title = chapter.get("title", "Untitled Chapter")
-                    sections = chapter.get("sections", [])
+                    sections = chapter.get("sections", {}).values() if isinstance(chapter.get("sections", {}), dict) else chapter.get("sections", [])
 
                     # Filter based on search query
                     if query.lower() in chapter_title.lower() or \

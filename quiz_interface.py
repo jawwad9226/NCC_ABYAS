@@ -6,44 +6,8 @@ import json # Import json for reading quiz data
 from typing import List, Dict, Any, Optional
 from datetime import datetime # Ensure datetime is imported
 
-# --- Mock Utility Functions (as in main.py) ---
-# In a real application, these would be imported from utils.py
-# from utils import get_response_func, read_history, append_message, clear_history, initialize_firebase
-
-def read_history(history_type):
-    """Mocks reading chat history from a file."""
-    try:
-        # Assuming history files are in a 'history' subdirectory or project root
-        # For this context, let's assume quiz_history.json is in the project root
-        file_path = f"{history_type}_history.json" 
-        if os.path.exists(file_path):
-            with open(file_path, "r") as f:
-                content = f.read()
-                return json.loads(content) if content else [] # Load JSON, return empty list if file is empty
-        return []
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        st.warning(f"Could not load {history_type} history: {e}. Starting fresh.")
-        return []
-
-def append_message(history_type, data):
-    """Mocks appending data to chat history (now supports JSON for quiz)."""
-    file_path = f"{history_type}_history.json"
-    history = read_history(history_type) # Read existing history
-    history.append(data) # Append new data
-    with open(file_path, "w") as f:
-        json.dump(history, f, indent=4) # Write back as JSON
-
-def clear_history(history_type):
-    """Mocks clearing chat history."""
-    file_path = f"{history_type}_history.json"
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path) # Remove the file
-            st.info(f"Cleared {history_type} history.")
-    except OSError as e:
-        st.error(f"Error clearing {history_type} history: {e}")
-
-# --- End of Mock Utility Functions ---
+from utils import read_history, clear_history
+# TODO: In the future, load quiz questions from an external JSON file for scalability.
 
 # --- Quiz Data Loading (Mock) ---
 # In a real app, this would load from data/quizzes.json or similar

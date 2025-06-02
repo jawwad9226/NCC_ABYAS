@@ -11,7 +11,7 @@ def display_progress_dashboard(ss):
         return
 
     # Prepare data
-    score_history = ss.quiz_score_history
+    score_history = ss.get('quiz_score_history', [])
     quiz_numbers = list(range(1, len(score_history) + 1))
 
     # Optional: timestamps if stored
@@ -51,8 +51,8 @@ def display_progress_dashboard(ss):
     # ─── Stats Summary ────────────────────────────────────────
     st.subheader("📋 Summary")
     total = len(score_history)
-    average = round(sum(score_history) / total, 2)
-    best = max(score_history)
+    average = round(sum(score_history) / total, 2) if total else 0
+    best = max(score_history) if total else 0
     latest_diff = ss.get('current_quiz_difficulty', 'Unknown')
 
     col1, col2, col3 = st.columns(3)
@@ -69,8 +69,9 @@ def display_progress_dashboard(ss):
     st.download_button("⬇️ Download Progress CSV", csv, "quiz_progress.csv")
 
     # ─── Topic‐Wise Performance ──────────────────────────────
-    if ss.get('quiz_topic_history'):
-        topic_counts = pd.Series(ss.quiz_topic_history).value_counts()
+    topic_history = ss.get('quiz_topic_history', [])
+    if topic_history:
+        topic_counts = pd.Series(topic_history).value_counts()
         st.subheader("📑 Quizzes by Topic")
         st.bar_chart(topic_counts)
     else:
