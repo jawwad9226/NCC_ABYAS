@@ -1,187 +1,198 @@
 import streamlit as st
-from typing import Callable, Any
-from utils import read_history, clear_history
-import logging
 from datetime import datetime
+import time # For simulating cooldown display
 
-# ... (setup logger if not already at module level) ...
+# Assuming these functions are available in utils.py
+# You would typically import them like this:
+# from utils import get_response_func, read_history, append_message, clear_history
 
-def _welcome_message() -> str:
-    return "Hello! 👋 I'm your **NCC AI Assistant**. Ask me about anything related to **training**, **camps**, **certificates**, or **NCC rules**!"
+# Mock functions for demonstration purposes if utils.py is not available
+# In a real scenario, these would come from your actual utils.py file.
+def get_response_func(chat_type, prompt):
+    """
+    Mocks a function that gets a response from a model.
+    Includes a mock cooldown mechanism for demonstration.
+    """
+    # Simulate a cooldown
+    if "last_chat_time" not in st.session_state:
+        st.session_state.last_chat_time = time.time()
+        st.session_state.cooldown_duration = 5 # seconds
 
-def display_chat_interface(
-    get_response_func: Callable[[str], str],
-    st_session_state: Any
-):
-    # Initialize chat history if not exists
-    if "messages" not in st_session_state:
-        st_session_state.messages = [{"role": "assistant", "content": _welcome_message()}]
-    
-    # Initialize sample question flag if not exists
-    if "sample_question_to_process" not in st_session_state:
-        st_session_state.sample_question_to_process = None
+    time_since_last_chat = time.time() - st.session_state.last_chat_time
 
-    # Process sample question if one was selected
-    if st_session_state.sample_question_to_process:
-        question_content = st_session_state.sample_question_to_process
-        st_session_state.sample_question_to_process = None  # Clear the flag first
-        
-        # Add user message with timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st_session_state.messages.append({
-            "role": "user", 
-            "content": f"{question_content}  *({timestamp})*"
-        })
-        
-        # Generate response
-        with st.spinner("🤖 Generating response..."):
-            try:
-                response = get_response_func(question_content)
-                formatted_response = response.strip() + f"\n\n🕒 *Answered at {datetime.now().strftime('%H:%M:%S')}*"
-                st_session_state.messages.append({
-                    "role": "assistant",
-                    "content": formatted_response
-                })
-            except Exception as e:
-                error_msg = "❌ AI failed to respond. Check your API key or connection."
-                logging.error(f"Error processing sample question: {e}")
-                st_session_state.messages.append({
-                    "role": "assistant",
-                    "content": error_msg
-                })
-        st.rerun()
+    if time_since_last_chat < st.session_state.cooldown_duration:
+        remaining_time = int(st.session_state.cooldown_duration - time_since_last_chat)
+        return f"Please wait {remaining_time} seconds before sending another message."
+    else:
+        st.session_state.last_chat_time = time.time() # Reset cooldown timer
+        # Simulate a response
+        if "hello" in prompt.lower():
+            return "Hello! How can I assist you with NCC today?"
+        elif "syllabus" in prompt.lower():
+            return "The NCC syllabus covers topics like drill, weapon training, map reading, and field craft. Would you like more details on a specific topic?"
+        elif "cadet" in prompt.lower():
+            return "An NCC cadet is a young individual enrolled in the National Cadet Corps, undergoing training in various military and social service activities."
+        else:
+            return "I am an AI assistant for NCC. Please ask me a question related to NCC."
 
-    st.header("💬 Chat with NCC Assistant")
-    
-    # Chat controls
-    col1, col2, col3 = st.columns([0.2, 0.4, 0.4])
-    
-    # Clear chat button with confirmation
-    with col1:
-        if st.button("🧹 Clear Chat", key="clear_chat_button", 
-                    help="Clear the current chat session"):
-            st.session_state.confirm_clear = True
+def read_history(history_type):
+    """Mocks reading chat history from a file."""
+    try:
+        with open(f"{history_type}_history.txt", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
 
-        if st.session_state.get("confirm_clear"):
-            st.warning("Are you sure? This will clear all chat history.")
-            if st.button("Yes, clear all"):
-                st_session_state.messages = [{"role": "assistant", "content": _welcome_message()}]
-                clear_history("chat")
-                st.session_state.confirm_clear = False
-                st.rerun()
-            if st.button("No, keep chat"):
-                st.session_state.confirm_clear = False
-                st.rerun()
+def append_message(history_type, message):
+    """Mocks appending a message to chat history."""
+    with open(f"{history_type}_history.txt", "a") as f:
+        f.write(message + "\n")
 
-    # View history button
-    with col2:
-        if st.button("📜 View Chat History", 
-                    key="view_history_btn",
-                    help="Show recent chat history"):
-            with st.expander("🔎 Recent Chat History", expanded=True):
-                history = read_history("chat")
-                if history:
-                    history_lines = history.splitlines()
-                    for line in history_lines[-50:]:  # Show last 50 lines
-                        st.write(line)
-                    if len(history_lines) > 50:
-                        st.info(f"...and {len(history_lines)-50} more lines in the full history.")
-                else:
-                    st.info("No chat history available.")
+def clear_history(history_type):
+    """Mocks clearing chat history."""
+    try:
+        open(f"{history_type}_history.txt", "w").close()
+    except FileNotFoundError:
+        pass # File doesn't exist, nothing to clear
 
-    # Download history button
-    with col3:
-        history_content = read_history("chat")
-        st.download_button(
-            "⬇️ Download History",
-            history_content if history_content else "No history available.",
-            "chat_history.txt",
-            mime="text/plain",
-            help="Download complete chat history as a text file"
-        )
+# --- End of Mock Functions ---
 
-    # Sample Questions
-    with st.expander("💡 Sample Questions (click to ask)"):
-        questions = [
-            "What is the NCC motto?",
-            "Explain the importance of 'Drill' in NCC.",
-            "What are the types of NCC camps?",
-            "How does NCC assist in disaster relief?",
-            "What is the structure of NCC in India?"
+def chat_interface():
+    st.title("🤖 NCC AI Assistant Chat")
+
+    # Initialize session state for messages and confirmation dialog
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "confirm_clear" not in st.session_state:
+        st.session_state.confirm_clear = False
+    if "cooldown_active" not in st.session_state:
+        st.session_state.cooldown_active = False
+    if "cooldown_time_remaining" not in st.session_state:
+        st.session_state.cooldown_time_remaining = 0
+
+    # --- Sample Questions ---
+    with st.expander("💡 Sample Questions"):
+        st.write("Click a question to ask the assistant directly:")
+        sample_questions = [
+            "What is the NCC?",
+            "What are the benefits of joining NCC?",
+            "Tell me about the NCC syllabus.",
+            "What is drill in NCC?",
+            "How can I join the NCC?",
+            "What is weapon training in NCC?"
         ]
-        cols = st.columns(2)
-        for i, q_text in enumerate(questions):
-            with cols[i % 2]:
-                if st.button(q_text, key=f"sample_{i}"):
-                    st_session_state.sample_question_to_process = q_text
+        cols = st.columns(3)
+        for i, q in enumerate(sample_questions):
+            with cols[i % 3]:
+                if st.button(q, key=f"sample_q_{i}"):
+                    # Append user message with timestamp
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    st.session_state.messages.append({"role": "user", "content": f"{q} *(Sent at {timestamp})*"})
+                    append_message("chat", f"User: {q} *(Sent at {timestamp})*")
                     st.rerun()
 
-    # Display chat history using Streamlit's native chat message styling
-    for msg in st_session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"], unsafe_allow_html=True)
+    # --- Clear Chat Confirmation ---
+    col1, col2, col3 = st.columns([1, 1, 3])
+    with col1:
+        if st.button("🧹 Clear Chat", help="Erase all chat history from this session and disk."):
+            st.session_state.confirm_clear = True
 
-    # Chat input with validation
-    if prompt := st.chat_input("Type your NCC question here..."):
-        # Validate input
-        if not prompt.strip():
+    if st.session_state.confirm_clear:
+        st.warning("Are you sure you want to clear the chat history? This cannot be undone.")
+        col_yes, col_no = st.columns(2)
+        with col_yes:
+            if st.button("Yes, clear", key="confirm_yes"):
+                st.session_state.messages = []
+                clear_history("chat") # Clear on-disk history
+                st.session_state.confirm_clear = False
+                st.success("Chat history cleared!")
+                st.rerun()
+        with col_no:
+            if st.button("No, keep chat", key="confirm_no"):
+                st.session_state.confirm_clear = False
+                st.info("Chat clearing cancelled.")
+                st.rerun()
+    with col2:
+        with st.expander("📜 View Chat History", expanded=False, help="Show the last 50 chat messages from disk."):
+            history_lines = read_history("chat").splitlines()
+            if history_lines:
+                for line in history_lines[-50:]:  # Show only last 50 lines
+                    st.text(line) # Using st.text to preserve raw line formatting
+                if len(history_lines) > 50:
+                    st.info(f"...and {len(history_lines)-50} more lines (view full history by downloading).")
+            else:
+                st.info("No chat history found yet.")
+    with col3:
+        # Download Full History
+        history_content = read_history("chat")
+        if history_content:
+            st.download_button(
+                label="⬇️ Download Full History",
+                data=history_content,
+                file_name="chat_history.txt",
+                mime="text/plain",
+                help="Download the complete chat history as a text file."
+            )
+        else:
+            st.button("⬇️ Download Full History", disabled=True, help="No chat history to download yet.")
+
+
+    st.markdown("---")
+
+    # Display chat messages from session state
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]): # Streamlit automatically handles bubble styling based on role
+            st.write(message["content"])
+
+    # Chat input
+    if prompt := st.chat_input("Ask me anything about NCC..."):
+        # Prompt Sanitization
+        if prompt.strip() == "":
             st.warning("Please enter a valid question.")
-            st.stop()
-            
-        # Add timestamp to user message
+            # Clear the chat input if it was just whitespace
+            st.stop() # Stop execution to prevent further processing of empty prompt
+
+        # Append user message with timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        user_message = f"{prompt}  *({timestamp})*"
-        
-        # Add user message to chat history
-        st_session_state.messages.append({"role": "user", "content": user_message})
-        
-        # Display user message
+        st.session_state.messages.append({"role": "user", "content": f"{prompt} *(Sent at {timestamp})*"})
+        append_message("chat", f"User: {prompt} *(Sent at {timestamp})*")
+
+        # Display user message immediately
         with st.chat_message("user"):
-            st.markdown(user_message, unsafe_allow_html=True)
-        
-        # Generate and display assistant response
+            st.write(f"{prompt} *(Sent at {timestamp})*")
+
+        # Get assistant response
         with st.chat_message("assistant"):
-            with st.spinner("🤖 Generating response..."):
-                try:
-                    response = get_response_func(prompt)
-                    formatted_response = response.strip() + f"\n\n🕒 *Answered at {datetime.now().strftime('%H:%M:%S')}*"
-                    st.markdown(formatted_response, unsafe_allow_html=True)
-                    st_session_state.messages.append({
-                        "role": "assistant",
-                        "content": formatted_response
-                    })
-                except Exception as e:
-                    error_msg = "❌ AI failed to respond. Check your API key or connection."
-                    logging.error(f"Chat error: {e}")
-                    st.warning(error_msg)
-                    st_session_state.messages.append({
-                        "role": "assistant",
-                        "content": error_msg
-                    })
+            with st.spinner("Thinking..."):
+                response = get_response_func("chat", prompt)
 
-    # Handle follow-up responses to user messages (including sample questions)
-    elif st_session_state.messages and st_session_state.messages[-1]["role"] == "user":
-        if len(st_session_state.messages) < 2 or st_session_state.messages[-2]["role"] != "assistant" or \
-           st_session_state.messages[-2].get("related_to_user_prompt") != st_session_state.messages[-1]["content"]:
-
-            last_user_prompt = st_session_state.messages[-1]["content"]
-            with st.chat_message("assistant"):
-                with st.spinner("🤖 Thinking about that..."):
+                # Check for cooldown message
+                if "Please wait" in response and "seconds" in response:
+                    st.session_state.cooldown_active = True
+                    # Attempt to parse remaining time
                     try:
-                        response = get_response_func(last_user_prompt)
-                        formatted_response = response.strip() + f"\n\n🕒 *Answered at {datetime.now().strftime('%H:%M:%S')}*"
-                        st.markdown(formatted_response, unsafe_allow_html=True)
-                        st_session_state.messages.append({
-                            "role": "assistant",
-                            "content": formatted_response,
-                            "related_to_user_prompt": last_user_prompt
-                        })
-                        st.rerun()
-                    except Exception as e:
-                        error_msg = "❌ AI failed to respond. Check your API key or connection."
-                        logging.error(f"Chat error on follow-up: {e}")
-                        st.warning(error_msg)
-                        st_session_state.messages.append({
-                            "role": "assistant",
-                            "content": error_msg
-                        })
+                        parts = response.split(" ")
+                        time_index = parts.index("wait") + 1
+                        st.session_state.cooldown_time_remaining = int(parts[time_index])
+                    except (ValueError, IndexError):
+                        st.session_state.cooldown_time_remaining = 0 # Fallback
+                    st.warning(response) # Display the cooldown message
+                    # Do not append to messages or history if it's a cooldown message
+                    st.session_state.messages.pop() # Remove the last user message if it was a cooldown
+                    append_message("chat", f"Assistant: {response} *(Cooldown)*")
+                else:
+                    st.session_state.cooldown_active = False
+                    st.session_state.cooldown_time_remaining = 0
+                    st.write(f"{response} *(Answered at {datetime.now().strftime('%H:%M:%S')})*")
+                    st.session_state.messages.append({"role": "assistant", "content": f"{response} *(Answered at {datetime.now().strftime('%H:%M:%S')})*"})
+                    append_message("chat", f"Assistant: {response} *(Answered at {datetime.now().strftime('%H:%M:%S')})*")
+
+        # Rerun to update chat display
+        st.rerun()
+
+    # Display cooldown timer if active (can be placed near the input field)
+    if st.session_state.cooldown_active and st.session_state.cooldown_time_remaining > 0:
+        st.info(f"Please wait {st.session_state.cooldown_time_remaining} seconds before sending another message.")
+        # You could also disable the input here, but Streamlit's chat_input doesn't directly support `disabled`
+        # A more advanced approach would be to use a regular text_input and a button, and control their disabled state.
+

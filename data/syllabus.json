@@ -1,4 +1,7 @@
 {
+  "version": "1.0",
+  "chapters": [
+{
   "CHAPTER-I": {
     "title": "NCC",
     "wing": "COMMON",
@@ -455,7 +458,6 @@
         "keywords": [
           "commitment",
           "service",
-          "motivation",
           "youth",
           "social",
           "development",
@@ -3142,4 +3144,6 @@
       }
     }
   }
+}
+]
 }

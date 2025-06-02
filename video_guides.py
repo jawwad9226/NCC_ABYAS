@@ -1,182 +1,130 @@
 import streamlit as st
-from typing import Dict, List
-from dataclasses import dataclass
+import json
+import os
 
-@dataclass
-class Video:
-    title: str
-    url: str
-    description: str = ""
-    duration: str = ""
+# Define the path to the videos.json file
+VIDEO_DATA_PATH = os.path.join("data", "videos.json")
 
-# NCC Video Library
-NCC_VIDEOS: Dict[str, List[Video]] = {
-    "Drill": [
-        Video(
-            "NCC Drill Training Basics",
-            "https://www.youtube.com/embed/45a6V4bSe0A",
-            "Learn the fundamentals of NCC drill training including basic commands and formations.",
-            "12:45"
-        ),
-        Video(
-            "Advanced Drill Commands",
-            "https://www.youtube.com/embed/8Q-4ckqIedU",
-            "Advanced drill commands and ceremonial movements for senior cadets.",
-            "15:30"
-        ),
-        Video(
-            "NCC Parade Commands",
-            "https://www.youtube.com/embed/3qMkZ-s5vYQ",
-            "Complete guide to NCC parade commands and execution.",
-            "18:15"
-        )
-    ],
-    "Weapon Training": [
-        Video(
-            "Handling .22 Rifle in NCC",
-            "https://www.youtube.com/embed/XD3Ha0Ah7Fs",
-            "Proper handling and safety procedures for .22 rifles in NCC training.",
-            "18:22"
-        ),
-        Video(
-            "Weapon Safety Protocols",
-            "https://www.youtube.com/embed/9X_ViIPA-Gc",
-            "Essential safety measures and protocols for weapon handling.",
-            "10:15"
-        ),
-        Video(
-            "Rifle Assembly & Disassembly",
-            "https://www.youtube.com/embed/7YHjGXkYw7k",
-            "Step-by-step guide to assembling and disassembling standard issue rifles.",
-            "14:30"
-        )
-    ],
-    "Map Reading": [
-        Video(
-            "Basics of Map and Compass",
-            "https://www.youtube.com/embed/F9UxuFgdnK0",
-            "Introduction to map reading and compass use for navigation.",
-            "14:30"
-        ),
-        Video(
-            "Advanced Navigation Techniques",
-            "https://www.youtube.com/embed/6v2L2zZ0y_M",
-            "Advanced land navigation skills for NCC cadets.",
-            "16:45"
-        ),
-        Video(
-            "Topographic Map Reading",
-            "https://www.youtube.com/embed/4jfoYM67W4o",
-            "How to read and interpret topographic maps.",
-            "12:20"
-        )
-    ],
-    "First Aid": [
-        Video(
-            "NCC First Aid Demo",
-            "https://www.youtube.com/embed/ntEZWYKnQQk",
-            "Demonstration of basic first aid techniques for NCC cadets.",
-            "22:10"
-        ),
-        Video(
-            "CPR Training",
-            "https://www.youtube.com/embed/gz0M9cfFNq0",
-            "Complete CPR training for emergency situations.",
-            "08:45"
-        ),
-        Video(
-            "First Aid for Fractures",
-            "https://www.youtube.com/embed/8DJ45ekU7h8",
-            "How to handle and provide first aid for fractures.",
-            "11:30"
-        )
-    ],
-    "Leadership": [
-        Video(
-            "Leadership in NCC",
-            "https://www.youtube.com/embed/XrfF4jFq53E",
-            "Developing leadership skills through NCC training programs.",
-            "16:45"
-        ),
-        Video(
-            "Team Building Exercises",
-            "https://www.youtube.com/embed/6kZxJtVbBgY",
-            "Effective team building activities for cadets.",
-            "14:20"
-        ),
-        Video(
-            "Public Speaking for Leaders",
-            "https://www.youtube.com/embed/bGBamf6Nk54",
-            "Improving public speaking skills for NCC cadet leaders.",
-            "19:15"
-        )
-    ],
-    "Disaster Management": [
-        Video(
-            "Fire Drill & Earthquake Tips",
-            "https://www.youtube.com/embed/1xRCa6Gs1LQ",
-            "Emergency response training for fire drills and earthquakes.",
-            "19:30"
-        ),
-        Video(
-            "Flood Safety Measures",
-            "https://www.youtube.com/embed/M5uYCWVfuPQ",
-            "Safety procedures and response during flood situations.",
-            "12:45"
-        ),
-        Video(
-            "Disaster Preparedness",
-            "https://www.youtube.com/embed/JF9FO5HRcJQ",
-            "Comprehensive guide to disaster preparedness and response.",
-            "15:20"
-        )
-    ]
-}
+def video_guides():
+    st.title("🎥 NCC Video Guides")
+    st.write("Explore a collection of helpful videos related to NCC topics.")
 
-def display_video_guides():
-    """Display the main video guides interface."""
-    st.title("🎥 NCC Video Training Guides")
-    st.markdown("Browse through our collection of NCC training videos by category.")
-    
-    # Sidebar with category selection
-    st.sidebar.header("Categories")
-    selected_category = st.sidebar.radio(
-        "Select a category:",
-        options=list(NCC_VIDEOS.keys()),
-        index=0
+    videos_data = {}
+    file_version = None # Initialize version
+
+    try:
+        # Construct the absolute path to the JSON file
+        script_dir = os.path.dirname(__file__)
+        full_path = os.path.join(script_dir, VIDEO_DATA_PATH)
+
+        if not os.path.exists(full_path):
+            st.error(f"Video guide data not found at '{VIDEO_DATA_PATH}'. Please ensure the file exists.")
+            st.info("Example structure for data/videos.json: {'version': '1.0', 'Drill': [{'title': 'Basic Drill', 'url': 'https://www.youtube.com/watch?v=example1', 'description': 'Learn basic drill movements.'}]}")
+            return # Exit if data file is missing
+
+        with open(full_path, "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+
+        # --- Versioning Check ---
+        file_version = raw_data.get("version")
+        expected_version = "1.0" # Define your expected version
+        if file_version != expected_version:
+            st.warning(f"Video data file version mismatch. Expected '{expected_version}', but found '{file_version}'. "
+                       "Functionality might be limited or incorrect. Please update your data/videos.json.")
+            # You could add logic here to adapt to older versions if needed
+            # For now, we'll proceed with the data as is, but warn the user.
+
+        # Extract actual video categories data (excluding 'version' key)
+        videos_data = {k: v for k, v in raw_data.items() if k != "version"}
+
+        if not videos_data:
+            st.warning("The video data file is empty or only contains version information. Please add video entries to data/videos.json.")
+            return # Exit if data file is empty but exists
+
+    except json.JSONDecodeError:
+        st.error("Unable to parse video guide data. Please check if data/videos.json is a valid JSON file.")
+        st.info("Ensure the JSON is correctly formatted, e.g., no trailing commas or syntax errors.")
+        return # Exit if JSON is corrupt
+    except Exception as e:
+        st.error(f"An unexpected error occurred while loading video data: {e}")
+        return
+
+    # --- Category Selector ---
+    categories = list(videos_data.keys())
+    if not categories:
+        st.info("No video categories found in the data file after loading.")
+        return
+
+    selected_category = st.selectbox(
+        "Choose a Video Category:",
+        categories,
+        help="Select a category to view relevant videos."
     )
-    
-    # Display selected category videos
-    st.header(f"{selected_category} Training Videos")
-    
-    if selected_category in NCC_VIDEOS:
-        videos = NCC_VIDEOS[selected_category]
-        
-        for video in videos:
-            with st.expander(f"{video.title} ({video.duration})", expanded=True):
-                # Video embed
-                st.video(video.url)
-                
-                # Video details
-                if video.description:
-                    st.markdown(f"**Description:** {video.description}")
-                
-                # Add some space between videos
-                st.markdown("---")
-    else:
-        st.warning("No videos available for this category.")
-    
-    # Add a feedback section
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Feedback")
-    feedback = st.sidebar.text_area("Suggest a video or category:")
-    if st.sidebar.button("Submit Feedback"):
-        if feedback:
-            # In a real app, you would save this feedback to a database
-            st.sidebar.success("Thank you for your feedback!")
-        else:
-            st.sidebar.warning("Please enter your feedback before submitting.")
 
-# For testing the module directly
-if __name__ == "__main__":
-    display_video_guides()
+    st.markdown("---")
+
+    # --- Search / Filter ---
+    search_query = st.text_input(
+        "Search Videos:",
+        placeholder="e.g., 'parade', 'map reading', 'first aid'",
+        help="Filter videos by title or description."
+    ).lower() # Convert to lowercase for case-insensitive search
+
+    st.markdown("---")
+
+    # Display videos for the selected category
+    if selected_category and selected_category in videos_data:
+        category_videos = videos_data[selected_category]
+        filtered_videos = []
+        required_keys = {"title", "url"} # Define required keys for each video entry
+
+        # Apply search filter and perform validation
+        for video in category_videos:
+            # --- JSON Schema Validation (Required Keys Check) ---
+            if not required_keys.issubset(video.keys()):
+                missing_keys = required_keys - video.keys()
+                st.error(f"Video entry in category '{selected_category}' is missing required keys: {missing_keys}. Video: {video.get('title', 'Untitled')}. Skipping this entry.")
+                continue # Skip this invalid video entry
+
+            # Apply search filter
+            title = video.get("title", "").lower()
+            description = video.get("description", "").lower()
+            if search_query in title or search_query in description:
+                filtered_videos.append(video)
+        
+        if filtered_videos:
+            st.subheader(f"Videos in '{selected_category}' Category:")
+            for vid in filtered_videos:
+                title = vid.get("title", "Untitled Video")
+                url = vid.get("url")
+                description = vid.get("description", "")
+
+                # URL presence is already checked by required_keys, but good to be explicit for display
+                if url:
+                    st.markdown(f"**{title}**")
+                    st.video(url) # Embed YouTube player
+                    if description:
+                        st.markdown(f"*{description}*")
+                    st.markdown("---")
+                else:
+                    # This case should ideally be caught by required_keys check, but as a safeguard
+                    st.warning(f"Video '{title}' in category '{selected_category}' has no URL provided and will not be displayed.")
+        else:
+            # Fallback message for no videos in category or no search results
+            if search_query:
+                st.info(f"No videos found matching '{search_query}' in the '{selected_category}' category.")
+            else:
+                st.info(f"No videos found for the '{selected_category}' category.")
+    else:
+        st.info("Please select a video category from the dropdown.")
+
+    # --- Offline Mode Note ---
+    st.markdown("---")
+    st.markdown("""
+    **Note on Offline Mode:**
+    For true offline access, videos would need to be downloaded and stored locally (e.g., as MP4 files in an `assets/videos/` folder).
+    The `st.video()` function can play local files if their paths are provided.
+    Implementing this would require a mechanism to download videos and manage their local file paths,
+    which is beyond the scope of this direct Streamlit application without a backend or pre-downloaded assets.
+    """)
+
