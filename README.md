@@ -44,8 +44,8 @@ An intelligent AI-powered assistant designed specifically for NCC (National Cade
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ncc-ai-assistant.git
-   cd ncc-ai-assistant
+   git clone https://github.com/jawwad9226/ncc_ai_assistant.git
+   cd ncc_ai_assistant
    ```
 
 2. Install dependencies:
@@ -62,7 +62,7 @@ An intelligent AI-powered assistant designed specifically for NCC (National Cade
 
 4. Run the application:
    ```bash
-   streamlit run ncc_assistant.py
+   streamlit run main.py
    ```
 
 ## 📋 Requirements

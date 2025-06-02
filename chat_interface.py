@@ -6,9 +6,9 @@ from pathlib import Path
 
 # Import from utils
 from utils import (
-    get_ncc_response,
+    get_response_func,
     read_history,
-    _save_chat_to_file,
+    append_message,
     clear_history,
     setup_gemini,
     Config
@@ -16,49 +16,6 @@ from utils import (
 
 # Initialize Gemini model
 model, model_error = setup_gemini()
-
-def get_response_func(chat_type: str, prompt: str) -> str:
-    """
-    Get response from the Gemini model with cooldown handling.
-    
-    Args:
-        chat_type: Type of chat (not used currently, kept for compatibility)
-        prompt: User's input prompt
-        
-    Returns:
-        str: Generated response or cooldown message
-    """
-    # Check cooldown (keeping the existing cooldown logic)
-    if "last_chat_time" not in st.session_state:
-        st.session_state.last_chat_time = time.time()
-        st.session_state.cooldown_duration = 5  # seconds
-
-    time_since_last_chat = time.time() - st.session_state.last_chat_time
-
-    if time_since_last_chat < st.session_state.cooldown_duration:
-        remaining_time = int(st.session_state.cooldown_duration - time_since_last_chat)
-        return f"Please wait {remaining_time} seconds before sending another message."
-    
-    # Get response from the model
-    response = get_ncc_response(model, model_error, prompt)
-    
-    # Save chat to history
-    _save_chat_to_file(prompt, response)
-    
-    # Update cooldown timer
-    st.session_state.last_chat_time = time.time()
-    
-    return response
-
-def append_message(history_type: str, message: str) -> None:
-    """
-    Append a message to the chat history.
-    
-    Note: This is now handled by _save_chat_to_file in utils.py,
-    but keeping for backward compatibility.
-    """
-    if history_type == "chat":
-        _save_chat_to_file("", message)  # Empty prompt since we already have the full message
 
 def chat_interface():
     st.title("🤖 NCC AI Assistant Chat")
