@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import time # For simulating cooldown display
 from streamlit_pdf_viewer import pdf_viewer 
+from typing import Optional
 
 # Import functions from your consolidated modules
 # Make sure these paths are correct relative to main.py
@@ -66,10 +67,44 @@ def clear_history(history_type):
 # --- Page Configuration ---
 st.set_page_config(
     page_title="NCC AI Assistant",
-    page_icon="🇮🇳",
+    page_icon="🎖️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Dark mode toggle
+st.sidebar.markdown("### Theme")
+dark_mode = st.sidebar.toggle('Dark Mode', value=True)
+
+# Set theme based on toggle
+if dark_mode:
+    st.markdown("""
+        <style>
+        .stApp {
+            background-color: #0E1117;
+            color: #FAFAFA;
+        }
+        .stTextInput>div>div>input {
+            color: #FAFAFA;
+            background-color: #1E1E1E;
+        }
+        .stTextInput>div>div>input::placeholder {
+            color: #808080;
+        }
+        .stTextInput>div>div>input:focus {
+            border-color: #4B8BF4;
+        }
+        /* Add more component styles as needed */
+        .stButton>button {
+            border: 1px solid #4B8BF4;
+            color: #4B8BF4;
+        }
+        .stButton>button:hover {
+            border-color: #6BA0F5;
+            color: #6BA0F5;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
 # --- Custom CSS (Removed nth-child overrides as st.chat_message handles roles) ---
 st.markdown("""
@@ -234,4 +269,3 @@ elif app_mode == "📖 View Cadet Handbook":
         st.error("NCC Cadet Handbook PDF not found. Cannot display viewer. Please ensure 'Ncc-CadetHandbook.pdf' is in the main directory.")
     except Exception as e:
         st.error(f"An error occurred while loading or displaying the PDF: {e}")
-
