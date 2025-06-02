@@ -1,325 +1,419 @@
 import streamlit as st
 import random
-import json
-from datetime import datetime
+import time
+import os
+import json # Import json for reading quiz data
+from typing import List, Dict, Any, Optional
+from datetime import datetime # Ensure datetime is imported
 
-# Assuming a function to load syllabus topics exists, e.g., in utils.py
-# from utils import load_syllabus_topics
-# For demonstration, we'll mock it or load from a local JSON if available.
+# --- Mock Utility Functions (as in main.py) ---
+# In a real application, these would be imported from utils.py
+# from utils import get_response_func, read_history, append_message, clear_history, initialize_firebase
 
-# --- Mock Data/Functions for Demonstration (Replace with actual implementations) ---
-def _mock_load_syllabus_topics():
+def read_history(history_type):
+    """Mocks reading chat history from a file."""
     try:
-        with open("data/syllabus.json", "r") as f:
-            syllabus_data = json.load(f)
-            # Extract main topic names, assuming a structure like {"Topic Name": {"subtopics": [...]}}
-            return list(syllabus_data.keys())
-    except FileNotFoundError:
-        return ["Drill", "Weapon Training", "Map Reading", "Field Craft", "First Aid", "Leadership"]
-    except json.JSONDecodeError:
-        return ["Drill", "Weapon Training", "Map Reading", "Field Craft", "First Aid", "Leadership"]
-
-
-def _mock_generate_quiz_questions(topic, difficulty, num_questions):
-    """
-    Mocks a function to generate quiz questions based on topic, difficulty, and count.
-    In a real scenario, this would interact with your syllabus data and possibly a model.
-    """
-    sample_questions = {
-        "Drill": [
-            {"question": "What is the command for 'Stand at Ease'?", "options": {"A": "Savdhan!", "B": "Vishram!", "C": "Aaram!", "D": "Dahine Mur!"}, "correct": "B"},
-            {"question": "Which foot moves first in 'Quick March'?", "options": {"A": "Right", "B": "Left", "C": "Either", "D": "Both simultaneously"}, "correct": "B"},
-            {"question": "What is the purpose of Drill?", "options": {"A": "To look smart", "B": "To instill discipline", "C": "To train for combat", "D": "To avoid falling down"}, "correct": "B"},
-            {"question": "How many paces are taken for 'Salute'?", "options": {"A": "1", "B": "2", "C": "3", "D": "No fixed paces"}, "correct": "A"},
-            {"question": "In drill, what does 'Savdhan' mean?", "options": {"A": "Attention", "B": "Stand at Ease", "C": "Right Turn", "D": "Left Turn"}, "correct": "A"},
-        ],
-        "Weapon Training": [
-            {"question": "What is the caliber of the INSAS rifle?", "options": {"A": "5.56mm", "B": "7.62mm", "C": "9mm", "D": "0.303 inch"}, "correct": "A"},
-            {"question": "What is the full form of LMG?", "options": {"A": "Light Machine Gun", "B": "Long Machine Gun", "C": "Loaded Machine Gun", "D": "Live Military Gun"}, "correct": "A"},
-            {"question": "What is the effective range of a .22 rifle?", "options": {"A": "25 yards", "B": "50 yards", "C": "100 yards", "D": "200 yards"}, "correct": "A"},
-            {"question": "Which part of the rifle supports the aim?", "options": {"A": "Butt", "B": "Barrel", "C": "Sights", "D": "Trigger"}, "correct": "C"},
-        ],
-        "General NCC": [
-            {"question": "What is the motto of NCC?", "options": {"A": "Unity and Discipline", "B": "Service Before Self", "C": "Knowledge is Power", "D": "Never Give Up"}, "correct": "A"},
-            {"question": "When was NCC established?", "options": {"A": "1947", "B": "1948", "C": "1950", "D": "1962"}, "correct": "B"},
-        ]
-    }
-
-    # Combine topic-specific and general questions
-    all_qs = sample_questions.get(topic, []) + sample_questions.get("General NCC", [])
-    if not all_qs:
+        # Assuming history files are in a 'history' subdirectory or project root
+        # For this context, let's assume quiz_history.json is in the project root
+        file_path = f"{history_type}_history.json" 
+        if os.path.exists(file_path):
+            with open(file_path, "r") as f:
+                content = f.read()
+                return json.loads(content) if content else [] # Load JSON, return empty list if file is empty
+        return []
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        st.warning(f"Could not load {history_type} history: {e}. Starting fresh.")
         return []
 
-    # Filter by difficulty (mocking difficulty for simplicity)
-    # In a real app, questions would have actual difficulty tags or be generated based on complexity
-    if difficulty == "Easy":
-        filtered_qs = [q for q in all_qs if len(q["options"]) <= 3] # Example: simpler questions
-    elif difficulty == "Hard":
-        filtered_qs = [q for q in all_qs if len(q["options"]) == 4] # Example: more complex questions
-    else: # Medium
-        filtered_qs = all_qs
+def append_message(history_type, data):
+    """Mocks appending data to chat history (now supports JSON for quiz)."""
+    file_path = f"{history_type}_history.json"
+    history = read_history(history_type) # Read existing history
+    history.append(data) # Append new data
+    with open(file_path, "w") as f:
+        json.dump(history, f, indent=4) # Write back as JSON
 
-    if len(filtered_qs) < num_questions:
-        st.warning(f"Only {len(filtered_qs)} questions available for '{topic}' at '{difficulty}' difficulty. Generating all available.")
-        return filtered_qs
-    return random.sample(filtered_qs, min(num_questions, len(filtered_qs)))
-# --- End of Mock Functions ---
+def clear_history(history_type):
+    """Mocks clearing chat history."""
+    file_path = f"{history_type}_history.json"
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path) # Remove the file
+            st.info(f"Cleared {history_type} history.")
+    except OSError as e:
+        st.error(f"Error clearing {history_type} history: {e}")
 
+# --- End of Mock Utility Functions ---
 
-def quiz_interface():
-    st.title("🧠 NCC Quiz Challenge")
+# --- Quiz Data Loading (Mock) ---
+# In a real app, this would load from data/quizzes.json or similar
+# For demonstration, we use a simple hardcoded structure
+QUIZ_DATA = {
+    "easy": [
+        {"question": "What does NCC stand for?", "options": ["National Cadet Corps", "National Central Corps", "National Civil Corps", "None of the above"], "answer": "National Cadet Corps", "chapter": "Introduction"},
+        {"question": "What is the capital of India?", "options": ["Mumbai", "Delhi", "Kolkata", "Chennai"], "answer": "Delhi", "chapter": "General Knowledge"},
+        {"question": "How many states are there in India?", "options": ["28", "29", "30", "27"], "answer": "28", "chapter": "General Knowledge"},
+        {"question": "Who is the Father of the Nation?", "options": ["Jawaharlal Nehru", "Sardar Patel", "Mahatma Gandhi", "Subhash Chandra Bose"], "answer": "Mahatma Gandhi", "chapter": "History"},
+    ],
+    "medium": [
+        {"question": "What is the motto of NCC?", "options": ["Unity and Discipline", "Service and Sacrifice", "Leadership and Loyalty", "Duty and Dedication"], "answer": "Unity and Discipline", "chapter": "Introduction"},
+        {"question": "Which of the following ranks is specific to the NCC?", "options": ["Lance Naik", "Sergeant", "Company Quartermaster Sergeant", "Cadet Sergeant Major"], "answer": "Cadet Sergeant Major", "chapter": "Ranks"},
+        {"question": "When was NCC established?", "options": ["1948", "1950", "1947", "1962"], "answer": "1948", "chapter": "History"},
+    ],
+    "hard": [
+        {"question": "What is the full form of DG NCC?", "options": ["Director General National Cadet Corps", "Directorate General of National Cadet Corps", "Directorate General National Cadet Corps", "Directorate General of NCC"], "answer": "Directorate General National Cadet Corps", "chapter": "Organization"},
+        {"question": "What is the role of NCC in nation-building?", "options": ["Providing military training", "Developing youth leadership", "Disaster relief operations", "All of the above"], "answer": "All of the above", "chapter": "Nation Building"},
+    ]
+}
 
-    # Alias st.session_state for brevity
-    ss = st.session_state
+# --- Quiz State Management ---
+SS_PREFIX = "quiz_ss_" # Prefix to avoid conflicts with other modules' session state
 
-    # Initialize session state variables if not already present
-    if "quiz_questions" not in ss:
-        ss.quiz_questions = []
-    if "user_answers" not in ss:
-        ss.user_answers = {}
-    if "quiz_submitted" not in ss:
-        ss.quiz_submitted = False
-    if "quiz_score_history" not in ss:
-        ss.quiz_score_history = []
-    if "current_quiz_difficulty" not in ss:
-        ss.current_quiz_difficulty = "Medium" # Default difficulty
-    if "quiz_bookmarks" not in ss:
-        ss.quiz_bookmarks = []
-    if "current_q_index" not in ss: # For pagination
-        ss.current_q_index = 0
-    if "syllabus_topics" not in ss: # For topic selection dropdown
-        ss.syllabus_topics = _mock_load_syllabus_topics() # Load topics only once
+def _initialize_quiz_state(ss):
+    """Initializes all quiz-related session state variables if they don't exist."""
+    if f"{SS_PREFIX}quiz_active" not in ss:
+        _reset_quiz_state(ss)
+        ss[f"{SS_PREFIX}quiz_score_history"] = read_history("quiz_score") # Persisted history for difficulty calculation
 
-    # --- Quiz Generation Form ---
-    st.header("Generate New Quiz")
-    with st.form(key="quiz_generation_form"):
-        topic_input = st.text_input("Enter a specific topic (e.g., 'Drill', 'Map Reading'):", key="quiz_topic_input")
-        # Explain "No Topic Provided" with dropdown
-        selected_topic_from_dropdown = st.selectbox(
-            "Or choose from common NCC topics:",
-            [""] + ss.syllabus_topics, # Add an empty option
-            key="quiz_topic_select",
-            help="Select a predefined NCC topic for your quiz."
-        )
+def _reset_quiz_state(ss):
+    """Resets the quiz to its initial state, clearing current quiz data."""
+    ss[f"{SS_PREFIX}quiz_active"] = False
+    ss[f"{SS_PREFIX}current_question_index"] = 0
+    ss[f"{SS_PREFIX}quiz_questions"] = []
+    ss[f"{SS_PREFIX}user_answers"] = {}
+    ss[f"{SS_PREFIX}quiz_start_time"] = None
+    ss[f"{SS_PREFIX}quiz_end_time"] = None
+    ss[f"{SS_PREFIX}quiz_submitted"] = False
+    ss[f"{SS_PREFIX}quiz_result"] = None
+    ss[f"{SS_PREFIX}quiz_bookmarks"] = [] # Clear bookmarks on new quiz
+    ss[f"{SS_PREFIX}current_quiz_topic"] = "General Knowledge" # Default topic for new quizzes
 
-        difficulty_level = st.radio(
-            "Select Difficulty:",
-            ["Easy", "Medium", "Hard"],
-            horizontal=True,
-            key="quiz_difficulty_radio",
-            index=1 # Default to Medium
-        )
-        num_questions = st.slider("Number of Questions:", min_value=1, max_value=10, value=5, key="quiz_num_questions")
-
-        generate_quiz_button = st.form_submit_button("🚀 Generate Quiz")
-
-        if generate_quiz_button:
-            # Determine actual topic to use
-            actual_topic = topic_input.strip() if topic_input.strip() else selected_topic_from_dropdown
-
-            if not actual_topic:
-                st.warning("Please enter a topic or select one from the dropdown to generate a quiz.")
-            else:
-                ss.quiz_questions = _mock_generate_quiz_questions(actual_topic, difficulty_level, num_questions)
-                if ss.quiz_questions:
-                    ss.user_answers = {}
-                    ss.quiz_submitted = False
-                    ss.current_quiz_difficulty = difficulty_level # Store chosen difficulty
-                    ss.current_q_index = 0 # Reset for new quiz
-                    st.success(f"Generated a {len(ss.quiz_questions)} question quiz on '{actual_topic}' ({difficulty_level}).")
-                    st.experimental_rerun() # Rerun to display quiz
-                else:
-                    st.warning(f"Could not generate questions for topic '{actual_topic}' at '{difficulty_level}' difficulty. Please try another topic or difficulty.")
-
-    st.markdown("---")
-
-    # --- Display Active Quiz or Results ---
-    if ss.quiz_questions:
-        if not ss.quiz_submitted:
-            _display_active_quiz(ss)
-        else:
-            _display_quiz_results(ss)
+    # FIX: Resetting Difficulty on "New Quiz" - Recalc from history instead of hard-coding "Medium"
+    if f"{SS_PREFIX}quiz_score_history" in ss and ss[f"{SS_PREFIX}quiz_score_history"]:
+        ss[f"{SS_PREFIX}current_quiz_difficulty"] = get_difficulty_level(ss[f"{SS_PREFIX}quiz_score_history"])
     else:
-        st.info("Generate a quiz above to get started with your NCC knowledge challenge!")
-
-    st.markdown("---")
-
-    # --- History and Bookmarks ---
-    col_hist, col_book = st.columns(2)
-    with col_hist:
-        _display_quiz_history(ss)
-    with col_book:
-        _display_bookmarked_questions(ss)
+        ss[f"{SS_PREFIX}current_quiz_difficulty"] = "Medium" # Default if no history
 
 
-def _display_active_quiz(ss):
-    """Displays the current question of the active quiz with navigation."""
-    st.header("Active Quiz")
+def get_difficulty_level(score_history: List[Dict[str, Any]]) -> str:
+    """
+    Determines the next quiz difficulty based on recent quiz scores.
+    Args:
+        score_history: List of dictionaries, each with 'score' (percentage) and 'difficulty'.
+    Returns:
+        str: 'easy', 'medium', or 'hard'.
+    """
+    if not score_history:
+        return "Medium" # Default difficulty if no history
 
-    total_questions = len(ss.quiz_questions)
-    current_q_data = ss.quiz_questions[ss.current_q_index]
-    q_index = ss.current_q_index
+    # Consider last 3-5 quizzes for adaptive difficulty
+    recent_scores = score_history[-5:]
+    
+    # Calculate average score for the recent quizzes
+    total_score = sum(entry['score'] for entry in recent_scores if 'score' in entry)
+    average_score = total_score / len(recent_scores) if recent_scores else 0
 
-    # Progress Bar
-    st.progress((q_index + 1) / total_questions, text=f"Question {q_index + 1} of {total_questions}")
+    # Basic adaptive logic
+    if average_score >= 80:
+        return "Hard"
+    elif average_score >= 60:
+        return "Medium"
+    else:
+        return "Easy"
 
-    # Difficulty-based Visual Cues
-    color_map = {"Easy": "#A3E635", "Medium": "#60A5FA", "Hard": "#EF4444"}
-    diff = ss.current_quiz_difficulty
-    st.markdown(f"<span style='background:{color_map[diff]};padding:4px 8px;border-radius:4px;color:#fff;font-weight:bold;'>{diff}</span>", unsafe_allow_html=True)
+def _generate_quiz_questions(num_questions: int, difficulty: str, topic: str) -> List[Dict[str, Any]]:
+    """Generates a list of quiz questions for the selected difficulty and topic."""
+    # Filter questions by topic first (mocking based on 'chapter' field in QUIZ_DATA)
+    topic_filtered_questions = [
+        q for q in QUIZ_DATA.get(difficulty.lower(), [])
+        if topic.lower() in q.get("chapter", "").lower() or topic.lower() == "general knowledge" # Allow 'General Knowledge' to match all
+    ]
+    
+    if not topic_filtered_questions:
+        st.warning(f"No questions found for topic: '{topic}' at difficulty: {difficulty}. Falling back to general questions for this difficulty.")
+        available_questions = QUIZ_DATA.get(difficulty.lower(), []) # Fallback to all questions for difficulty
+    else:
+        available_questions = topic_filtered_questions
 
+    if not available_questions:
+        st.warning(f"No questions found for difficulty: {difficulty}. Please choose another difficulty.")
+        return []
+    
+    # Ensure we don't try to pick more questions than available
+    num_to_pick = min(num_questions, len(available_questions))
+    
+    return random.sample(available_questions, num_to_pick)
 
-    st.markdown(f"### Q{q_index + 1}: {current_q_data['question']}")
+def _display_quiz_creation_form(ss):
+    """Displays the form to create a new quiz."""
+    st.subheader("New Quiz Configuration")
 
-    # Radio buttons for options
-    options_keys = sorted(current_q_data["options"].keys())
-    # Ensure consistent string key for user_answers
-    selected_option = st.radio(
-        "Select your answer:",
-        options=[f"{k}) {current_q_data['options'][k]}" for k in options_keys],
-        key=f"q_{q_index}_option",
-        index=options_keys.index(ss.user_answers.get(str(q_index), "")) if ss.user_answers.get(str(q_index)) else None # Pre-select if answer exists
+    # Display current suggested difficulty
+    st.info(f"Suggested Difficulty based on history: **{ss[f'{SS_PREFIX}current_quiz_difficulty']}**")
+
+    # Difficulty selection
+    selected_difficulty = st.selectbox(
+        "Select Difficulty",
+        ["Easy", "Medium", "Hard"],
+        index=["Easy", "Medium", "Hard"].index(ss[f"{SS_PREFIX}current_quiz_difficulty"]) if ss[f"{SS_PREFIX}current_quiz_difficulty"] in ["Easy", "Medium", "Hard"] else 1,
+        key=f"{SS_PREFIX}difficulty_select"
     )
 
-    if selected_option:
-        # Extract just the option key (e.g., 'A', 'B')
-        selected_answer_key = selected_option[0]
-        # Store using string key
-        ss.user_answers[str(q_index)] = selected_answer_key
+    # Topic selection (mocked list of topics)
+    # In a real app, this would come from syllabus_manager.get_syllabus_topics()
+    mock_topics = ["General Knowledge", "Introduction", "History", "Ranks", "Organization", "Nation Building"]
+    selected_topic = st.selectbox(
+        "Select Topic",
+        mock_topics,
+        key=f"{SS_PREFIX}topic_select"
+    )
 
-    # Bookmark Button
-    if st.button(f"⭐ Bookmark Q{q_index+1}", key=f"bookmark_{q_index}", help="Bookmark this question for later review."):
-        if current_q_data not in ss.quiz_bookmarks: # Avoid duplicates
-            ss.quiz_bookmarks.append(current_q_data)
-            st.success(f"Question {q_index+1} bookmarked!")
-        else:
-            st.info(f"Question {q_index+1} is already bookmarked.")
+    # Number of questions selection
+    num_questions = st.slider(
+        "Number of Questions",
+        min_value=5,
+        max_value=len(QUIZ_DATA.get(selected_difficulty.lower(), [])) or 10, # Max available or 10 if none
+        value=min(10, len(QUIZ_DATA.get(selected_difficulty.lower(), [])) or 10),
+        step=1,
+        key=f"{SS_PREFIX}num_questions_slider"
+    )
 
+    if st.button("Start Quiz", key=f"{SS_PREFIX}start_quiz_button"):
+        ss[f"{SS_PREFIX}current_quiz_difficulty"] = selected_difficulty # Set chosen difficulty
+        ss[f"{SS_PREFIX}current_quiz_topic"] = selected_topic # Store chosen topic
+        ss[f"{SS_PREFIX}quiz_questions"] = _generate_quiz_questions(num_questions, selected_difficulty, selected_topic)
+        if ss[f"{SS_PREFIX}quiz_questions"]:
+            ss[f"{SS_PREFIX}quiz_active"] = True
+            ss[f"{SS_PREFIX}current_question_index"] = 0
+            ss[f"{SS_PREFIX}user_answers"] = {}
+            ss[f"{SS_PREFIX}quiz_start_time"] = datetime.now()
+            ss[f"{SS_PREFIX}quiz_submitted"] = False
+            ss[f"{SS_PREFIX}quiz_result"] = None
+            ss[f"{SS_PREFIX}quiz_bookmarks"] = [] # Ensure bookmarks are clear for new quiz
+            st.rerun() # Trigger rerun to display the quiz
 
-    # --- Navigation Buttons ---
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col1:
-        if st.button("⬅️ Previous", key="prev_q_btn", disabled=(q_index == 0)):
-            ss.current_q_index -= 1
+def _display_active_quiz(ss):
+    """Displays the active quiz questions."""
+    st.subheader(f"Quiz (Difficulty: {ss[f'{SS_PREFIX}current_quiz_difficulty']})")
+    
+    current_q_index = ss[f"{SS_PREFIX}current_question_index"]
+    questions = ss[f"{SS_PREFIX}quiz_questions"]
+    num_questions = len(questions)
+
+    if not questions:
+        st.warning("No questions available for this quiz. Please go back and select a different configuration.")
+        if st.button("Back to Quiz Setup", key="back_to_setup_no_q"):
+            _reset_quiz_state(ss)
             st.rerun()
-    with col2:
-        if q_index == total_questions - 1:
-            if st.button("✅ Submit Quiz", key="submit_quiz_btn", type="primary"):
-                ss.quiz_submitted = True
+        return
+
+    # Progress bar
+    progress_percent = (current_q_index / num_questions) if num_questions > 0 else 0
+    st.progress(progress_percent, text=f"Question {current_q_index + 1} of {num_questions}")
+
+    # Display current question
+    question = questions[current_q_index]
+    st.markdown(f"**Q{current_q_index + 1}: {question['question']}**")
+
+    # Use a form to capture user's answer
+    with st.form(key=f"question_form_{current_q_index}"):
+        user_choice = st.radio(
+            "Select your answer:",
+            options=question['options'],
+            key=f"q_{current_q_index}_option",
+            index=question['options'].index(ss[f"{SS_PREFIX}user_answers"].get(str(current_q_index))) if str(current_q_index) in ss[f"{SS_PREFIX}user_answers"] else None
+        )
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            submit_button = st.form_submit_button("Next Question ▶️")
+        with col2:
+            # FIX: Avoid Duplicate Bookmarks
+            if st.form_submit_button(f"⭐ Bookmark Q{current_q_index+1}", key=f"bookmark_{current_q_index}"):
+                if question not in ss[f"{SS_PREFIX}quiz_bookmarks"]:
+                    ss[f"{SS_PREFIX}quiz_bookmarks"].append(question)
+                    st.toast(f"Question {current_q_index+1} bookmarked!")
+                else:
+                    st.toast(f"Question {current_q_index+1} already bookmarked.")
+        with col3:
+            if st.form_submit_button("🗑️ Abandon Quiz", key=f"abandon_quiz_{current_q_index}"):
+                # FIX: "Abandon Quiz" vs History - Clear persisted history if desired
+                _reset_quiz_state(ss)
+                clear_history("quiz_score") # Clear score history on abandon
                 st.rerun()
-        else:
-            if st.button("➡️ Next", key="next_q_btn"):
-                ss.current_q_index += 1
-                st.rerun()
-    with col3:
-        pass # Placeholder for alignment
 
+    if submit_button:
+        ss[f"{SS_PREFIX}user_answers"][str(current_q_index)] = user_choice
+        ss[f"{SS_PREFIX}current_question_index"] += 1
+        # If all questions answered, go to results
+        if ss[f"{SS_PREFIX}current_question_index"] >= num_questions:
+            _calculate_results(ss)
+            ss[f"{SS_PREFIX}quiz_submitted"] = True
+            ss[f"{SS_PREFIX}quiz_end_time"] = datetime.now()
+        st.rerun() # Rerun to display next question or results
 
-def _display_quiz_results(ss):
-    """Displays the results of the submitted quiz."""
-    st.header("Quiz Results")
-
-    total_questions = len(ss.quiz_questions)
+def _calculate_results(ss):
+    """Calculates and stores quiz results."""
     correct_answers = 0
     wrong_questions = []
-
-    # Iterate through questions to calculate score and identify wrong answers
-    for i, q in enumerate(ss.quiz_questions):
-        user_ans = ss.user_answers.get(str(i)) # Ensure string key
-        correct_ans = q["correct"]
-
-        if user_ans == correct_ans:
+    
+    for i, question in enumerate(ss[f"{SS_PREFIX}quiz_questions"]):
+        user_ans = ss[f"{SS_PREFIX}user_answers"].get(str(i)) # FIX: Consistent Key Types for user_answers (already str(i))
+        if user_ans == question['answer']:
             correct_answers += 1
         else:
-            wrong_questions.append(q)
-
+            wrong_questions.append({
+                "index": i,
+                "question": question,
+                "user_answer": user_ans,
+                "correct_answer": question['answer']
+            })
+    
+    total_questions = len(ss[f"{SS_PREFIX}quiz_questions"])
     score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
 
-    st.write(f"You answered {correct_answers} out of {total_questions} questions correctly.")
-    st.write(f"Your score: **{score_percentage:.2f}%**")
+    duration = None
+    if ss[f"{SS_PREFIX}quiz_start_time"] and ss[f"{SS_PREFIX}quiz_end_time"]:
+        duration = ss[f"{SS_PREFIX}quiz_end_time"] - ss[f"{SS_PREFIX}quiz_start_time"]
 
-    # Add score to history only if it's an initial submission (not a retry of wrong questions)
-    # The assumption here is that 'Retry Wrong Questions' does not add to history.
-    # If a new full quiz is generated, quiz_submitted will be reset to False, allowing a new history entry.
-    if not ss.get('is_retry_quiz', False):
-        ss.quiz_score_history.append({
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "score": score_percentage,
-            "total_questions": total_questions,
-            "difficulty": ss.current_quiz_difficulty,
-            "topic": ss.quiz_questions[0].get("topic", "N/A") # Assuming first question has topic
-        })
-    # Reset is_retry_quiz flag
-    ss.is_retry_quiz = False
+    ss[f"{SS_PREFIX}quiz_result"] = {
+        "score": score_percentage,
+        "correct": correct_answers,
+        "wrong": len(wrong_questions),
+        "total": total_questions,
+        "wrong_questions": wrong_questions,
+        "duration": str(duration) if duration else "N/A",
+        "timestamp": datetime.now().isoformat(),
+        "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"]
+    }
+    
+    # Append result to persisted history
+    append_message("quiz_score", {
+        "timestamp": datetime.now().isoformat(),
+        "score": score_percentage,
+        "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"],
+        "topic": ss[f"{SS_PREFIX}current_quiz_topic"] # NEW: Include the quiz topic
+    })
 
+def _display_quiz_results(ss):
+    """Displays the quiz results."""
+    result = ss[f"{SS_PREFIX}quiz_result"]
+    if not result:
+        st.error("No quiz results available.")
+        return
 
-    st.subheader("Review Answers:")
-    for i, q in enumerate(ss.quiz_questions):
-        user_ans = ss.user_answers.get(str(i)) # Ensure string key
-        correct_ans = q["correct"]
-        is_correct = (user_ans == correct_ans)
+    st.subheader("Quiz Results")
+    st.markdown(f"**Score: {result['score']:.2f}%**")
+    st.info(f"Correct: {result['correct']} | Wrong: {result['wrong']} | Total: {result['total']}")
+    st.write(f"Duration: {result['duration']}")
+    st.write(f"Difficulty: {result['difficulty']}")
+    st.write(f"Topic: {result.get('topic', 'N/A')}") # Display topic
 
-        with st.expander(f"Q{i+1}: {q['question']}", expanded=False):
-            st.write(f"**Your Answer:** {user_ans}) {q['options'].get(user_ans, 'No Answer')}" if user_ans else "**No Answer Provided**")
-            st.write(f"**Correct Answer:** {correct_ans}) {q['options'].get(correct_ans, 'N/A')}")
-            if is_correct:
-                st.success("Correct!")
-            else:
-                st.error("Incorrect!")
-
-            # Display options with correct/incorrect highlighting
-            for k in ['A', 'B', 'C', 'D']: # Fixed typo here ['A', ' 'B', 'C', 'D']
-                if k in q['options']:
-                    option_text = f"{k}) {q['options'][k]}"
-                    if ss.quiz_submitted: # Only show highlighting after submission
-                        if k == correct_ans:
-                            st.markdown(f"<span style='background-color:#d4edda;color:#155724;padding:3px;border-radius:3px;'>{option_text} (Correct)</span>", unsafe_allow_html=True)
-                        elif k == user_ans and not is_correct:
-                            st.markdown(f"<span style='background-color:#f8d7da;color:#721c24;padding:3px;border-radius:3px;'>{option_text} (Your Answer)</span>", unsafe_allow_html=True)
-                        else:
-                            st.write(option_text)
-                    else:
-                        st.write(option_text) # Show without highlighting if not submitted
-
-    # Retry Wrong Questions button
-    if correct_answers == total_questions:
-        st.info("Congratulations! You got everything correct—no wrong questions to retry.")
-        st.button("🔁 Retry Wrong Questions", disabled=True, help="You answered all questions correctly.")
-    elif wrong_questions:
-        if st.button("🔁 Retry Wrong Questions", help="Generate a new quiz with only the questions you got wrong."):
-            ss.quiz_questions = wrong_questions
-            ss.user_answers = {}
-            ss.quiz_submitted = False
-            ss.current_q_index = 0
-            ss.is_retry_quiz = True # Set flag to prevent double counting in history
-            st.success(f"Retrying {len(wrong_questions)} wrong questions.")
-            st.experimental_rerun()
+    # FIX: "Retry Wrong Questions" When None Wrong - Disable or hide button
+    wrong_questions_count = result['wrong']
+    if wrong_questions_count == 0:
+        st.success("🎉 Congratulations! You answered all questions correctly!")
+        st.info("No wrong questions to retry.")
     else:
-        st.info("No questions to retry (perhaps all questions were answered correctly or the quiz was empty).")
+        if st.button("🔁 Retry Wrong Questions", key="retry_wrong_q_button"):
+            # Set up a new quiz with only the wrong questions
+            ss[f"{SS_PREFIX}quiz_active"] = True
+            ss[f"{SS_PREFIX}current_question_index"] = 0
+            ss[f"{SS_PREFIX}user_answers"] = {}
+            ss[f"{SS_PREFIX}quiz_start_time"] = datetime.now()
+            ss[f"{SS_PREFIX}quiz_end_time"] = None
+            ss[f"{SS_PREFIX}quiz_submitted"] = False
+            ss[f"{SS_PREFIX}quiz_result"] = None
+            ss[f"{SS_PREFIX}quiz_questions"] = [q['question'] for q in result['wrong_questions']]
+            ss[f"{SS_PREFIX}quiz_bookmarks"] = [] # Clear bookmarks when retrying wrong questions
+            # When retrying wrong questions, maintain the original topic and difficulty
+            ss[f"{SS_PREFIX}current_quiz_topic"] = result.get('topic', 'General Knowledge')
+            ss[f"{SS_PREFIX}current_quiz_difficulty"] = result.get('difficulty', 'Medium')
+            st.rerun()
+
+    if st.button("Start New Quiz", key="new_quiz_from_results"):
+        _reset_quiz_state(ss)
+        st.rerun()
+
+    if wrong_questions_count > 0:
+        st.markdown("---")
+        st.subheader("Review Wrong Answers")
+        for wrong_q in result['wrong_questions']:
+            q_data = wrong_q['question']
+            q_index = wrong_q['index']
+            st.markdown(f"**Q{q_index + 1}: {q_data['question']}**")
+            st.error(f"Your answer: {wrong_q['user_answer']}")
+            st.success(f"Correct answer: {wrong_q['correct_answer']}")
+            st.markdown(f"Options: {', '.join(q_data['options'])}")
+            st.markdown("---")
+
+    if ss[f"{SS_PREFIX}quiz_bookmarks"]:
+        st.markdown("---")
+        st.subheader("Bookmarked Questions")
+        for i, b_q in enumerate(ss[f"{SS_PREFIX}quiz_bookmarks"]):
+            st.markdown(f"**Q{i+1}: {b_q['question']}**")
+            st.write(f"Options: {', '.join(b_q['options'])}")
+            st.info(f"Correct Answer: {b_q['answer']}")
+            if b_q.get("chapter"):
+                st.caption(f"Chapter: {b_q['chapter']}")
+            st.markdown("---")
 
 
-def _display_quiz_history(ss):
-    """Displays the user's quiz score history."""
-    st.subheader("Quiz Score History")
-    if ss.quiz_score_history:
-        for i, entry in enumerate(reversed(ss.quiz_score_history)): # Show most recent first
-            st.markdown(f"**Attempt {len(ss.quiz_score_history) - i}:** "
-                        f"{entry['timestamp']} - {entry['score']:.2f}% "
-                        f"({entry['difficulty']} on {entry['topic']})")
+def _generate_result_text(quiz_info: Dict[str, Any], correct_count: int, total_count: int) -> str:
+    """
+    Generates a text summary of the quiz results.
+    Args:
+        quiz_info (dict): Dictionary containing quiz metadata.
+        correct_count (int): Number of correct answers.
+        total_count (int): Total number of questions.
+    Returns:
+        str: A formatted text summary.
+    """
+    score = (correct_count / total_count) * 100 if total_count > 0 else 0
+    duration = quiz_info.get("duration", "N/A")
+    difficulty = quiz_info.get("difficulty", "N/A")
+    topic = quiz_info.get("topic", "N/A")
+
+    result_text = f"Quiz Completed!\n"
+    result_text += f"Score: {score:.2f}%\n"
+    result_text += f"Correct Answers: {correct_count}/{total_count}\n"
+    result_text += f"Difficulty: {difficulty}\n"
+    result_text += f"Topic: {topic}\n" # Include topic in text summary
+    result_text += f"Time Taken: {duration}\n\n"
+    result_text += "Review your answers below."
+    return result_text
+
+# Main function for the quiz interface
+def quiz_interface():
+    st.title("🧠 NCC Quiz Challenge")
+    st.write("Test your knowledge about NCC topics!")
+
+    # Use a common session state object for brevity and clarity
+    ss = st.session_state
+
+    # Initialize quiz state if not already done
+    _initialize_quiz_state(ss)
+
+    if not ss[f"{SS_PREFIX}quiz_active"]:
+        _display_quiz_creation_form(ss)
+    elif not ss[f"{SS_PREFIX}quiz_submitted"]:
+        _display_active_quiz(ss)
     else:
-        st.info("No quiz history yet. Take a quiz to see your scores here!")
+        _display_quiz_results(ss)
 
-
-def _display_bookmarked_questions(ss):
-    """Displays bookmarked questions and allows removal."""
-    st.subheader("Bookmarked Questions")
-    if ss.quiz_bookmarks:
-        for i, q in enumerate(ss.quiz_bookmarks):
-            st.markdown(f"**{i+1}. {q['question']}**")
-            if st.button(f"❌ Remove Bookmark {i+1}", key=f"remove_bookmark_{i}", help="Remove this question from your bookmarks."):
-                ss.quiz_bookmarks.pop(i)
-                st.success(f"Bookmark {i+1} removed.")
-                st.experimental_rerun() # Rerun to update the list
+    # Display quiz score history for adaptive difficulty calculation visibility
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Quiz Score History")
+    score_history = ss.get(f"{SS_PREFIX}quiz_score_history", [])
+    if score_history:
+        for i, entry in enumerate(reversed(score_history)): # Show most recent first
+            timestamp = datetime.fromisoformat(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
+            st.sidebar.write(f"**{i+1}.** {timestamp} | Score: {entry['score']:.2f}% | Diff: {entry['difficulty']} | Topic: {entry.get('topic', 'N/A')}") # Display topic
     else:
-        st.info("No questions bookmarked yet. Click the ⭐ button on a question to bookmark it.")
+        st.sidebar.info("No quiz history yet. Take a quiz to build your history!")
+
+    # Option to clear quiz history
+    if st.sidebar.button("Clear Quiz History", key="clear_quiz_history_sidebar"):
+        clear_history("quiz_score")
+        _reset_quiz_state(ss) # Reset quiz state after clearing history
+        st.rerun()
 

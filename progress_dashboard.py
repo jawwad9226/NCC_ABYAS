@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from datetime import datetime, timedelta # For date filtering
+from datetime import datetime, timedelta
 
 # Note: matplotlib.pyplot is no longer imported as it's not used.
 
@@ -12,16 +12,19 @@ def progress_dashboard():
     ss = st.session_state
 
     # Initialize quiz_score_history if it doesn't exist (though quiz_interface should handle this)
-    if "quiz_score_history" not in ss:
-        ss.quiz_score_history = []
+    if "quiz_ss_quiz_score_history" not in ss: # Use the SS_PREFIX from quiz_interface
+        st.info("No quiz data yet. Take some quizzes to see your progress here!")
+        return # Exit the function if no data
+
+    score_history = ss["quiz_ss_quiz_score_history"] # Access with prefix
 
     # Check if there's any quiz data
-    if not ss.quiz_score_history:
+    if not score_history:
         st.info("No quiz data yet. Take some quizzes to see your progress here!")
         return # Exit the function if no data
 
     # Convert history to DataFrame for easier manipulation
-    df = pd.DataFrame(ss.quiz_score_history)
+    df = pd.DataFrame(score_history)
     df["timestamp"] = pd.to_datetime(df["timestamp"]) # Convert timestamp string to datetime objects
 
     st.header("Overall Performance")
@@ -59,7 +62,8 @@ def progress_dashboard():
     # Calculate delta for average score (compare to previous average if enough data)
     delta_value = None
     if total_quizzes > 1:
-        previous_avg = filtered_df["score"].iloc[:-1].mean() # Average of all except the latest quiz
+        # Average of all except the latest quiz in the filtered set
+        previous_avg = filtered_df["score"].iloc[:-1].mean() 
         delta_value = avg_score - previous_avg
 
     st.metric(
@@ -76,13 +80,15 @@ def progress_dashboard():
     st.subheader("📈 Scores Over Time by Difficulty")
 
     # Ensure 'Quiz' column for sequential display
-    filtered_df['Quiz'] = filtered_df.index + 1 # Use DataFrame index as quiz number
+    # Reset index to get a sequential number for quizzes within the filtered data
+    filtered_df_reset = filtered_df.reset_index(drop=True)
+    filtered_df_reset['Quiz'] = filtered_df_reset.index + 1 
 
-    chart = alt.Chart(filtered_df).mark_line(point=True).encode(
+    chart = alt.Chart(filtered_df_reset).mark_line(point=True).encode(
         x=alt.X("Quiz:O", title="Quiz Attempt Number"), # :O for ordinal to treat as discrete categories
         y=alt.Y("score", title="Score (%)", scale=alt.Scale(domain=[0, 100])),
         color=alt.Color("difficulty:N", title="Difficulty"), # :N for nominal
-        tooltip=["Quiz", "timestamp", "score", "difficulty", "total_questions", "topic"]
+        tooltip=["Quiz", "timestamp", "score", "difficulty", "total", "topic"] # Added 'total' and 'topic' to tooltip
     ).properties(
         title="Quiz Scores Over Time"
     ).interactive() # Enable zooming and panning
@@ -93,6 +99,7 @@ def progress_dashboard():
 
     # --- Quizzes by Topic (Bar Chart) ---
     st.subheader("📑 Quizzes by Topic")
+    # Check if 'topic' column exists and has non-null values
     if "topic" in filtered_df.columns and not filtered_df["topic"].isnull().all():
         topic_counts = filtered_df["topic"].value_counts().reset_index()
         topic_counts.columns = ["Topic", "Count"] # Rename columns for clarity
@@ -106,7 +113,7 @@ def progress_dashboard():
         )
         st.altair_chart(topic_chart, use_container_width=True)
     else:
-        st.info("No topic data available for analysis in this period.")
+        st.info("No topic data available for analysis in this period. Ensure quizzes are started with a selected topic.")
 
 
     st.markdown("---")
@@ -114,7 +121,10 @@ def progress_dashboard():
     # --- Export Dashboard Data ---
     st.subheader("📊 Export Data")
     if not filtered_df.empty:
-        csv_data = filtered_df.to_csv(index=False)
+        # Prepare data for CSV, including quiz attempt number for clarity
+        export_df = filtered_df_reset[['Quiz', 'timestamp', 'score', 'difficulty', 'total', 'topic']].copy()
+        export_df.rename(columns={'total': 'Total Questions'}, inplace=True) # Rename for better CSV header
+        csv_data = export_df.to_csv(index=False)
         st.download_button(
             label="⬇️ Download Progress Data (CSV)",
             data=csv_data,
