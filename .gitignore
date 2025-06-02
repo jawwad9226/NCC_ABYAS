@@ -1,0 +1,22 @@
+# Environment variables
+.env
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Log files and temporary data
+chat_history.txt
+quiz_log.txt
+
+# Specific file if it's a typo/duplicate and not needed
+requirement.txt
+
+# Other common Python ignores (optional, but good practice)
+# Virtual environment
+venv/
+.venv/
+
+# IDE files
+.idea/
+.vscode/

@@ -1,9 +1,0 @@
-
-User: hello assistace waht are you made of
-Assistant: I am a large language model, trained by Google.  I'm not made of physical materials like metal or plastic.  Instead, I exist as a computer program and a massive dataset of text and code.  My "body" is the complex network of computer servers and the algorithms that allow me to process information and respond to your requests.
-
---------------------------------------------------
-
-User: What is the NCC motto?
-Assistant: The NCC motto is **"Unity and Discipline"**.
---------------------------------------------------
