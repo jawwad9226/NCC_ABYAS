@@ -24,8 +24,7 @@ class Config:
     TEMP_QUIZ = 0.4
     MAX_TOKENS_CHAT = 1000
     MAX_TOKENS_QUIZ = 2000
-    COOLDOWN_MIN = 1
-    
+    API_CALL_COOLDOWN_MINUTES = 2
     # Quiz Settings
     QUESTION_COUNTS = {"Easy": 3, "Medium": 5, "Hard": 8}
     
