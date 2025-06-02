@@ -1,0 +1,94 @@
+{
+  "videos": [
+    {
+      "id": "drill_basics",
+      "title": "NCC Drill Training Basics",
+      "url": "https://www.youtube.com/embed/45a6V4bSe0A",
+      "description": "Learn the fundamentals of NCC drill training including basic commands and formations.",
+      "duration": "12:45",
+      "category": "Drill",
+      "thumbnail": "https://img.youtube.com/vi/45a6V4bSe0A/maxresdefault.jpg",
+      "tags": ["basic", "drill", "training"]
+    },
+    {
+      "id": "advanced_drill",
+      "title": "Advanced Drill Commands",
+      "url": "https://www.youtube.com/embed/8Q-4ckqIedU",
+      "description": "Advanced drill commands and ceremonial movements for senior cadets.",
+      "duration": "15:30",
+      "category": "Drill",
+      "thumbnail": "https://img.youtube.com/vi/8Q-4ckqIedU/maxresdefault.jpg",
+      "tags": ["advanced", "drill", "ceremonial"]
+    },
+    {
+      "id": "parade_commands",
+      "title": "NCC Parade Commands",
+      "url": "https://www.youtube.com/embed/3qMkZ-s5vYQ",
+      "description": "Complete guide to NCC parade commands and execution.",
+      "duration": "18:15",
+      "category": "Drill",
+      "thumbnail": "https://img.youtube.com/vi/3qMkZ-s5vYQ/maxresdefault.jpg",
+      "tags": ["parade", "commands", "drill"]
+    },
+    {
+      "id": "rifle_handling",
+      "title": "Handling .22 Rifle in NCC",
+      "url": "https://www.youtube.com/embed/XD3Ha0Ah7Fs",
+      "description": "Proper handling and safety procedures for .22 rifles in NCC training.",
+      "duration": "18:22",
+      "category": "Weapon Training",
+      "thumbnail": "https://img.youtube.com/vi/XD3Ha0Ah7Fs/maxresdefault.jpg",
+      "tags": ["rifle", "safety", "weapons"]
+    },
+    {
+      "id": "weapon_safety",
+      "title": "Weapon Safety Protocols",
+      "url": "https://www.youtube.com/embed/9X_ViIPA-Gc",
+      "description": "Essential safety measures and protocols for weapon handling.",
+      "duration": "10:15",
+      "category": "Weapon Training",
+      "thumbnail": "https://img.youtube.com/vi/9X_ViIPA-Gc/maxresdefault.jpg",
+      "tags": ["safety", "protocols", "weapons"]
+    },
+    {
+      "id": "map_reading",
+      "title": "Basics of Map and Compass",
+      "url": "https://www.youtube.com/embed/F9UxuFgdnK0",
+      "description": "Introduction to map reading and compass use for navigation.",
+      "duration": "14:30",
+      "category": "Map Reading",
+      "thumbnail": "https://img.youtube.com/vi/F9UxuFgdnK0/maxresdefault.jpg",
+      "tags": ["map", "compass", "navigation"]
+    },
+    {
+      "id": "first_aid",
+      "title": "NCC First Aid Demo",
+      "url": "https://www.youtube.com/embed/ntEZWYKnQQk",
+      "description": "Demonstration of basic first aid techniques for NCC cadets.",
+      "duration": "22:10",
+      "category": "First Aid",
+      "thumbnail": "https://img.youtube.com/vi/ntEZWYKnQQk/maxresdefault.jpg",
+      "tags": ["first aid", "emergency", "medical"]
+    },
+    {
+      "id": "leadership",
+      "title": "Leadership in NCC",
+      "url": "https://www.youtube.com/embed/XrfF4jFq53E",
+      "description": "Developing leadership skills through NCC training programs.",
+      "duration": "16:45",
+      "category": "Leadership",
+      "thumbnail": "https://img.youtube.com/vi/XrfF4jFq53E/maxresdefault.jpg",
+      "tags": ["leadership", "skills", "development"]
+    },
+    {
+      "id": "disaster_mgmt",
+      "title": "Fire Drill & Earthquake Tips",
+      "url": "https://www.youtube.com/embed/1xRCa6Gs1LQ",
+      "description": "Emergency response training for fire drills and earthquakes.",
+      "duration": "19:30",
+      "category": "Disaster Management",
+      "thumbnail": "https://img.youtube.com/vi/1xRCa6Gs1LQ/maxresdefault.jpg",
+      "tags": ["disaster", "safety", "emergency"]
+    }
+  ]
+}
