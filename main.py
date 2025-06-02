@@ -1,271 +1,320 @@
 import streamlit as st
 import os
-from datetime import datetime
-import time # For simulating cooldown display
-from streamlit_pdf_viewer import pdf_viewer 
-from typing import Optional
+from functools import partial
+import json
+from utils import setup_gemini, get_ncc_response, generate_quiz_questions, API_CALL_COOLDOWN_MINUTES, clear_history, read_history
 
-# Import functions from your consolidated modules
-# Make sure these paths are correct relative to main.py
-from chat_interface import chat_interface
-from quiz_interface import quiz_interface
-from progress_dashboard import progress_dashboard
-from video_guides import video_guides
-# Corrected import: now import from syllabus_manager
-from syllabus_manager import load_syllabus_data, search_syllabus, SyllabusData 
+def main():
+    """
+    Main entry point for the NCC AI Assistant Streamlit application.
+    Handles overall structure, navigation, theme, and routing to different features.
+    """
 
-# --- Configuration and Utility Functions (from utils.py, mocked for demonstration) ---
-# In a real application, these would be imported from utils.py
-# from utils import get_response_func, read_history, append_message, clear_history, initialize_firebase
+    # --- Gemini Model Initialization & Error Handling ---
+    # This should be the very first thing to ensure the model is ready or an error is displayed early.
+    model, model_error = setup_gemini()
 
-def get_response_func(chat_type, prompt):
-    """Mocks a function that gets a response from a model."""
-    # This is a mock; replace with your actual model call logic
-    if "last_chat_time" not in st.session_state:
-        st.session_state.last_chat_time = time.time()
-        st.session_state.cooldown_duration = 5 # seconds
+    if model_error:
+        st.error(f"🚨 Critical Error: {model_error}")
+        st.stop() # Halts execution, preventing any further UI elements from rendering
 
-    time_since_last_chat = time.time() - st.session_state.last_chat_time
+    # Initialize session state for theme if not already set
+    if "theme_mode" not in st.session_state:
+        st.session_state.theme_mode = "Light"
 
-    if time_since_last_chat < st.session_state.cooldown_duration:
-        remaining_time = int(st.session_state.cooldown_duration - time_since_last_chat)
-        return f"Please wait {remaining_time} seconds before sending another message."
-    else:
-        st.session_state.last_chat_time = time.time() # Reset cooldown timer
-        # Simulate a response
-        if "hello" in prompt.lower():
-            return "Hello! How can I assist you with NCC today?"
-        elif "syllabus" in prompt.lower():
-            return "The NCC syllabus covers topics like drill, weapon training, map reading, and field craft. Would you like more details on a specific topic?"
-        elif "cadet" in prompt.lower():
-            return "An NCC cadet is a young individual enrolled in the National Cadet Corps, undergoing training in various military and social service activities."
-        else:
-            return "I am an AI assistant for NCC. Please ask me a question related to NCC."
+    # --- Sidebar - Theme Toggle & Info ---
+    # Move these below the model error check to ensure they don't appear if the app is stopped
+    st.sidebar.header("Settings")
 
-def read_history(history_type):
-    """Mocks reading chat history from a file."""
-    try:
-        with open(f"{history_type}_history.txt", "r") as f:
-            return f.read()
-    except FileNotFoundError:
-        return ""
+    # Theme Toggle
+    st.session_state.theme_mode = st.sidebar.radio(
+        "Choose Theme",
+        ["Light", "Dark"],
+        index=0 if st.session_state.theme_mode == "Light" else 1,
+        key="theme_radio"
+    )
 
-def append_message(history_type, message):
-    """Mocks appending a message to chat history."""
-    with open(f"{history_type}_history.txt", "a") as f:
-        f.write(message + "\n")
-
-def clear_history(history_type):
-    """Mocks clearing chat history."""
-    try:
-        open(f"{history_type}_history.txt", "w").close()
-    except FileNotFoundError:
-        pass # File doesn't exist, nothing to clear
-
-# --- End of Mock Utility Functions ---
-
-# --- Page Configuration ---
-st.set_page_config(
-    page_title="NCC AI Assistant",
-    page_icon="🎖️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Dark mode toggle
-st.sidebar.markdown("### Theme")
-dark_mode = st.sidebar.toggle('Dark Mode', value=True)
-
-# Set theme based on toggle
-if dark_mode:
-    st.markdown("""
-        <style>
-        .stApp {
-            background-color: #0E1117;
-            color: #FAFAFA;
-        }
-        .stTextInput>div>div>input {
-            color: #FAFAFA;
-            background-color: #1E1E1E;
-        }
-        .stTextInput>div>div>input::placeholder {
-            color: #808080;
-        }
-        .stTextInput>div>div>input:focus {
-            border-color: #4B8BF4;
-        }
-        /* Add more component styles as needed */
-        .stButton>button {
-            border: 1px solid #4B8BF4;
-            color: #4B8BF4;
-        }
-        .stButton>button:hover {
-            border-color: #6BA0F5;
-            color: #6BA0F5;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-# --- Custom CSS (Removed nth-child overrides as st.chat_message handles roles) ---
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #f0f2f6; /* Light background */
-    }
-    .stSidebar {
-        background-color: #ffffff; /* White sidebar */
-        padding-top: 20px;
-    }
-    .stButton>button {
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: bold;
-        transition: all 0.2s ease-in-out;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .stRadio > label > div {
-        padding: 5px 0;
-    }
-    .stExpander {
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        margin-bottom: 10px;
-    }
-    .stExpander > div > div > p {
-        font-weight: bold;
-        color: #333;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-
-# --- Sidebar Navigation ---
-st.sidebar.title("NCC AI Assistant")
-st.sidebar.markdown("Your comprehensive guide for NCC.")
-
-# Navigation options
-app_mode = st.sidebar.radio(
-    "Go to",
-    ["💬 Chat with AI", "🧠 Take a Quiz", "📊 Progress Dashboard", "🎥 Video Guides", "📚 Syllabus Viewer", "📖 View Cadet Handbook"],
-    key="app_mode_radio"
-)
-
-st.sidebar.markdown("---")
-
-# --- Syllabus Viewer in Sidebar ---
-st.sidebar.header("📚 Syllabus Viewer")
-# Pass the correct filename to load_syllabus_data
-# Assuming 'syllabus.json' is in the 'data' directory relative to main.py
-SYLLABUS_JSON_PATH = os.path.join("data", "syllabus.json")
-syllabus_data: Optional[SyllabusData] = load_syllabus_data(file_name=SYLLABUS_JSON_PATH) 
-
-if syllabus_data: # Check if syllabus_data object was successfully loaded
-    st.sidebar.markdown(f"Syllabus Version: **{syllabus_data.version}**") # Display version
-    
-    syllabus_search_query = st.sidebar.text_input(
-        "Search Syllabus:",
-        placeholder="e.g., 'Drill', 'First Aid', 'Map Reading'",
-        key="syllabus_search_input",
-        help="Search for chapters or sections in the NCC syllabus."
-    ).lower()
-
-    if syllabus_search_query:
-        search_results = search_syllabus(syllabus_data, syllabus_search_query)
-        if search_results:
-            st.sidebar.subheader("Search Results:")
-            for result in search_results:
-                # Access attributes or dict keys based on what search_syllabus returns
-                if result["match_type"] == "chapter":
-                    st.sidebar.markdown(f"**Chapter:** {result['chapter_title']}")
-                elif result["match_type"] == "section":
-                    st.sidebar.markdown(f"**Section:** {result['section_name']} (in {result['chapter_title']})")
-                elif result["match_type"] == "section_content":
-                    st.sidebar.markdown(f"**Content in Section:** {result['section_name']} (in {result['chapter_title']})")
-            st.sidebar.markdown("---") # Separator for search results
-        else:
-            st.sidebar.info("No matching chapters or sections found.")
-            st.sidebar.markdown("---")
-    
-    # Display full syllabus if no search query or after search results
-    # Access .chapters attribute
-    if syllabus_data.chapters: 
-        st.sidebar.subheader("Full Syllabus:")
-        for chapter in syllabus_data.chapters: # Iterate over Chapter objects
-            # Only display if not filtered by search, or if it was a chapter match
-            # Access .title attribute
-            if not syllabus_search_query or any(res.get("chapter_title") == chapter.title for res in search_results): 
-                # Access .title attribute
-                with st.sidebar.expander(chapter.title, expanded=False): 
-                    # Access .sections attribute
-                    for section in chapter.sections: # Iterate over Section objects
-                        # Only display section if not filtered by search, or if it was a section match
-                        # Access .name and .title attributes
-                        if not syllabus_search_query or any(res.get("section_name") == section.name and res.get("chapter_title") == chapter.title for res in search_results): 
-                            # Access .name attribute
-                            st.write(f"- {section.name}") 
-    else:
-        st.sidebar.warning("Syllabus data is missing 'chapters' key or is malformed.")
-else:
-    st.sidebar.info("Syllabus data could not be loaded. Please check data/syllabus.json.")
-
-st.sidebar.markdown("---")
-
-# --- Download Syllabus PDF (Remains as a convenient option) ---
-# Ensure this path is correct. If Ncc-CadetHandbook.pdf is in the project root, this is correct.
-PDF_PATH = os.path.join(os.path.dirname(__file__), "Ncc-CadetHandbook.pdf")
-try:
-    with open(PDF_PATH, "rb") as pdf_file:
-        st.sidebar.download_button(
-            label="⬇️ Download Cadet Handbook (PDF)",
-            data=pdf_file,
-            file_name="Ncc-CadetHandbook.pdf",
-            mime="application/pdf",
-            key="sidebar_download_pdf",
-            help="Download the complete NCC Cadet Handbook in PDF format."
+    # Apply Custom CSS for Theme
+    if st.session_state.theme_mode == "Dark":
+        st.markdown(
+            """
+            <style>
+            body {
+                background-color: #0e1117;
+                color: #fafafa;
+            }
+            .stApp {
+                background-color: #0e1117;
+            }
+            .stButton>button {
+                background-color: #262730;
+                color: #fafafa;
+                border: 1px solid #262730;
+            }
+            .stButton>button:hover {
+                border: 1px solid #0068c9;
+                color: #0068c9;
+            }
+            .stTextInput>div>div>input {
+                background-color: #262730;
+                color: #fafafa;
+                border: 1px solid #31333F;
+            }
+            .stSelectbox>div>div>div {
+                background-color: #262730;
+                color: #fafafa;
+                border: 1px solid #31333F;
+            }
+            .stExpander {
+                background-color: #262730;
+                border: 1px solid #31333F;
+                border-radius: 0.25rem;
+            }
+            .stExpander>div>div>p {
+                color: #fafafa !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
         )
-except FileNotFoundError:
-    st.sidebar.warning("NCC Cadet Handbook PDF not found. Please ensure 'Ncc-CadetHandbook.pdf' is in the main directory.")
-
-
-# --- Main Content Area ---
-if app_mode == "💬 Chat with AI":
-    chat_interface()
-elif app_mode == "🧠 Take a Quiz":
-    quiz_interface()
-elif app_mode == "📊 Progress Dashboard":
-    progress_dashboard()
-elif app_mode == "🎥 Video Guides":
-    video_guides()
-elif app_mode == "📚 Syllabus Viewer":
-    st.header("NCC Syllabus Details")
-    st.info("The full syllabus content is available in the sidebar. Use the search bar to find specific topics or navigate below to view the full Cadet Handbook.")
-    st.write("This section could be used for more detailed interactive syllabus exploration if needed.")
-elif app_mode == "📖 View Cadet Handbook":
-    st.header("📖 NCC Cadet Handbook")
-    
-    # Load PDF data
-    try:
-        with open(PDF_PATH, "rb") as pdf_file:
-            PDFbyte = pdf_file.read()
-        
-        # Display the PDF viewer
-        pdf_viewer(PDFbyte)
-        
-        # Also offer download button in main area
-        st.download_button(
-            label="⬇️ Download Handbook (Main Area)",
-            data=PDFbyte,
-            file_name="Ncc-CadetHandbook.pdf",
-            mime="application/pdf",
-            key="main_download_pdf",
-            help="Download the complete NCC Cadet Handbook in PDF format."
+    else:
+        st.markdown(
+            """
+            <style>
+            body {
+                background-color: #ffffff;
+                color: #333333;
+            }
+            .stApp {
+                background-color: #ffffff;
+            }
+            .stButton>button {
+                background-color: #f0f2f6;
+                color: #333333;
+                border: 1px solid #f0f2f6;
+            }
+            .stButton>button:hover {
+                border: 1px solid #0068c9;
+                color: #0068c9;
+            }
+            .stTextInput>div>div>input {
+                background-color: #ffffff;
+                color: #333333;
+                border: 1px solid #e0e0e0;
+            }
+            .stSelectbox>div>div>div {
+                background-color: #ffffff;
+                color: #333333;
+                border: 1px solid #e0e0e0;
+            }
+            .stExpander {
+                background-color: #f0f2f6;
+                border: 1px solid #e0e0e0;
+                border-radius: 0.25rem;
+            }
+            .stExpander>div>div>p {
+                color: #333333 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
         )
 
-    except FileNotFoundError:
-        st.error("NCC Cadet Handbook PDF not found. Cannot display viewer. Please ensure 'Ncc-CadetHandbook.pdf' is in the main directory.")
-    except Exception as e:
-        st.error(f"An error occurred while loading or displaying the PDF: {e}")
+    st.sidebar.markdown("---") # Separator
+
+    # Sidebar Navigation
+    app_mode = st.sidebar.radio(
+        "Go to",
+        ["💬 Chat Assistant", "🎯 Knowledge Quiz", "📚 Syllabus Viewer", "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"],
+        key="app_mode_radio"
+    )
+
+    st.sidebar.markdown("---") # Separator
+
+    st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} minutes between questions if you hit rate limits.")
+
+    st.sidebar.markdown("---") # Separator
+
+    # Reset All State Button
+    if st.sidebar.button("♻️ Reset All"):
+        # Clear session state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        # Clear on-disk logs
+        clear_history("chat")
+        clear_history("quiz")
+        clear_history("bookmark") # Assuming you might add this later
+        st.rerun()
+
+    # Optional Dev Tools
+    if st.sidebar.checkbox("🔍 Dev Tools"):
+        st.sidebar.write("### Session State Dump")
+        st.sidebar.json(st.session_state)
+
+    # --- Module Routing ---
+    st.markdown("<h1 style='text-align: center;'>NCC AI Assistant</h1>", unsafe_allow_html=True)
+
+    if app_mode == "💬 Chat Assistant":
+        from chat_interface import display_chat_interface # Lazy import
+        chat_func = partial(get_ncc_response, model, model_error)
+        display_chat_interface(chat_func, st.session_state)
+
+    elif app_mode == "🎯 Knowledge Quiz":
+        from quiz_interface import initialize_quiz_state, display_quiz_interface # Lazy imports
+        initialize_quiz_state(st.session_state) # Always initialize quiz state first
+        if model:
+            quiz_func = partial(generate_quiz_questions, model, model_error, st.session_state)
+            display_quiz_interface(quiz_func, st.session_state)
+        else:
+            st.error("Model failed to load, Quiz feature is unavailable.")
+
+    elif app_mode == "📚 Syllabus Viewer":
+        st.header("📚 NCC Syllabus")
+        syllabus_json_path = os.path.join("data", "syllabus.json")
+        ncc_handbook_pdf_path = "Ncc-CadetHandbook.pdf"
+
+        # Display syllabus from JSON
+        if os.path.exists(syllabus_json_path):
+            with open(syllabus_json_path, "r") as f:
+                syllabus_data = json.load(f)
+
+            query = st.text_input("🔍 Search Syllabus", key="syllabus_search_query")
+            
+            st.markdown("---")
+
+            found_results = False
+            if "chapters" in syllabus_data:
+                for chapter in syllabus_data["chapters"]:
+                    chapter_title = chapter.get("title", "Untitled Chapter")
+                    sections = chapter.get("sections", [])
+
+                    # Filter based on search query
+                    if query.lower() in chapter_title.lower() or \
+                       any(query.lower() in sec.get("name", "").lower() for sec in sections):
+                        
+                        found_results = True
+                        with st.expander(chapter_title):
+                            for section in sections:
+                                section_name = section.get("name", "Untitled Section")
+                                if query.lower() in section_name.lower():
+                                    st.write(f"- {section_name}")
+                            if not sections:
+                                st.info("No sections found for this chapter.")
+            else:
+                st.warning("Syllabus JSON format invalid: 'chapters' key not found.")
+            
+            if query and not found_results:
+                st.info(f"No results found for '{query}' in the syllabus.")
+            elif not query and not found_results:
+                 st.info("Syllabus content could not be displayed. Please check the `data/syllabus.json` file.")
+
+        else:
+            st.warning("Syllabus JSON file not found. Please ensure 'data/syllabus.json' exists.")
+        
+        st.markdown("---")
+
+        # Offer PDF download
+        if os.path.exists(ncc_handbook_pdf_path):
+            with open(ncc_handbook_pdf_path, "rb") as f:
+                pdf_bytes = f.read()
+            st.download_button(
+                label="⬇️ Download NCC Cadet Handbook (PDF)",
+                data=pdf_bytes,
+                file_name="Ncc-CadetHandbook.pdf",
+                mime="application/pdf"
+            )
+        else:
+            st.info("NCC Cadet Handbook PDF not found. Please ensure 'Ncc-CadetHandbook.pdf' is in the main directory.")
+
+    elif app_mode == "🎥 Video Guides":
+        from video_guides import display_video_guides # Lazy import
+        display_video_guides()
+
+    elif app_mode == "📁 History Viewer":
+        st.header("📁 History Viewer")
+        history_tab = st.tabs(["Chat History", "Quiz History"])
+
+        with history_tab[0]:
+            st.subheader("Chat History")
+            chat_history_content = read_history("chat")
+            
+            if st.button("🧹 Clear Chat History", key="clear_chat_button"):
+                st.session_state.confirm_clear_chat = True
+            
+            if st.session_state.get("confirm_clear_chat", False):
+                st.warning("Are you sure you want to clear the chat history? This cannot be undone.")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Yes, Clear Chat History", key="confirm_yes_chat"):
+                        clear_history("chat")
+                        st.session_state.confirm_clear_chat = False
+                        st.success("Chat history cleared!")
+                        st.rerun()
+                with col2:
+                    if st.button("No, Keep Chat History", key="confirm_no_chat"):
+                        st.session_state.confirm_clear_chat = False
+                        st.info("Chat history not cleared.")
+
+            if chat_history_content:
+                lines = chat_history_content.splitlines()
+                display_limit = 50 # Limit display to last 50 lines
+                
+                for line in lines[-display_limit:]:
+                    st.text(line)
+                
+                if len(lines) > display_limit:
+                    st.info(f"...and {len(lines) - display_limit} earlier lines are hidden. Download full history to view all.")
+                
+                if st.download_button("⬇️ Download Full Chat History", chat_history_content, "chat_history.txt"):
+                    st.success("Chat history downloaded!")
+            else:
+                st.info("No chat history found yet.")
+
+        with history_tab[1]:
+            st.subheader("Quiz History")
+            quiz_history_content = read_history("quiz")
+            
+            if st.button("🧹 Clear Quiz History", key="clear_quiz_button"):
+                st.session_state.confirm_clear_quiz = True
+
+            if st.session_state.get("confirm_clear_quiz", False):
+                st.warning("Are you sure you want to clear the quiz history? This cannot be undone.")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Yes, Clear Quiz History", key="confirm_yes_quiz"):
+                        clear_history("quiz")
+                        st.session_state.confirm_clear_quiz = False
+                        st.success("Quiz history cleared!")
+                        st.rerun()
+                with col2:
+                    if st.button("No, Keep Quiz History", key="confirm_no_quiz"):
+                        st.session_state.confirm_clear_quiz = False
+                        st.info("Quiz history not cleared.")
+            
+            if quiz_history_content:
+                lines = quiz_history_content.splitlines()
+                display_limit = 50 # Limit display to last 50 lines
+
+                for line in lines[-display_limit:]:
+                    st.text(line)
+                
+                if len(lines) > display_limit:
+                    st.info(f"...and {len(lines) - display_limit} earlier lines are hidden. Download full history to view all.")
+
+                if st.download_button("⬇️ Download Full Quiz History", quiz_history_content, "quiz_history.txt"):
+                    st.success("Quiz history downloaded!")
+            else:
+                st.info("No quiz history found yet. Take a quiz to start.")
+
+    elif app_mode == "📊 Progress Dashboard":
+        # Placeholder for the Progress Dashboard
+        # Lazy import only if the file exists and is meant to be used
+        try:
+            from progress_dashboard import display_progress_dashboard
+            display_progress_dashboard(st.session_state)
+        except ImportError:
+            st.info("📊 Progress Dashboard coming soon! Take quizzes to populate your data here.")
+
+
+if __name__ == "__main__":
+    main()

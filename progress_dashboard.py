@@ -1,137 +1,99 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Note: matplotlib.pyplot is no longer imported as it's not used.
+def display_progress_dashboard(ss):
+    st.header("📊 Progress Dashboard")
 
-def progress_dashboard():
-    st.title("📊 Your NCC Progress Dashboard")
+    # If no quiz history exists
+    if not ss.get("quiz_score_history"):
+        st.info("No quiz data yet. Take a quiz to see your progress here.")
+        return
 
-    # Alias st.session_state for brevity
-    ss = st.session_state
+    # Prepare data
+    score_history = ss.quiz_score_history
+    quiz_numbers = list(range(1, len(score_history) + 1))
 
-    # Initialize quiz_score_history if it doesn't exist (though quiz_interface should handle this)
-    if "quiz_ss_quiz_score_history" not in ss: # Use the SS_PREFIX from quiz_interface
-        st.info("No quiz data yet. Take some quizzes to see your progress here!")
-        return # Exit the function if no data
+    # Optional: timestamps if stored
+    timestamps = ss.get("quiz_timestamps", None)
+    
+    # Create DataFrame for scores
+    df = pd.DataFrame({
+        'Quiz': quiz_numbers,
+        'Score (%)': score_history
+    })
 
-    score_history = ss["quiz_ss_quiz_score_history"] # Access with prefix
+    # If timestamps exist, add them to the DataFrame
+    if timestamps and len(timestamps) == len(score_history):
+        df['Date'] = [ts.strftime('%Y-%m-%d') for ts in timestamps]
+    
+    # ─── Score Over Time ─────────────────────────────────────
+    st.subheader("📈 Score Over Time")
+    # Plot a line chart of Quiz Number vs. Score
+    st.line_chart(df.set_index('Quiz')[['Score (%)']])
 
-    # Check if there's any quiz data
-    if not score_history:
-        st.info("No quiz data yet. Take some quizzes to see your progress here!")
-        return # Exit the function if no data
+    # ─── Difficulty Trend ────────────────────────────────────
+    def get_difficulty(score):
+        if score < 50:
+            return "Easy"
+        elif score < 80:
+            return "Medium"
+        else:
+            return "Hard"
 
-    # Convert history to DataFrame for easier manipulation
-    df = pd.DataFrame(score_history)
-    df["timestamp"] = pd.to_datetime(df["timestamp"]) # Convert timestamp string to datetime objects
+    difficulty_trend = [get_difficulty(score) for score in score_history]
+    diff_counts = pd.Series(difficulty_trend).value_counts().sort_index()
 
-    st.header("Overall Performance")
+    st.subheader("📶 Difficulty Level Distribution")
+    # Plot a bar chart of difficulty counts
+    st.bar_chart(diff_counts)
 
-    # --- Date Filtering ---
-    time_filter_option = st.selectbox(
-        "Show data for:",
-        ["All Time", "Last 7 Days", "Last 30 Days", "Custom Range"],
-        key="time_filter_dashboard"
-    )
+    # ─── Stats Summary ────────────────────────────────────────
+    st.subheader("📋 Summary")
+    total = len(score_history)
+    average = round(sum(score_history) / total, 2)
+    best = max(score_history)
+    latest_diff = ss.get('current_quiz_difficulty', 'Unknown')
 
-    filtered_df = df.copy()
-    if time_filter_option == "Last 7 Days":
-        seven_days_ago = datetime.now() - timedelta(days=7)
-        filtered_df = df[df["timestamp"] >= seven_days_ago]
-    elif time_filter_option == "Last 30 Days":
-        thirty_days_ago = datetime.now() - timedelta(days=30)
-        filtered_df = df[df["timestamp"] >= thirty_days_ago]
-    elif time_filter_option == "Custom Range":
-        col_start, col_end = st.columns(2)
-        with col_start:
-            start_date = st.date_input("Start date", datetime.now() - timedelta(days=30))
-        with col_end:
-            end_date = st.date_input("End date", datetime.now())
-        filtered_df = df[(df["timestamp"].dt.date >= start_date) & (df["timestamp"].dt.date <= end_date)]
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"**Total Quizzes Taken:** {total}")
+    with col2:
+        st.markdown(f"**Average Score:** {average}%")
+    with col3:
+        st.markdown(f"**Best Score:** {best}%")
+    st.markdown(f"**Latest Difficulty:** {latest_diff}")
 
-    if filtered_df.empty:
-        st.warning(f"No quiz data available for the selected '{time_filter_option}' period.")
-        return # Exit if no data after filtering
+    # ─── Download CSV of Progress ─────────────────────────────
+    csv = df.to_csv(index=False)
+    st.download_button("⬇️ Download Progress CSV", csv, "quiz_progress.csv")
 
-    # --- Average Score Gauge / Metric ---
-    avg_score = filtered_df["score"].mean()
-    total_quizzes = len(filtered_df)
-
-    # Calculate delta for average score (compare to previous average if enough data)
-    delta_value = None
-    if total_quizzes > 1:
-        # Average of all except the latest quiz in the filtered set
-        previous_avg = filtered_df["score"].iloc[:-1].mean() 
-        delta_value = avg_score - previous_avg
-
-    st.metric(
-        label="🏆 Average Score",
-        value=f"{avg_score:.2f}%",
-        delta=f"{delta_value:.2f}%" if delta_value is not None else None,
-        help="Your average quiz score. Delta shows change from previous average."
-    )
-    st.write(f"Completed **{total_quizzes}** quizzes in this period.")
-
-    st.markdown("---")
-
-    # --- Scores Over Time (Altair Chart) ---
-    st.subheader("📈 Scores Over Time by Difficulty")
-
-    # Ensure 'Quiz' column for sequential display
-    # Reset index to get a sequential number for quizzes within the filtered data
-    filtered_df_reset = filtered_df.reset_index(drop=True)
-    filtered_df_reset['Quiz'] = filtered_df_reset.index + 1 
-
-    chart = alt.Chart(filtered_df_reset).mark_line(point=True).encode(
-        x=alt.X("Quiz:O", title="Quiz Attempt Number"), # :O for ordinal to treat as discrete categories
-        y=alt.Y("score", title="Score (%)", scale=alt.Scale(domain=[0, 100])),
-        color=alt.Color("difficulty:N", title="Difficulty"), # :N for nominal
-        tooltip=["Quiz", "timestamp", "score", "difficulty", "total", "topic"] # Added 'total' and 'topic' to tooltip
-    ).properties(
-        title="Quiz Scores Over Time"
-    ).interactive() # Enable zooming and panning
-
-    st.altair_chart(chart, use_container_width=True)
-
-    st.markdown("---")
-
-    # --- Quizzes by Topic (Bar Chart) ---
-    st.subheader("📑 Quizzes by Topic")
-    # Check if 'topic' column exists and has non-null values
-    if "topic" in filtered_df.columns and not filtered_df["topic"].isnull().all():
-        topic_counts = filtered_df["topic"].value_counts().reset_index()
-        topic_counts.columns = ["Topic", "Count"] # Rename columns for clarity
-
-        topic_chart = alt.Chart(topic_counts).mark_bar().encode(
-            x=alt.X("Count", title="Number of Quizzes"),
-            y=alt.Y("Topic", sort="-x", title="Topic"), # Sort by count descending
-            tooltip=["Topic", "Count"]
-        ).properties(
-            title="Number of Quizzes per Topic"
-        )
-        st.altair_chart(topic_chart, use_container_width=True)
+    # ─── Topic‐Wise Performance ──────────────────────────────
+    if ss.get('quiz_topic_history'):
+        topic_counts = pd.Series(ss.quiz_topic_history).value_counts()
+        st.subheader("📑 Quizzes by Topic")
+        st.bar_chart(topic_counts)
     else:
-        st.info("No topic data available for analysis in this period. Ensure quizzes are started with a selected topic.")
+        st.subheader("📚 Topic Performance (Coming Soon)")
+        st.info("Topic-wise performance tracking will be added once quiz topics are stored per session.")
 
-
-    st.markdown("---")
-
-    # --- Export Dashboard Data ---
-    st.subheader("📊 Export Data")
-    if not filtered_df.empty:
-        # Prepare data for CSV, including quiz attempt number for clarity
-        export_df = filtered_df_reset[['Quiz', 'timestamp', 'score', 'difficulty', 'total', 'topic']].copy()
-        export_df.rename(columns={'total': 'Total Questions'}, inplace=True) # Rename for better CSV header
-        csv_data = export_df.to_csv(index=False)
-        st.download_button(
-            label="⬇️ Download Progress Data (CSV)",
-            data=csv_data,
-            file_name="ncc_quiz_progress.csv",
-            mime="text/csv",
-            help="Download your quiz score history as a CSV file."
+    # ─── Date Filter (if timestamps exist) ───────────────────
+    if timestamps:
+        st.subheader("📆 Quiz Timeline")
+        date_df = df.copy()
+        date_df['Date'] = pd.to_datetime(date_df['Date'])
+        date_filter = st.date_input(
+            "Filter by Date Range",
+            [date_df['Date'].min(), date_df['Date'].max()]
         )
-    else:
-        st.button("⬇️ Download Progress Data (CSV)", disabled=True, help="No data to download.")
+        start_date, end_date = date_filter
+        mask = (date_df['Date'] >= pd.to_datetime(start_date)) & (date_df['Date'] <= pd.to_datetime(end_date))
+        filtered = date_df.loc[mask]
+        if not filtered.empty:
+            st.line_chart(filtered.set_index('Quiz')[['Score (%)']])
+        else:
+            st.info("No quizzes in the selected date range.")
 
+    # ─── Placeholder for Future Metrics ───────────────────────
+    st.subheader("🔧 Additional Insights")
+    st.info("More analytics (e.g., topic weaknesses, pace of improvement) will be available soon.")
