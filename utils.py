@@ -36,6 +36,9 @@ class Config:
 # Initialize data directory
 Config.ensure_data_dir()
 
+# Export the constant for backward compatibility
+API_CALL_COOLDOWN_MINUTES = Config.API_CALL_COOLDOWN_MINUTES
+
 # --- Logging Configuration ---
 logging.basicConfig(
     level=logging.INFO, 
@@ -145,14 +148,14 @@ def clear_history(file_type: str = "chat") -> bool:
         logging.error(f"Failed to clear {file_type} history: {str(e)}")
         return False
 
-def read_history(file_type: str = "chat") -> List[Dict]:
-    """Read history for the specified type.
+def read_history(file_type: str = "chat") -> str:
+    """Read history for the specified type and return as formatted string.
     
     Args:
         file_type: Type of history to read ('chat' or 'quiz')
     
     Returns:
-        List of history items
+        Formatted string of history items
     """
     file_path = {
         "chat": Config.CHAT_HISTORY_FILE,
@@ -160,9 +163,33 @@ def read_history(file_type: str = "chat") -> List[Dict]:
     }.get(file_type)
     
     if not file_path:
-        return []
+        return ""
         
-    return _load_json_file(file_path, [])
+    history_data = _load_json_file(file_path, [])
+    
+    if not history_data:
+        return ""
+    
+    # Format history as readable text
+    formatted_lines = []
+    for item in history_data:
+        timestamp = item.get("timestamp", "Unknown time")
+        if file_type == "chat":
+            prompt = item.get("prompt", "")
+            response = item.get("response", "")
+            formatted_lines.append(f"[{timestamp}] USER: {prompt}")
+            formatted_lines.append(f"[{timestamp}] AI: {response}")
+            formatted_lines.append("")  # Empty line between conversations
+        elif file_type == "quiz":
+            topic = item.get("topic", "Unknown topic")
+            questions = item.get("questions", [])
+            formatted_lines.append(f"[{timestamp}] QUIZ: {topic} ({len(questions)} questions)")
+            for i, q in enumerate(questions, 1):
+                formatted_lines.append(f"  Q{i}: {q.get('question', 'No question')}")
+                formatted_lines.append(f"  Answer: {q.get('answer', 'No answer')}")
+            formatted_lines.append("")  # Empty line between quizzes
+    
+    return "\n".join(formatted_lines)
 
 def export_flashcards(questions: List[Dict], format: str = "csv") -> Union[str, bytes]:
     """Export quiz questions as flashcards.
@@ -196,12 +223,13 @@ def export_flashcards(questions: List[Dict], format: str = "csv") -> Union[str, 
         if not any(output[-1].values()):
             output = output[:-1]
             
-        csv_output = []
+        from io import StringIO
+        csv_output = StringIO()
         writer = csv.DictWriter(csv_output, fieldnames=["#", "Type", "Content"])
         writer.writeheader()
         writer.writerows(output)
         
-        return "\n".join(csv_output)
+        return csv_output.getvalue()
         
     except Exception as e:
         logging.error(f"Failed to export flashcards: {str(e)}")
@@ -359,7 +387,7 @@ def _is_in_cooldown(time_key: str) -> bool:
     """Check if an action is in cooldown period."""
     if time_key in st.session_state:
         elapsed = datetime.now() - st.session_state[time_key]
-        return elapsed < timedelta(minutes=Config.COOLDOWN_MIN)
+        return elapsed < timedelta(minutes=Config.API_CALL_COOLDOWN_MINUTES)
     return False
 
 def _cooldown_message(scope: str) -> str:
