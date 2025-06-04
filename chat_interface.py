@@ -73,7 +73,7 @@ def chat_interface():
                 st.info("Chat clearing cancelled.")
                 st.rerun()
     with col2:
-        with st.expander("📜 View Chat History", expanded=False, help="Show the last 50 chat messages from disk."):
+        with st.expander("📜 View Chat History", expanded=False):
             history_lines = read_history("chat").splitlines()
             if history_lines:
                 for line in history_lines[-50:]:  # Show only last 50 lines
