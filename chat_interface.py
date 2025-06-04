@@ -44,9 +44,7 @@ def chat_interface():
         cols = st.columns(3)
         for i, q in enumerate(sample_questions):
             with cols[i % 3]:
-                # Use both index and a hash of the question string to guarantee uniqueness
-                safe_key = f"sample_q_{i}_{abs(hash(q)) % 100000}"
-                if st.button(q, key=safe_key):
+                if st.button(q):
                     # Append user message with timestamp
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     st.session_state.messages.append({"role": "user", "content": f"{q} *(Sent at {timestamp})*"})
@@ -126,7 +124,7 @@ def chat_interface():
         # Get assistant response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                # Use get_ncc_response instead of get_response_func
+                # Get response from the Gemini model
                 response = get_ncc_response(model, model_error, prompt)
 
                 # Check for cooldown message
