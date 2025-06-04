@@ -75,6 +75,19 @@ def setup_gemini() -> Tuple[Optional[genai.GenerativeModel], Optional[str]]:
         logging.exception(error_msg)
         return None, "Apologies, we're experiencing technical difficulties. Please try again later."
 
+# (e.g. right after the other “Public API” functions)
+def append_message(role: str, message: str) -> None:
+    """
+    Add a new message (role="user" or "assistant") into st.session_state['chat_history'],
+    and also write it into disk (so it persists after reload).
+    """
+    # Ensure session state has a list for chat_history
+    st.session_state.setdefault("chat_history", [])
+    st.session_state["chat_history"].append({"role": role, "content": message})
+    # Also save it to your chat_history.json file
+    _save_chat_to_file(role, message)
+
+
 # --- File Operations ---
 def _load_json_file(file_path: str, default: Any = None) -> Any:
     """Safely load JSON data from a file."""

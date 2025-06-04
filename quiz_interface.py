@@ -179,6 +179,9 @@ def _display_active_quiz(ss):
     question = questions[current_q_index]
     st.markdown(f"**Q{current_q_index + 1}: {question['question']}**")
 
+    # Create columns for layout
+    col1, col2, col3 = st.columns([1, 1, 1])
+    
     # Use a form to capture user's answer
     with st.form(key=f"question_form_{current_q_index}"):
         user_choice = st.radio(
@@ -187,23 +190,26 @@ def _display_active_quiz(ss):
             key=f"q_{current_q_index}_option",
             index=question['options'].index(ss[f"{SS_PREFIX}user_answers"].get(str(current_q_index))) if str(current_q_index) in ss[f"{SS_PREFIX}user_answers"] else None
         )
+        
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             submit_button = st.form_submit_button("Next Question ▶️")
-        with col2:
-            # FIX: Avoid Duplicate Bookmarks
-            if st.form_submit_button(f"⭐ Bookmark Q{current_q_index+1}", key=f"bookmark_{current_q_index}"):
-                if question not in ss[f"{SS_PREFIX}quiz_bookmarks"]:
-                    ss[f"{SS_PREFIX}quiz_bookmarks"].append(question)
-                    st.toast(f"Question {current_q_index+1} bookmarked!")
-                else:
-                    st.toast(f"Question {current_q_index+1} already bookmarked.")
         with col3:
-            if st.form_submit_button("🗑️ Abandon Quiz", key=f"abandon_quiz_{current_q_index}"):
+            if st.form_submit_button("🗑️ Abandon Quiz"):
                 # FIX: "Abandon Quiz" vs History - Clear persisted history if desired
                 _reset_quiz_state(ss)
                 clear_history("quiz_score") # Clear score history on abandon
                 st.rerun()
+    
+    # Bookmark button outside the form
+    with col2:
+        if st.button(f"⭐ Bookmark Q{current_q_index+1}", key=f"bookmark_{current_q_index}"):
+            if question not in ss[f"{SS_PREFIX}quiz_bookmarks"]:
+                ss[f"{SS_PREFIX}quiz_bookmarks"].append(question)
+                st.toast(f"Question {current_q_index+1} bookmarked!")
+            else:
+                st.toast(f"Question {current_q_index+1} already bookmarked.")
+            st.rerun()  # Force a rerun to update the UI
 
     if submit_button:
         ss[f"{SS_PREFIX}user_answers"][str(current_q_index)] = user_choice

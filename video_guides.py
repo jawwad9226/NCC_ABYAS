@@ -1,6 +1,12 @@
 import streamlit as st
 from utils import _load_json_file as load_videos_json
 
+def load_videos_json():
+    # Build the full path to data/videos.json
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, "data", "videos.json")
+    return _load_json_file(file_path, default=[])
+
 def video_guides():
     st.title("🎥 NCC Video Guides")
     st.write("Explore a collection of helpful videos related to NCC topics.")

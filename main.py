@@ -184,10 +184,11 @@ def main():
             st.markdown("---")
 
             found_results = False
-            if "chapters" in syllabus_data:
-                for chapter_key, chapter in syllabus_data["chapters"].items():
+            if isinstance(syllabus_data, list):
+                for chapter in syllabus_data:
+                    chapter_key = chapter.get("id", "")
                     chapter_title = chapter.get("title", "Untitled Chapter")
-                    sections = chapter.get("sections", {}).values() if isinstance(chapter.get("sections", {}), dict) else chapter.get("sections", [])
+                    sections = chapter.get("sections", [])
 
                     # Filter based on search query
                     if query.lower() in chapter_title.lower() or \
@@ -202,7 +203,7 @@ def main():
                             if not sections:
                                 st.info("No sections found for this chapter.")
             else:
-                st.warning("Syllabus JSON format invalid: 'chapters' key not found.")
+                st.warning("Syllabus JSON format invalid: expected a list of chapters.")
             
             if query and not found_results:
                 st.info(f"No results found for '{query}' in the syllabus.")
