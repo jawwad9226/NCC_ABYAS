@@ -1,7 +1,7 @@
 
 import os
 import streamlit as st
-from utils import _load_json_file as load_videos_json
+from utils import _load_json_file
 
 def load_videos_json():
     # Build the full path to data/videos.json

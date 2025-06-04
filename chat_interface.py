@@ -6,11 +6,11 @@ from pathlib import Path
 
 # Import from utils
 from utils import (
-
     read_history,
     append_message,
     clear_history,
     setup_gemini,
+    get_ncc_response,
     Config
 )
 
@@ -44,7 +44,9 @@ def chat_interface():
         cols = st.columns(3)
         for i, q in enumerate(sample_questions):
             with cols[i % 3]:
-                if st.button(q, key=f"sample_q_{i}"):
+                # Use both index and a hash of the question string to guarantee uniqueness
+                safe_key = f"sample_q_{i}_{abs(hash(q)) % 100000}"
+                if st.button(q, key=safe_key):
                     # Append user message with timestamp
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     st.session_state.messages.append({"role": "user", "content": f"{q} *(Sent at {timestamp})*"})
