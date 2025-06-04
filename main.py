@@ -3,8 +3,8 @@ import os
 from functools import partial
 import json
 from utils import setup_gemini, get_ncc_response, generate_quiz_questions, API_CALL_COOLDOWN_MINUTES, clear_history, read_history
-from video_guides import display_video_guides
-from quiz_interface import display_quiz_interface, initialize_quiz_state
+from video_guides import video_guides as display_video_guides
+from quiz_interface import quiz_interface, _initialize_quiz_state
 
 def main():
     """
@@ -162,11 +162,10 @@ def main():
         chat_interface()
 
     elif app_mode == "🎯 Knowledge Quiz":
-        from quiz_interface import initialize_quiz_state, display_quiz_interface # Lazy imports
-        initialize_quiz_state(st.session_state) # Always initialize quiz state first
+        from quiz_interface import _initialize_quiz_state, quiz_interface # Lazy imports
+        _initialize_quiz_state(st.session_state) # Always initialize quiz state first
         if model:
-            quiz_func = partial(generate_quiz_questions, model, model_error, st.session_state)
-            display_quiz_interface(quiz_func, st.session_state)
+            quiz_interface()
         else:
             st.error("Model failed to load, Quiz feature is unavailable.")
 
@@ -229,7 +228,7 @@ def main():
             st.info("NCC Cadet Handbook PDF not found. Please ensure 'Ncc-CadetHandbook.pdf' is in the main directory.")
 
     elif app_mode == "🎥 Video Guides":
-        from video_guides import display_video_guides # Lazy import
+        from video_guides import video_guides as display_video_guides # Lazy import
         display_video_guides()
 
     elif app_mode == "📁 History Viewer":

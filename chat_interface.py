@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Import from utils
 from utils import (
-    get_response_func,
+
     read_history,
     append_message,
     clear_history,
@@ -124,7 +124,8 @@ def chat_interface():
         # Get assistant response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                response = get_response_func("chat", prompt)
+                # Use get_ncc_response instead of get_response_func
+                response = get_ncc_response(model, model_error, prompt)
 
                 # Check for cooldown message
                 if "Please wait" in response and "seconds" in response:

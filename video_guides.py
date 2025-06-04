@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import load_videos_json
+from utils import _load_json_file as load_videos_json
 
 def video_guides():
     st.title("🎥 NCC Video Guides")
