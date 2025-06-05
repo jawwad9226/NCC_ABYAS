@@ -22,7 +22,7 @@ def main():
 
     # Initialize session state for theme if not already set
     if "theme_mode" not in st.session_state:
-        st.session_state.theme_mode = "Light"
+        st.session_state.theme_mode = "Dark"
 
     # --- Sidebar - Theme Toggle & Info ---
     # Move these below the model error check to ensure they don't appear if the app is stopped
@@ -32,7 +32,7 @@ def main():
     st.session_state.theme_mode = st.sidebar.radio(
         "Choose Theme",
         ["Light", "Dark"],
-        index=0 if st.session_state.theme_mode == "Light" else 1,
+        index=0 if st.session_state.theme_mode == "Dark" else 1,
         key="theme_radio"
     )
 

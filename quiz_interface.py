@@ -6,7 +6,7 @@ import json # Import json for reading quiz data
 from typing import List, Dict, Any, Optional
 from datetime import datetime # Ensure datetime is imported
 
-from utils import read_history, clear_history
+from utils import read_history, clear_history, append_message
 # TODO: In the future, load quiz questions from an external JSON file for scalability.
 
 # --- Quiz Data Loading (Mock) ---
@@ -160,9 +160,17 @@ def _display_active_quiz(ss):
     """Displays the active quiz questions."""
     st.subheader(f"Quiz (Difficulty: {ss[f'{SS_PREFIX}current_quiz_difficulty']})")
     
-    current_q_index = ss[f"{SS_PREFIX}current_question_index"]
-    questions = ss[f"{SS_PREFIX}quiz_questions"]
+    questions = ss.get(f"{SS_PREFIX}quiz_questions", [])
+    current_q_index = ss.get(f"{SS_PREFIX}current_question_index", 0)
     num_questions = len(questions)
+
+    # Safety check for empty questions list or invalid index
+    if not questions or not (0 <= current_q_index < num_questions):
+        st.warning("No active quiz questions found or quiz state is inconsistent. Please start a new quiz.")
+        # Optionally, reset quiz state here if it's a common recovery path
+        # _reset_quiz_state(ss)
+        # st.rerun()
+        return # Exit the function to prevent further errors
 
     if not questions:
         st.warning("No questions available for this quiz. Please go back and select a different configuration.")
@@ -191,10 +199,10 @@ def _display_active_quiz(ss):
             index=question['options'].index(ss[f"{SS_PREFIX}user_answers"].get(str(current_q_index))) if str(current_q_index) in ss[f"{SS_PREFIX}user_answers"] else None
         )
         
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
+        form_btn_col1, _, form_btn_col3 = st.columns([1, 1, 1]) # Renamed columns inside the form, using placeholder for middle if unused
+        with form_btn_col1:
             submit_button = st.form_submit_button("Next Question ▶️")
-        with col3:
+        with form_btn_col3:
             if st.form_submit_button("🗑️ Abandon Quiz"):
                 # FIX: "Abandon Quiz" vs History - Clear persisted history if desired
                 _reset_quiz_state(ss)
