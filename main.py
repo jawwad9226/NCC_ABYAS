@@ -1,13 +1,29 @@
-import streamlit as st
 import os
-from functools import partial
 import json
+from functools import partial
 from typing import Optional
-from utils import setup_gemini, get_ncc_response, generate_quiz_questions, API_CALL_COOLDOWN_MINUTES, clear_history, read_history
+
+# Core streamlit imports
+import streamlit as st
+from streamlit_pdf_viewer import pdf_viewer
+
+# Local imports
+from utils import (
+    setup_gemini,
+    get_ncc_response,
+    generate_quiz_questions,
+    API_CALL_COOLDOWN_MINUTES,
+    clear_history,
+    read_history
+)
 from video_guides import video_guides as display_video_guides
-import base64 # For PDF embedding
-import streamlit.components.v1 as components # For embedding HTML/iframes
-from quiz_interface import quiz_interface # _initialize_quiz_state is called within quiz_interface or main
+from quiz_interface import quiz_interface
+
+# Print version info once
+if "version_info_printed" not in st.session_state:
+    print(f"Streamlit version: {st.__version__}")
+    print(f"Streamlit file: {st.__file__}")
+    st.session_state.version_info_printed = True
 
 def main():
     """
@@ -43,7 +59,7 @@ def main():
     # Update theme if changed
     if new_theme != st.session_state.theme_mode:
         st.session_state.theme_mode = new_theme
-        st.experimental_rerun()
+        st.rerun()
 
     # Apply Custom CSS for Theme
     if st.session_state.theme_mode == "Dark":
@@ -165,27 +181,49 @@ def main():
     # --- Helper function for PDF embedding ---
     def display_pdf(file_path: str, height: int = 750, page: Optional[int] = None):
         """
-        Embeds a PDF file in the Streamlit app using st.components.v1.iframe.
-        The page navigation (#page=N) relies on browser/PDF plugin support and may not always work as expected.
+        Embeds a PDF file in the Streamlit app with enhanced navigation and cross-browser support.
+        Includes fallback options and proper error handling.
         """
         try:
-            with open(file_path, "rb") as f:
-                base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-    
-            # Default to page 1 if no specific page is requested or if page is 0/None
-            current_page_to_display = page if page and page > 0 else 1
-            pdf_src_with_page_anchor = f"data:application/pdf;base64,{base64_pdf}#page={current_page_to_display}"
+            if not os.path.exists(file_path):
+                st.error(f"🚨 PDF Error: File not found at '{file_path}'.")
+                return False
             
-            # Use st.components.v1.iframe for embedding
-            # The `scrolling=True` argument can be helpful if the PDF content overflows.
-            components.iframe(pdf_src_with_page_anchor, height=height + 20, scrolling=True) # Added a bit extra height
-            # st.caption(f"Debug: Attempting to display PDF page: {current_page_to_display}") # Uncomment for debugging
+            if not file_path.endswith('.pdf'):
+                st.error("🚨 Invalid file type. Only PDF files are supported.")
+                return False
+
+            # Initialize PDF metadata if not already done
+            if "pdf_metadata" not in st.session_state:
+                import PyPDF2
+                with open(file_path, 'rb') as pdf_file:
+                    pdf_reader = PyPDF2.PdfReader(pdf_file)
+                    st.session_state.pdf_metadata = {
+                        "total_pages": len(pdf_reader.pages),
+                        "outline": []  # Will store table of contents
+                    }
+                    
+                    # Try to extract table of contents if available
+                    try:
+                        outline = pdf_reader.outline
+                        if outline:
+                            st.session_state.pdf_metadata["outline"] = outline
+                    except Exception:
+                        pass  # Some PDFs may not have an outline/table of contents
+                
+            # Use pdf_viewer for display
+            pdf_viewer(
+                file_path,
+                height=height,
+                width="100%"
+            )
             return True
-        except FileNotFoundError:
-            st.error(f"🚨 PDF Error: File not found at '{file_path}'. Please ensure 'Ncc-CadetHandbook.pdf' is in the application's root directory.")
+        except ImportError as ie:
+            st.error("🚨 PDF viewer component not installed properly. Try reinstalling streamlit-pdf-viewer.")
             return False
         except Exception as e:
-            st.error(f"An error occurred while trying to display the PDF: {e}")
+            st.error(f"🚨 Error displaying PDF: {str(e)}")
+            st.info("💡 Try downloading the PDF to view it locally if the viewer fails.")
             return False
 
     # --- Module Routing ---
@@ -242,8 +280,7 @@ def main():
                                     button_key = f"goto_pdf_search_{result.get('chapter_title', 'chap')}_{result.get('section_name', 'sec')}_{page_num}"
                                     if st.button(f"View Page {page_num} in PDF", key=button_key):
                                         st.session_state.pdf_current_page = page_num
-                                        # st.experimental_rerun() # Consider if needed for immediate tab update
-                                        st.toast(f"PDF viewer set to page {page_num}. Check the 'View NCC Handbook (PDF)' tab.")
+                                        st.rerun()  # This will switch to the PDF tab and update the viewer
                     else:
                         st.info(f"No results found for '{query}' in the syllabus structure.")
                 else:
@@ -256,11 +293,25 @@ def main():
                                         st.markdown(f"##### 📄 {section.name}") # Using H5 for section title
                                         st.markdown(section.content if section.content else "_No content available for this section._")
                                         if section.page_number: # Check if Section object has page_number
-                                            button_key = f"goto_pdf_browse_{chapter.title}_{section.name}_{section.page_number}"
-                                            if st.button(f"View Page {section.page_number} in PDF", key=button_key):
-                                                st.session_state.pdf_current_page = section.page_number
-                                                # st.experimental_rerun() # Consider if needed
-                                                st.toast(f"PDF viewer set to page {section.page_number}. Check the 'View NCC Handbook (PDF)' tab.")
+                                            col1, col2 = st.columns([3, 1])
+                                            with col1:
+                                                button_key = f"goto_pdf_browse_{chapter.title}_{section.name}_{section.page_number}"
+                                                if st.button(f"📖 View Page {section.page_number} in PDF", key=button_key):
+                                                    st.session_state.pdf_current_page = section.page_number
+                                                    st.session_state.active_tab = "pdf_viewer"  # Mark PDF viewer tab as active
+                                                    st.rerun()
+                                            with col2:
+                                                bookmark_key = f"bookmark_{chapter.title}_{section.name}"
+                                                if st.button("🔖 Bookmark", key=bookmark_key):
+                                                    if "bookmarks" not in st.session_state:
+                                                        st.session_state.bookmarks = []
+                                                    bookmark = {
+                                                        "title": f"{chapter.title} - {section.name}",
+                                                        "page": section.page_number
+                                                    }
+                                                    if bookmark not in st.session_state.bookmarks:
+                                                        st.session_state.bookmarks.append(bookmark)
+                                                        st.toast(f"Bookmarked page {section.page_number}!")
                                         if i < len(chapter.sections) - 1: # Add separator if not the last section
                                             st.markdown("---") 
                                 else:
@@ -271,21 +322,136 @@ def main():
                 st.error("Failed to load syllabus data. Please check the 'data/syllabus.json' file and ensure it's correctly formatted.")
 
         with tab2:
+            # Set this tab as active if requested
+            if st.session_state.get("active_tab") == "pdf_viewer":
+                st.session_state.active_tab = None  # Reset after switching
+                
             st.subheader("NCC Cadet Handbook Viewer")
             if os.path.exists(ncc_handbook_pdf_path):
-                display_pdf(ncc_handbook_pdf_path, page=st.session_state.pdf_current_page)
+                # Left sidebar for outline and bookmarks
+                pdf_sidebar = st.sidebar.container()
+                with pdf_sidebar:
+                    st.markdown("### 📑 Quick Navigation")
+                    navigation_mode = st.radio(
+                        "Navigation Mode",
+                        ["📖 Table of Contents", "🔖 Bookmarks", "🔍 Search"],
+                        key="pdf_nav_mode"
+                    )
+                    
+                    if navigation_mode == "📖 Table of Contents":
+                        if st.session_state.get("pdf_metadata", {}).get("outline"):
+                            for item in st.session_state.pdf_metadata["outline"]:
+                                if st.button(f"📄 {item.title}", use_container_width=True):
+                                    st.session_state.pdf_current_page = item.page
+                                    st.rerun()
+                        else:
+                            st.info("No table of contents available in this PDF")
+                            
+                    elif navigation_mode == "🔖 Bookmarks":
+                        if st.session_state.get("bookmarks"):
+                            for bookmark in st.session_state.bookmarks:
+                                if st.button(f"🔖 {bookmark['title']}", use_container_width=True):
+                                    st.session_state.pdf_current_page = bookmark['page']
+                                    st.rerun()
+                        else:
+                            st.info("No bookmarks added yet. Add bookmarks from the syllabus view.")
+                            
+                    elif navigation_mode == "🔍 Search":
+                        search_query = st.text_input("Search in PDF", key="pdf_search")
+                        if search_query:
+                            st.info("Search functionality coming soon!")
                 
-                # Offer PDF download as well
-                st.markdown("---") # Separator before download button
+                # Main PDF viewer controls
+                controls_container = st.container()
+                with controls_container:
+                    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                    
+                    with col1:
+                        # Page navigation with total pages display
+                        total_pages = 364  # Set to your PDF's actual page count
+                        page = st.number_input(
+                            f"Go to page (1-{total_pages})",
+                            min_value=1,
+                            max_value=total_pages,
+                            value=st.session_state.pdf_current_page or 1,
+                            step=1,
+                            key="page_input",
+                            help="Enter a page number to jump directly to that page"
+                        )
+
+                    with col2:
+                        # First/Previous page
+                        col2a, col2b = st.columns(2)
+                        with col2a:
+                            if st.button("⏮️ First", use_container_width=True):
+                                st.session_state.pdf_current_page = 1
+                                st.rerun()
+                        with col2b:
+                            if st.button("◀️ Prev", use_container_width=True):
+                                page = max(1, (st.session_state.pdf_current_page or 1) - 1)
+                                st.session_state.pdf_current_page = page
+                                st.rerun()
+
+                    with col3:
+                        # Next/Last page
+                        col3a, col3b = st.columns(2)
+                        with col3a:
+                            if st.button("Next ▶️", use_container_width=True):
+                                page = min(total_pages, (st.session_state.pdf_current_page or 1) + 1)
+                                st.session_state.pdf_current_page = page
+                                st.rerun()
+                        with col3b:
+                            if st.button("Last ⏭️", use_container_width=True):
+                                st.session_state.pdf_current_page = total_pages
+                                st.rerun()
+
+                    with col4:
+                        # Zoom control (future enhancement placeholder)
+                        zoom_level = st.selectbox(
+                            "Zoom",
+                            ["100%", "125%", "150%", "175%", "200%"],
+                            index=0,
+                            key="pdf_zoom",
+                            help="Select zoom level (Note: May not work in all browsers)"
+                        )
+
+                    # Quick Bookmarks
+                    st.markdown("---")
+                    bookmark_cols = st.columns(4)
+                    important_pages = {
+                        "Contents": 1,
+                        "Common Subjects": 50,
+                        "Specialized Subjects": 150,
+                        "Reference": 300
+                    }
+                    for i, (label, page_num) in enumerate(important_pages.items()):
+                        with bookmark_cols[i]:
+                            if st.button(f"📑 {label}", use_container_width=True):
+                                st.session_state.pdf_current_page = page_num
+                                st.rerun()
+
+                # Update page state if changed
+                if page != st.session_state.pdf_current_page:
+                    st.session_state.pdf_current_page = page
+                    st.rerun()
+
+                # Help text
+                st.info("💡 Due to browser limitations, PDF navigation might not work in all browsers. If you can't navigate pages, please use the download option to view the PDF locally.")
+
+                # Display the PDF with current page
+                if not display_pdf(ncc_handbook_pdf_path, height=800, page=st.session_state.pdf_current_page):
+                    st.warning("Could not display PDF in the browser. You can download it instead:")
+                    
+                # Always offer download option
                 with open(ncc_handbook_pdf_path, "rb") as f:
-                    pdf_bytes = f.read()
-                st.download_button(
-                    label="⬇️ Download NCC Cadet Handbook (PDF)",
-                    data=pdf_bytes,
-                    file_name="Ncc-CadetHandbook.pdf",
-                    mime="application/pdf",
-                    key="download_handbook_syllabus_tab"
-                )
+                    st.download_button(
+                        "⬇️ Download NCC Cadet Handbook (PDF)",
+                        f.read(),
+                        file_name="Ncc-CadetHandbook.pdf",
+                        mime="application/pdf",
+                        key="download_handbook_syllabus_tab",
+                        use_container_width=True
+                    )
             else:
                 st.warning(f"NCC Cadet Handbook PDF ('{ncc_handbook_pdf_path}') not found in the application's root directory. PDF viewer and download are unavailable.")
 
