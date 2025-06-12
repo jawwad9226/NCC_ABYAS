@@ -2,9 +2,12 @@ import streamlit as st
 import os
 from functools import partial
 import json
+from typing import Optional
 from utils import setup_gemini, get_ncc_response, generate_quiz_questions, API_CALL_COOLDOWN_MINUTES, clear_history, read_history
 from video_guides import video_guides as display_video_guides
-from quiz_interface import quiz_interface, _initialize_quiz_state
+import base64 # For PDF embedding
+import streamlit.components.v1 as components # For embedding HTML/iframes
+from quiz_interface import quiz_interface # _initialize_quiz_state is called within quiz_interface or main
 
 def main():
     """
@@ -25,16 +28,22 @@ def main():
         st.session_state.theme_mode = "Dark"
 
     # --- Sidebar - Theme Toggle & Info ---
-    # Move these below the model error check to ensure they don't appear if the app is stopped
     st.sidebar.header("Settings")
 
     # Theme Toggle
-    st.session_state.theme_mode = st.sidebar.radio(
+    theme_options = ["Dark", "Light"]  # Dark first to match default
+    current_theme_idx = theme_options.index(st.session_state.theme_mode)
+    new_theme = st.sidebar.radio(
         "Choose Theme",
-        ["Light", "Dark"],
-        index=0 if st.session_state.theme_mode == "Dark" else 1,
+        theme_options,
+        index=current_theme_idx,
         key="theme_radio"
     )
+    
+    # Update theme if changed
+    if new_theme != st.session_state.theme_mode:
+        st.session_state.theme_mode = new_theme
+        st.experimental_rerun()
 
     # Apply Custom CSS for Theme
     if st.session_state.theme_mode == "Dark":
@@ -153,6 +162,32 @@ def main():
         st.sidebar.write("### Session State Dump")
         st.sidebar.json(st.session_state)
 
+    # --- Helper function for PDF embedding ---
+    def display_pdf(file_path: str, height: int = 750, page: Optional[int] = None):
+        """Embeds a PDF file in the Streamlit app using st.components.v1.html."""
+        try:
+            with open(file_path, "rb") as f:
+                base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+
+            pdf_src = f"data:application/pdf;base64,{base64_pdf}"
+            if page:
+                pdf_src += f"#page={page}"
+
+            # Using st.components.v1.html for embedding
+            # The height for components.html should accommodate the iframe's height.
+            # Keying the component with the page number ensures it re-renders when the page changes.
+            components.html(
+                f'<iframe src="{pdf_src}" width="100%" height="{height}px" style="border:none;" type="application/pdf"></iframe>',
+                height=height + 20  # Add a little extra height for the component wrapper
+            )
+            return True
+        except FileNotFoundError:
+            st.error(f"🚨 PDF Error: File not found at '{file_path}'. Please ensure 'Ncc-CadetHandbook.pdf' is in the application's root directory.")
+            return False
+        except Exception as e:
+            st.error(f"An error occurred while trying to display the PDF: {e}")
+            return False
+
     # --- Module Routing ---
     st.markdown("<h1 style='text-align: center;'>NCC AI Assistant</h1>", unsafe_allow_html=True)
 
@@ -164,69 +199,96 @@ def main():
     elif app_mode == "🎯 Knowledge Quiz":
         from quiz_interface import _initialize_quiz_state, quiz_interface # Lazy imports
         _initialize_quiz_state(st.session_state) # Always initialize quiz state first
-        if model:
-            quiz_interface()
+        if model: # model is from setup_gemini() at the top of main()
+            quiz_interface(model, model_error) # Pass model and model_error
         else:
             st.error("Model failed to load, Quiz feature is unavailable.")
 
     elif app_mode == "📚 Syllabus Viewer":
         st.header("📚 NCC Syllabus")
-        syllabus_json_path = os.path.join("data", "syllabus.json")
-        ncc_handbook_pdf_path = "Ncc-CadetHandbook.pdf"
+        ncc_handbook_pdf_path = "Ncc-CadetHandbook.pdf" # Define path once
 
-        # Display syllabus from JSON
-        if os.path.exists(syllabus_json_path):
-            with open(syllabus_json_path, "r") as f:
-                syllabus_data = json.load(f)
+        from syllabus_manager import load_syllabus_data, get_syllabus_topics, search_syllabus
+        syllabus_data = load_syllabus_data()
 
-            query = st.text_input("🔍 Search Syllabus", key="syllabus_search_query")
-            
-            st.markdown("---")
+        # Initialize session state for PDF page navigation
+        if 'pdf_current_page' not in st.session_state:
+            st.session_state.pdf_current_page = None
 
-            found_results = False
-            if isinstance(syllabus_data, list):
-                for chapter in syllabus_data:
-                    chapter_key = chapter.get("id", "")
-                    chapter_title = chapter.get("title", "Untitled Chapter")
-                    sections = chapter.get("sections", [])
+        # Tabs for Syllabus Structure and PDF Viewer
+        tab1, tab2 = st.tabs(["Syllabus Structure", "View NCC Handbook (PDF)"])
 
-                    # Filter based on search query
-                    if query.lower() in chapter_title.lower() or \
-                       any(query.lower() in sec.get("name", "").lower() for sec in sections):
-                        
-                        found_results = True
-                        with st.expander(chapter_title):
-                            for section in sections:
-                                section_name = section.get("name", "Untitled Section")
-                                if query.lower() in section_name.lower():
-                                    st.write(f"- {section_name}")
-                            if not sections:
-                                st.info("No sections found for this chapter.")
+        with tab1:
+            st.subheader("Browse Syllabus Content")
+            query = st.text_input("🔍 Search Syllabus Topics/Sections", key="syllabus_search_query")
+
+            if syllabus_data:
+                if query:
+                    search_results = search_syllabus(syllabus_data, query)
+                    if search_results:
+                        st.write(f"Found {len(search_results)} results for '{query}':")
+                        for result in search_results:
+                            expander_title = result.get('chapter_title', 'Result')
+                            if result.get('section_name'):
+                                expander_title += f" - {result['section_name']}"
+                            
+                            match_type_display = result.get('match_type', 'Match').replace('_', ' ').title()
+                            expander_title = f"🔍 ({match_type_display}) {expander_title}"
+
+                            with st.expander(expander_title):
+                                st.markdown(result.get('content_preview', 'No preview available.'))
+                                page_num = result.get('page_number')
+                                if page_num:
+                                    button_key = f"goto_pdf_search_{result.get('chapter_title', 'chap')}_{result.get('section_name', 'sec')}_{page_num}"
+                                    if st.button(f"View Page {page_num} in PDF", key=button_key):
+                                        st.session_state.pdf_current_page = page_num
+                                        # st.experimental_rerun() # Consider if needed for immediate tab update
+                                        st.toast(f"PDF viewer set to page {page_num}. Check the 'View NCC Handbook (PDF)' tab.")
+                    else:
+                        st.info(f"No results found for '{query}' in the syllabus structure.")
+                else:
+                    # Display all chapters and sections if no search query
+                    if syllabus_data.chapters:
+                        for chapter in syllabus_data.chapters:
+                            with st.expander(f"📖 {chapter.title}"):
+                                if chapter.sections:
+                                    for i, section in enumerate(chapter.sections):
+                                        st.markdown(f"##### 📄 {section.name}") # Using H5 for section title
+                                        st.markdown(section.content if section.content else "_No content available for this section._")
+                                        if section.page_number: # Check if Section object has page_number
+                                            button_key = f"goto_pdf_browse_{chapter.title}_{section.name}_{section.page_number}"
+                                            if st.button(f"View Page {section.page_number} in PDF", key=button_key):
+                                                st.session_state.pdf_current_page = section.page_number
+                                                # st.experimental_rerun() # Consider if needed
+                                                st.toast(f"PDF viewer set to page {section.page_number}. Check the 'View NCC Handbook (PDF)' tab.")
+                                        if i < len(chapter.sections) - 1: # Add separator if not the last section
+                                            st.markdown("---") 
+                                else:
+                                    st.info("No sections available for this chapter.")
+                    else:
+                        st.info("No chapters found in the syllabus data.")
             else:
-                st.warning("Syllabus JSON format invalid: expected a list of chapters.")
-            
-            if query and not found_results:
-                st.info(f"No results found for '{query}' in the syllabus.")
-            elif not query and not found_results:
-                 st.info("Syllabus content could not be displayed. Please check the `data/syllabus.json` file.")
+                st.error("Failed to load syllabus data. Please check the 'data/syllabus.json' file and ensure it's correctly formatted.")
 
-        else:
-            st.warning("Syllabus JSON file not found. Please ensure 'data/syllabus.json' exists.")
-        
-        st.markdown("---")
+        with tab2:
+            st.subheader("NCC Cadet Handbook Viewer")
+            if os.path.exists(ncc_handbook_pdf_path):
+                display_pdf(ncc_handbook_pdf_path, page=st.session_state.pdf_current_page)
+                
+                # Offer PDF download as well
+                st.markdown("---") # Separator before download button
+                with open(ncc_handbook_pdf_path, "rb") as f:
+                    pdf_bytes = f.read()
+                st.download_button(
+                    label="⬇️ Download NCC Cadet Handbook (PDF)",
+                    data=pdf_bytes,
+                    file_name="Ncc-CadetHandbook.pdf",
+                    mime="application/pdf",
+                    key="download_handbook_syllabus_tab"
+                )
+            else:
+                st.warning(f"NCC Cadet Handbook PDF ('{ncc_handbook_pdf_path}') not found in the application's root directory. PDF viewer and download are unavailable.")
 
-        # Offer PDF download
-        if os.path.exists(ncc_handbook_pdf_path):
-            with open(ncc_handbook_pdf_path, "rb") as f:
-                pdf_bytes = f.read()
-            st.download_button(
-                label="⬇️ Download NCC Cadet Handbook (PDF)",
-                data=pdf_bytes,
-                file_name="Ncc-CadetHandbook.pdf",
-                mime="application/pdf"
-            )
-        else:
-            st.info("NCC Cadet Handbook PDF not found. Please ensure 'Ncc-CadetHandbook.pdf' is in the main directory.")
 
     elif app_mode == "🎥 Video Guides":
         from video_guides import video_guides as display_video_guides # Lazy import

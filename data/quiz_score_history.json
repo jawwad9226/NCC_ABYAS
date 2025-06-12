@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2025-06-11T17:44:03.531939",
+    "score": 100.0,
+    "difficulty": "Easy",
+    "topic": "Introduction"
+  },
+  {
+    "timestamp": "2025-06-11T17:47:34.834084",
+    "score": 0.0,
+    "difficulty": "Medium",
+    "topic": "Field Craft Battle Craft"
+  },
+  {
+    "timestamp": "2025-06-11T17:50:37.729085",
+    "score": 100.0,
+    "difficulty": "Easy",
+    "topic": "NCC General"
+  },
+  {
+    "timestamp": "2025-06-11T17:51:21.194888",
+    "score": 50.0,
+    "difficulty": "Medium",
+    "topic": "NCC General"
+  },
+  {
+    "timestamp": "2025-06-11T19:09:49.211581",
+    "score": 33.33333333333333,
+    "difficulty": "Medium",
+    "topic": "NCC General"
+  },
+  {
+    "timestamp": "2025-06-11T19:12:04.186141",
+    "score": 66.66666666666666,
+    "difficulty": "Easy",
+    "topic": "NCC General"
+  },
+  {
+    "timestamp": "2025-06-11T22:45:29.659118",
+    "score": 50.0,
+    "difficulty": "Easy",
+    "topic": "NCC General"
+  }
+]

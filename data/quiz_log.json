@@ -1,0 +1,332 @@
+[
+  {
+    "timestamp": "2025-06-11T17:46:49.587408",
+    "topic": "Field Craft Battle Craft",
+    "questions": [
+      {
+        "question": "You are leading a patrol through dense jungle.  Which method best balances speed and security?",
+        "options": {
+          "A": "Maintaining a tight, single-file formation for maximum speed.",
+          "B": "Employing a loose, bounding overwatch formation to increase situational awareness.",
+          "C": "Using a wide, spread-out formation to cover more ground quickly.",
+          "D": "Maintaining radio silence to avoid detection."
+        },
+        "answer": "B",
+        "explanation": "Bounding overwatch allows for speed while maintaining security through alternating fire and movement.  A tight formation is vulnerable, a wide formation is less secure, and radio silence is only one aspect of security.",
+        "timestamp": "2025-06-11T17:46:49.586873"
+      },
+      {
+        "question": "Your patrol is ambushed.  What is the priority of actions immediately following the initial contact?",
+        "options": {
+          "A": "Return fire and eliminate the enemy.",
+          "B": "Immediately retreat to a pre-planned rally point.",
+          "C": "Establish a base of fire and maneuver to a better position.",
+          "D": "Call for immediate air support."
+        },
+        "answer": "C",
+        "explanation": "While returning fire is important, the priority is to improve the tactical situation.  Establishing a base of fire and maneuvering to a better position allows for more effective return fire and reduces casualties.  Retreating without a plan is risky, and air support takes time.",
+        "timestamp": "2025-06-11T17:46:49.586910"
+      },
+      {
+        "question": "You need to establish a concealed observation post (OP) overlooking a likely enemy patrol route. Which factor is LEAST important in selecting the location?",
+        "options": {
+          "A": "Fields of fire covering the patrol route.",
+          "B": "Proximity to friendly forces for easy communication and resupply.",
+          "C": "The presence of a large, conspicuous landmark nearby.",
+          "D": "Concealment and cover from enemy observation."
+        },
+        "answer": "C",
+        "explanation": "A large landmark draws attention and compromises concealment.  Fields of fire, proximity to friendly forces, and concealment are all crucial for a successful OP.",
+        "timestamp": "2025-06-11T17:46:49.586927"
+      },
+      {
+        "question": "You are planning a night patrol. What is the most effective way to maintain situational awareness in low-light conditions?",
+        "options": {
+          "A": "Relying solely on night vision devices.",
+          "B": "Using only natural light sources for navigation.",
+          "C": "Employing a combination of night vision devices, listening, and touch.",
+          "D": "Maintaining complete radio silence to avoid detection."
+        },
+        "answer": "C",
+        "explanation": "Over-reliance on any single sense is dangerous.  Combining night vision with other senses provides a more complete picture of the environment.  Radio silence is important but doesn't replace situational awareness.",
+        "timestamp": "2025-06-11T17:46:49.586942"
+      },
+      {
+        "question": "Your patrol is tasked with breaching a wire obstacle at night. What is the most important consideration?",
+        "options": {
+          "A": "Speed of breaching.",
+          "B": "Silence and stealth.",
+          "C": "Use of explosives.",
+          "D": "The type of wire used."
+        },
+        "answer": "B",
+        "explanation": "While speed and the type of wire are factors, noise from breaching could alert the enemy.  Stealth is paramount for a successful night breach.  Explosives are rarely the best option for a quiet breach.",
+        "timestamp": "2025-06-11T17:46:49.586957"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T17:50:31.187578",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps",
+          "B": "National Civil Corps",
+          "C": "National Community Corps",
+          "D": "National Cadet Committee"
+        },
+        "answer": "A",
+        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
+        "timestamp": "2025-06-11T17:50:31.186786"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To provide military training for future soldiers.",
+          "B": "To develop character, discipline, and leadership qualities in young citizens.",
+          "C": "To exclusively focus on promoting physical fitness.",
+          "D": "To prepare students for careers in the defense industry."
+        },
+        "answer": "B",
+        "explanation": "While NCC provides some military training, its primary goal is the holistic development of youth through character building, discipline, and leadership training, benefiting them as citizens.",
+        "timestamp": "2025-06-11T17:50:31.186821"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T17:51:04.980807",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "A NCC cadet is tasked with leading a small group in a challenging outdoor navigation exercise.  Which leadership style would be MOST effective in this situation, considering the need for both guidance and team collaboration?",
+        "options": {
+          "A": "Autocratic leadership, providing clear instructions and leaving no room for deviation.",
+          "B": "Laissez-faire leadership, allowing the team complete autonomy in decision-making.",
+          "C": "Democratic leadership, encouraging team input and collaborative decision-making.",
+          "D": "Transformational leadership, focusing primarily on inspiring the team through charisma."
+        },
+        "answer": "C",
+        "explanation": "A challenging navigation exercise requires both guidance and the collective problem-solving skills of the team.  Democratic leadership fosters collaboration and shared responsibility, leading to better outcomes in complex situations.  While other styles have their place, they are less suitable for this specific scenario.",
+        "timestamp": "2025-06-11T17:51:04.979930"
+      },
+      {
+        "question": "During a NCC camp, a cadet notices a fellow cadet exhibiting signs of severe dehydration.  What is the MOST appropriate initial action the cadet should take?",
+        "options": {
+          "A": "Immediately administer oral rehydration salts (ORS) and continue the camp activities.",
+          "B": "Encourage the cadet to drink plenty of water and monitor their condition.",
+          "C": "Inform the camp's medical staff or designated adult immediately.",
+          "D": "Advise the cadet to rest in the shade and wait for symptoms to subside."
+        },
+        "answer": "C",
+        "explanation": "Severe dehydration is a serious medical condition.  While encouraging water intake and rest are helpful, immediately informing the camp's medical personnel is the most crucial step to ensure proper medical assessment and treatment.  Self-treating severe dehydration could be dangerous.",
+        "timestamp": "2025-06-11T17:51:04.980029"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T18:04:09.802039",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps",
+          "B": "National Civil Corps",
+          "C": "National Cadet Committee",
+          "D": "National Community Corps"
+        },
+        "answer": "A",
+        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
+        "timestamp": "2025-06-11T18:04:09.799822"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To promote religious harmony.",
+          "B": "To provide military training for future soldiers.",
+          "C": "To develop character, discipline, and leadership qualities in young citizens.",
+          "D": "To enhance technical skills for employment."
+        },
+        "answer": "C",
+        "explanation": "While NCC may indirectly contribute to other areas, its primary aim is character development, discipline, and leadership training among young Indians.",
+        "timestamp": "2025-06-11T18:04:09.799878"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T18:55:37.206339",
+    "topic": "Civil Defence",
+    "questions": [
+      {
+        "question": "A coastal city is developing its Civil Defence plan, prioritizing resource allocation during a major hurricane.  Which of the following strategies best exemplifies a nuanced understanding of resilience and resource prioritization, moving beyond simple immediate needs?",
+        "options": {
+          "A": "Focusing solely on immediate evacuation and emergency shelter provision.",
+          "B": "Prioritizing the protection of critical infrastructure (power, water, communication) to ensure long-term recovery capabilities.",
+          "C": "Stockpiling large quantities of non-perishable food and water for immediate distribution.",
+          "D": "Equipping first responders with advanced rescue equipment for immediate search and rescue operations."
+        },
+        "answer": "B",
+        "explanation": "While options A, C, and D are important aspects of immediate response, option B addresses the long-term sustainability and resilience of the city.  Protecting critical infrastructure ensures a faster and more effective recovery, exceeding the immediate relief provided by the other options.  A resilient city focuses on long-term recovery capabilities.",
+        "timestamp": "2025-06-11T18:55:37.205343"
+      },
+      {
+        "question": "A nation is evaluating its Civil Defence preparedness against a potential large-scale cyberattack targeting critical national infrastructure. Which of the following represents the most sophisticated and proactive approach to mitigating the risk?",
+        "options": {
+          "A": "Implementing robust firewalls and antivirus software across all government systems.",
+          "B": "Developing comprehensive incident response plans focusing solely on immediate containment and damage control.",
+          "C": "Investing heavily in redundancy and decentralized systems, coupled with robust cybersecurity training and drills for personnel.",
+          "D": "Increasing penalties for cybercrime and strengthening national cybersecurity legislation."
+        },
+        "answer": "C",
+        "explanation": "While options A, B, and D are important components of cybersecurity, option C addresses the issue most comprehensively.  Redundancy and decentralization mitigate the impact of a successful attack, while training and drills ensure effective response.  This proactive approach goes beyond reactive measures.",
+        "timestamp": "2025-06-11T18:55:37.205380"
+      },
+      {
+        "question": "A region is experiencing a prolonged period of drought, leading to widespread social unrest and resource scarcity.  Which of the following Civil Defence strategies best addresses the root causes of the instability, rather than just managing the immediate symptoms?",
+        "options": {
+          "A": "Distributing emergency food and water supplies to affected populations.",
+          "B": "Deploying law enforcement to quell civil disturbances.",
+          "C": "Implementing long-term water conservation programs and investing in drought-resistant agriculture.",
+          "D": "Establishing temporary shelters for displaced individuals."
+        },
+        "answer": "C",
+        "explanation": "Options A, B, and D address the immediate symptoms of the drought. Option C tackles the root cause by addressing the long-term water scarcity and food insecurity, promoting sustainable solutions and preventing future crises. This proactive approach fosters resilience and prevents future unrest.",
+        "timestamp": "2025-06-11T18:55:37.205398"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T19:09:22.781801",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "A newly appointed NCC officer is tasked with planning a camp involving several platoons.  Considering the principles of effective camp management, which of the following actions would MOST effectively ensure the smooth functioning and safety of the camp?",
+        "options": {
+          "A": "Developing a detailed camp schedule with clearly defined roles and responsibilities for each platoon and individual, incorporating contingency plans for unforeseen circumstances.",
+          "B": "Focusing primarily on the recreational activities planned for the camp, ensuring ample free time for cadets to socialize and relax.",
+          "C": "Prioritizing the selection of a visually appealing campsite, regardless of logistical considerations like accessibility and proximity to essential facilities.",
+          "D": "Assigning cadets to tasks based solely on their seniority within the platoon, regardless of their skills or aptitudes."
+        },
+        "answer": "A",
+        "explanation": "Effective camp management requires meticulous planning, including a detailed schedule, defined roles, and contingency plans.  Options B, C, and D neglect crucial aspects like safety, logistical efficiency, and optimal task allocation, which are essential for a well-run NCC camp.  A well-defined schedule and clear responsibilities are key to minimizing chaos and maximizing safety.",
+        "timestamp": "2025-06-11T19:09:22.761977"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T19:09:41.671649",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "A company uses the NCC General standard to guide its cybersecurity practices.  They've implemented strong password policies and multi-factor authentication. However, they've neglected regular security awareness training for their employees. Which control area of NCC General is primarily deficient?",
+        "options": {
+          "A": "Access Control",
+          "B": "Information Security Governance",
+          "C": "Security Awareness and Training",
+          "D": "Incident Management"
+        },
+        "answer": "C",
+        "explanation": "While strong passwords and MFA fall under Access Control, the lack of security awareness training directly impacts the effectiveness of those controls and is a significant deficiency in the Security Awareness and Training control area of NCC General.",
+        "timestamp": "2025-06-11T19:09:41.670604"
+      },
+      {
+        "question": "An organization adhering to NCC General discovers a vulnerability in their web application that could allow unauthorized access to sensitive customer data.  Following NCC General's guidance, what is the MOST appropriate FIRST step they should take?",
+        "options": {
+          "A": "Immediately notify all affected customers.",
+          "B": "Conduct a full-scale penetration test of their entire network.",
+          "C": "Implement a temporary patch or workaround to mitigate the vulnerability.",
+          "D": "Conduct a risk assessment to determine the severity and potential impact of the vulnerability."
+        },
+        "answer": "C",
+        "explanation": "While a risk assessment (D) is important, the immediate priority is to mitigate the vulnerability to prevent exploitation.  Notifying customers (A) and a full penetration test (B) are important steps, but should follow after immediate mitigation.  NCC General emphasizes timely response to vulnerabilities.",
+        "timestamp": "2025-06-11T19:09:41.670649"
+      },
+      {
+        "question": "A small business is implementing NCC General controls. They have limited resources and need to prioritize.  Which of the following controls should they focus on FIRST to achieve a reasonable level of security?",
+        "options": {
+          "A": "Implementing a complex intrusion detection system (IDS).",
+          "B": "Establishing a robust incident response plan.",
+          "C": "Implementing strong access controls and regular patching.",
+          "D": "Developing a comprehensive data loss prevention (DLP) strategy."
+        },
+        "answer": "C",
+        "explanation": "Strong access controls and regular patching are foundational security measures that provide a broad base of protection against many threats.  While the other options are important, they are more complex and resource-intensive, making access controls and patching a more effective starting point for a resource-constrained organization.",
+        "timestamp": "2025-06-11T19:09:41.670668"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T19:11:56.493106",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps",
+          "B": "National Civil Corps",
+          "C": "National Community Corps",
+          "D": "National Cadet Committee"
+        },
+        "answer": "A",
+        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
+        "timestamp": "2025-06-11T19:11:56.491898"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To provide military training for future soldiers.",
+          "B": "To develop character, discipline, and leadership qualities in young citizens.",
+          "C": "To solely focus on promoting patriotism through parades.",
+          "D": "To prepare students for careers in the defense industry."
+        },
+        "answer": "B",
+        "explanation": "While NCC involves some military training aspects, its primary goal is character development and leadership training for young citizens, fostering qualities beneficial in various fields.",
+        "timestamp": "2025-06-11T19:11:56.491953"
+      },
+      {
+        "question": "What is the age limit for joining the NCC?",
+        "options": {
+          "A": "10-14 years",
+          "B": "15-18 years",
+          "C": "18-21 years",
+          "D": "21-25 years"
+        },
+        "answer": "B",
+        "explanation": "The general age group for joining the NCC is between 15 and 18 years old, though specific age limits may vary slightly depending on the specific wing and state regulations.",
+        "timestamp": "2025-06-11T19:11:56.491972"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-11T22:45:24.666796",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps",
+          "B": "National Civil Corps",
+          "C": "National Community Corps",
+          "D": "National Cadet Committee"
+        },
+        "answer": "A",
+        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
+        "timestamp": "2025-06-11T22:45:24.665475"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To promote physical fitness only.",
+          "B": "To provide military training exclusively.",
+          "C": "To develop character, discipline, and leadership qualities in young citizens.",
+          "D": "To prepare cadets for immediate military service."
+        },
+        "answer": "C",
+        "explanation": "While NCC involves physical training and some military-style activities, its core aim is holistic development encompassing character building, discipline, and leadership skills, beneficial for civilian life as well.",
+        "timestamp": "2025-06-11T22:45:24.665524"
+      }
+    ]
+  }
+]

@@ -6,29 +6,15 @@ import json # Import json for reading quiz data
 from typing import List, Dict, Any, Optional
 from datetime import datetime # Ensure datetime is imported
 
-from utils import read_history, clear_history, append_message
-# TODO: In the future, load quiz questions from an external JSON file for scalability.
+from utils import (
+    load_quiz_score_history,  # Changed from read_history
+    append_quiz_score_entry,  # Changed from append_message
+    clear_quiz_score_history, # Changed from clear_history
+    generate_quiz_questions as ai_generate_quiz_questions # Import AI quiz generator
+)
 
-# --- Quiz Data Loading (Mock) ---
-# In a real app, this would load from data/quizzes.json or similar
-# For demonstration, we use a simple hardcoded structure
-QUIZ_DATA = {
-    "easy": [
-        {"question": "What does NCC stand for?", "options": ["National Cadet Corps", "National Central Corps", "National Civil Corps", "None of the above"], "answer": "National Cadet Corps", "chapter": "Introduction"},
-        {"question": "What is the capital of India?", "options": ["Mumbai", "Delhi", "Kolkata", "Chennai"], "answer": "Delhi", "chapter": "General Knowledge"},
-        {"question": "How many states are there in India?", "options": ["28", "29", "30", "27"], "answer": "28", "chapter": "General Knowledge"},
-        {"question": "Who is the Father of the Nation?", "options": ["Jawaharlal Nehru", "Sardar Patel", "Mahatma Gandhi", "Subhash Chandra Bose"], "answer": "Mahatma Gandhi", "chapter": "History"},
-    ],
-    "medium": [
-        {"question": "What is the motto of NCC?", "options": ["Unity and Discipline", "Service and Sacrifice", "Leadership and Loyalty", "Duty and Dedication"], "answer": "Unity and Discipline", "chapter": "Introduction"},
-        {"question": "Which of the following ranks is specific to the NCC?", "options": ["Lance Naik", "Sergeant", "Company Quartermaster Sergeant", "Cadet Sergeant Major"], "answer": "Cadet Sergeant Major", "chapter": "Ranks"},
-        {"question": "When was NCC established?", "options": ["1948", "1950", "1947", "1962"], "answer": "1948", "chapter": "History"},
-    ],
-    "hard": [
-        {"question": "What is the full form of DG NCC?", "options": ["Director General National Cadet Corps", "Directorate General of National Cadet Corps", "Directorate General National Cadet Corps", "Directorate General of NCC"], "answer": "Directorate General National Cadet Corps", "chapter": "Organization"},
-        {"question": "What is the role of NCC in nation-building?", "options": ["Providing military training", "Developing youth leadership", "Disaster relief operations", "All of the above"], "answer": "All of the above", "chapter": "Nation Building"},
-    ]
-}
+# QUIZ_DATA is removed as we will use AI to generate questions.
+# If you need a fallback or a static quiz mode, this could be reinstated.
 
 # --- Quiz State Management ---
 SS_PREFIX = "quiz_ss_" # Prefix to avoid conflicts with other modules' session state
@@ -36,8 +22,11 @@ SS_PREFIX = "quiz_ss_" # Prefix to avoid conflicts with other modules' session s
 def _initialize_quiz_state(ss):
     """Initializes all quiz-related session state variables if they don't exist."""
     if f"{SS_PREFIX}quiz_active" not in ss:
-        _reset_quiz_state(ss)
-        ss[f"{SS_PREFIX}quiz_score_history"] = read_history("quiz_score") # Persisted history for difficulty calculation
+        # Load persisted score history first, then reset other quiz state
+        # Ensure quiz_score_history is initialized before _reset_quiz_state might use it
+        if f"{SS_PREFIX}quiz_score_history" not in ss:
+            ss[f"{SS_PREFIX}quiz_score_history"] = load_quiz_score_history()
+        _reset_quiz_state(ss) # Resets current quiz, uses loaded history for difficulty
 
 def _reset_quiz_state(ss):
     """Resets the quiz to its initial state, clearing current quiz data."""
@@ -51,7 +40,7 @@ def _reset_quiz_state(ss):
     ss[f"{SS_PREFIX}quiz_result"] = None
     ss[f"{SS_PREFIX}quiz_bookmarks"] = [] # Clear bookmarks on new quiz
     ss[f"{SS_PREFIX}current_quiz_topic"] = "General Knowledge" # Default topic for new quizzes
-
+    
     # FIX: Resetting Difficulty on "New Quiz" - Recalc from history instead of hard-coding "Medium"
     if f"{SS_PREFIX}quiz_score_history" in ss and ss[f"{SS_PREFIX}quiz_score_history"]:
         ss[f"{SS_PREFIX}current_quiz_difficulty"] = get_difficulty_level(ss[f"{SS_PREFIX}quiz_score_history"])
@@ -67,48 +56,43 @@ def get_difficulty_level(score_history: List[Dict[str, Any]]) -> str:
     Returns:
         str: 'easy', 'medium', or 'hard'.
     """
+    # Default difficulty if no history
     if not score_history:
-        return "Medium" # Default difficulty if no history
+        return "Medium"
 
-    # Consider last 3-5 quizzes for adaptive difficulty
-    recent_scores = score_history[-5:]
+    recent_scores_data = score_history[-5:]
     
-    # Calculate average score for the recent quizzes
-    total_score = sum(entry['score'] for entry in recent_scores if 'score' in entry)
-    average_score = total_score / len(recent_scores) if recent_scores else 0
+    # Extract valid, numeric scores from recent history
+    valid_numeric_scores_recent = []
+    for entry in recent_scores_data:
+        score = entry.get('score') # Use .get() for safety against missing key
+        if isinstance(score, (int, float)): # Ensure score is numeric
+            valid_numeric_scores_recent.append(score)
 
-    # Basic adaptive logic
+    if not valid_numeric_scores_recent:
+        # If no valid scores in recent history, try to use overall average from all history
+        all_valid_numeric_scores = []
+        for entry in score_history: # Check all history
+            score = entry.get('score')
+            if isinstance(score, (int, float)):
+                all_valid_numeric_scores.append(score)
+        
+        if not all_valid_numeric_scores:
+            return "Medium" # Default if absolutely no valid scores anywhere
+        average_score = sum(all_valid_numeric_scores) / len(all_valid_numeric_scores)
+    else:
+        average_score = sum(valid_numeric_scores_recent) / len(valid_numeric_scores_recent)
+
+    # Adaptive logic based on average score
     if average_score >= 80:
         return "Hard"
     elif average_score >= 60:
         return "Medium"
     else:
         return "Easy"
+# This local _generate_quiz_questions is no longer needed as we use AI.
 
-def _generate_quiz_questions(num_questions: int, difficulty: str, topic: str) -> List[Dict[str, Any]]:
-    """Generates a list of quiz questions for the selected difficulty and topic."""
-    # Filter questions by topic first (mocking based on 'chapter' field in QUIZ_DATA)
-    topic_filtered_questions = [
-        q for q in QUIZ_DATA.get(difficulty.lower(), [])
-        if topic.lower() in q.get("chapter", "").lower() or topic.lower() == "general knowledge" # Allow 'General Knowledge' to match all
-    ]
-    
-    if not topic_filtered_questions:
-        st.warning(f"No questions found for topic: '{topic}' at difficulty: {difficulty}. Falling back to general questions for this difficulty.")
-        available_questions = QUIZ_DATA.get(difficulty.lower(), []) # Fallback to all questions for difficulty
-    else:
-        available_questions = topic_filtered_questions
-
-    if not available_questions:
-        st.warning(f"No questions found for difficulty: {difficulty}. Please choose another difficulty.")
-        return []
-    
-    # Ensure we don't try to pick more questions than available
-    num_to_pick = min(num_questions, len(available_questions))
-    
-    return random.sample(available_questions, num_to_pick)
-
-def _display_quiz_creation_form(ss):
+def _display_quiz_creation_form(ss, model, model_error):
     """Displays the form to create a new quiz."""
     st.subheader("New Quiz Configuration")
 
@@ -123,29 +107,47 @@ def _display_quiz_creation_form(ss):
         key=f"{SS_PREFIX}difficulty_select"
     )
 
-    # Topic selection (mocked list of topics)
-    # In a real app, this would come from syllabus_manager.get_syllabus_topics()
-    mock_topics = ["General Knowledge", "Introduction", "History", "Ranks", "Organization", "Nation Building"]
+    # Topic selection
+    # TODO: Consider dynamically populating topics from syllabus_manager or a predefined list for AI.
+    ai_topics = [
+        "NCC General", "National Integration", "Drill", "Weapon Training", 
+        "Map Reading", "Field Craft Battle Craft", "Civil Defence", 
+        "First Aid", "Leadership", "Social Service"
+    ]
     selected_topic = st.selectbox(
         "Select Topic",
-        mock_topics,
+        ai_topics,
         key=f"{SS_PREFIX}topic_select"
     )
 
-    # Number of questions selection
-    num_questions = st.slider(
-        "Number of Questions",
-        min_value=5,
-        max_value=len(QUIZ_DATA.get(selected_difficulty.lower(), [])) or 10, # Max available or 10 if none
-        value=min(10, len(QUIZ_DATA.get(selected_difficulty.lower(), [])) or 10),
+    # Number of questions selection for AI generation
+    # The AI will attempt to generate this many, capped by difficulty settings in utils.py
+    num_questions_to_request = st.slider(
+        "Number of Questions to Generate",
+        min_value=1, # As per utils.py clamping
+        max_value=10, # As per utils.py clamping
+        value=5,      # Default value
         step=1,
-        key=f"{SS_PREFIX}num_questions_slider"
+        key=f"{SS_PREFIX}num_questions_slider_ai",
+        disabled=(model_error is not None) # Disable if AI model has an error
     )
 
-    if st.button("Start Quiz", key=f"{SS_PREFIX}start_quiz_button"):
+    if model_error:
+        st.error(f"AI Model Error: {model_error}. Quiz generation is unavailable.")
+
+    if st.button("Start AI Generated Quiz", key=f"{SS_PREFIX}start_quiz_button_ai", disabled=(model_error is not None)):
+        with st.spinner(f"Generating {num_questions_to_request} questions on '{selected_topic}' (Difficulty: {selected_difficulty})..."):
+            questions_to_start, gen_error = ai_generate_quiz_questions(
+                model, model_error, selected_topic, num_questions_to_request, selected_difficulty
+            )
+
+        if not questions_to_start:
+            st.error(f"Failed to generate quiz: {gen_error or 'No questions returned by AI.'}")
+            return
+        
         ss[f"{SS_PREFIX}current_quiz_difficulty"] = selected_difficulty # Set chosen difficulty
         ss[f"{SS_PREFIX}current_quiz_topic"] = selected_topic # Store chosen topic
-        ss[f"{SS_PREFIX}quiz_questions"] = _generate_quiz_questions(num_questions, selected_difficulty, selected_topic)
+        ss[f"{SS_PREFIX}quiz_questions"] = questions_to_start
         if ss[f"{SS_PREFIX}quiz_questions"]:
             ss[f"{SS_PREFIX}quiz_active"] = True
             ss[f"{SS_PREFIX}current_question_index"] = 0
@@ -164,15 +166,11 @@ def _display_active_quiz(ss):
     current_q_index = ss.get(f"{SS_PREFIX}current_question_index", 0)
     num_questions = len(questions)
 
-    # Safety check for empty questions list or invalid index
     if not questions or not (0 <= current_q_index < num_questions):
-        st.warning("No active quiz questions found or quiz state is inconsistent. Please start a new quiz.")
-        # Optionally, reset quiz state here if it's a common recovery path
-        # _reset_quiz_state(ss)
-        # st.rerun()
-        return # Exit the function to prevent further errors
-
-    if not questions:
+        st.error("Quiz error: No questions loaded or invalid question index.")
+        if st.button("Return to Quiz Setup", key="error_return_to_setup"):
+            _reset_quiz_state(ss)
+            st.rerun()
         st.warning("No questions available for this quiz. Please go back and select a different configuration.")
         if st.button("Back to Quiz Setup", key="back_to_setup_no_q"):
             _reset_quiz_state(ss)
@@ -183,50 +181,95 @@ def _display_active_quiz(ss):
     progress_percent = (current_q_index / num_questions) if num_questions > 0 else 0
     st.progress(progress_percent, text=f"Question {current_q_index + 1} of {num_questions}")
 
-    # Display current question
-    question = questions[current_q_index]
-    st.markdown(f"**Q{current_q_index + 1}: {question['question']}**")
+    question = questions[current_q_index] # Get current question
 
-    # Create columns for layout
-    col1, col2, col3 = st.columns([1, 1, 1])
+    # Display current question and bookmark button in columns
+    col_q_text, col_bookmark_btn = st.columns([4, 1]) # Adjust ratio as needed
+    with col_q_text:
+        st.markdown(f"**Q{current_q_index + 1}: {question['question']}**")
+    with col_bookmark_btn:
+        # Bookmark button - MOVED OUTSIDE THE FORM & ENHANCED
+        is_bookmarked = question in ss.get(f"{SS_PREFIX}quiz_bookmarks", [])
+        bookmark_icon = "🌟" if is_bookmarked else "⭐"
+        bookmark_text = "Bookmarked" if is_bookmarked else "Bookmark"
+        if st.button(f"{bookmark_icon} {bookmark_text}", 
+                       key=f"bookmark_toggle_{current_q_index}", # Unique key for toggle
+                       help="Bookmark/Unbookmark this question for later review",
+                       use_container_width=True):
+            bookmarks = ss.get(f"{SS_PREFIX}quiz_bookmarks", [])
+            if not is_bookmarked:
+                bookmarks.append(question)
+                st.toast(f"Question {current_q_index+1} bookmarked!")
+            else:
+                bookmarks.remove(question) # Ensure removal works
+                st.toast(f"Question {current_q_index+1} unbookmarked.")
+            ss[f"{SS_PREFIX}quiz_bookmarks"] = bookmarks # Update session state
+            st.rerun()
+
+    # Prepare options for st.radio
+    # question['options'] is expected to be like {'A': 'Text A', 'B': 'Text B', ...}
+    # question['answer'] is the key, e.g., 'A'
+    # ss[f"{SS_PREFIX}user_answers"][str(current_q_index)] stores the key, e.g., 'A'
+    
+    options_dict = question.get('options', {})
+    if not options_dict or not all(isinstance(opt_text, str) for opt_text in options_dict.values()) or len(options_dict) < 2 : # Basic check for valid options
+        st.error(f"Question {current_q_index + 1} data is malformed: Options are missing, not strings, or incomplete. Please report this issue or try generating a new quiz.")
+        if st.button("Return to Quiz Setup", key=f"malformed_q_return_{current_q_index}"):
+            _reset_quiz_state(ss)
+            st.rerun()
+        return
+        
+    options_display_list = list(options_dict.values()) # List of option texts for display
+    
+    # Determine the index for st.radio if an answer was previously selected
+    selected_option_index = None
+    previous_answer_key = ss[f"{SS_PREFIX}user_answers"].get(str(current_q_index))
+    if previous_answer_key and previous_answer_key in options_dict:
+        previous_answer_text = options_dict[previous_answer_key]
+        if previous_answer_text in options_display_list:
+            selected_option_index = options_display_list.index(previous_answer_text)
     
     # Use a form to capture user's answer
     with st.form(key=f"question_form_{current_q_index}"):
-        user_choice = st.radio(
+        user_selected_text = st.radio( # This will now store the selected option's text
             "Select your answer:",
-            options=question['options'],
+            options=options_display_list, # Display the actual option text
             key=f"q_{current_q_index}_option",
-            index=question['options'].index(ss[f"{SS_PREFIX}user_answers"].get(str(current_q_index))) if str(current_q_index) in ss[f"{SS_PREFIX}user_answers"] else None
+            index=selected_option_index # Pre-select if already answered
         )
         
-        form_btn_col1, _, form_btn_col3 = st.columns([1, 1, 1]) # Renamed columns inside the form, using placeholder for middle if unused
-        with form_btn_col1:
-            submit_button = st.form_submit_button("Next Question ▶️")
-        with form_btn_col3:
-            if st.form_submit_button("🗑️ Abandon Quiz"):
-                # FIX: "Abandon Quiz" vs History - Clear persisted history if desired
-                _reset_quiz_state(ss)
-                clear_history("quiz_score") # Clear score history on abandon
+        # Form buttons for Next and Abandon
+        col_next_btn, col_abandon_btn = st.columns(2)
+        with col_next_btn:
+            submit_button = st.form_submit_button("Next Question ▶️", use_container_width=True)
+        with col_abandon_btn:
+            if st.form_submit_button("🗑️ Abandon Quiz", use_container_width=True, type="secondary"):
+                _reset_quiz_state(ss) # Reset current quiz, do not clear all history
+                st.info("Quiz abandoned. Your overall score history is preserved.")
                 st.rerun()
-    
-    # Bookmark button outside the form
-    with col2:
-        if st.button(f"⭐ Bookmark Q{current_q_index+1}", key=f"bookmark_{current_q_index}"):
-            if question not in ss[f"{SS_PREFIX}quiz_bookmarks"]:
-                ss[f"{SS_PREFIX}quiz_bookmarks"].append(question)
-                st.toast(f"Question {current_q_index+1} bookmarked!")
-            else:
-                st.toast(f"Question {current_q_index+1} already bookmarked.")
-            st.rerun()  # Force a rerun to update the UI
 
+    # The bookmark button is now outside the form, handled above.
+
+    # Handle the "Next Question" button click (if it was the one pressed)
     if submit_button:
-        ss[f"{SS_PREFIX}user_answers"][str(current_q_index)] = user_choice
+        # Find the key ('A', 'B', 'C', 'D') corresponding to the selected text
+        user_choice_key = None
+        for opt_key, opt_val in options_dict.items():
+            if opt_val == user_selected_text:
+                user_choice_key = opt_key
+                break
+        
+        if user_choice_key:
+            ss[f"{SS_PREFIX}user_answers"][str(current_q_index)] = user_choice_key
+        else:
+            st.warning(f"Could not map selected answer '{user_selected_text}' back to an option key for Q{current_q_index+1}. This might indicate an issue with question data. Storing raw text.")
+            ss[f"{SS_PREFIX}user_answers"][str(current_q_index)] = user_selected_text # Fallback, though this might affect scoring if not a key
         ss[f"{SS_PREFIX}current_question_index"] += 1
         # If all questions answered, go to results
         if ss[f"{SS_PREFIX}current_question_index"] >= num_questions:
+            ss[f"{SS_PREFIX}quiz_end_time"] = datetime.now() # Set end time BEFORE calculating results
             _calculate_results(ss)
             ss[f"{SS_PREFIX}quiz_submitted"] = True
-            ss[f"{SS_PREFIX}quiz_end_time"] = datetime.now()
         st.rerun() # Rerun to display next question or results
 
 def _calculate_results(ss):
@@ -235,23 +278,35 @@ def _calculate_results(ss):
     wrong_questions = []
     
     for i, question in enumerate(ss[f"{SS_PREFIX}quiz_questions"]):
-        user_ans = ss[f"{SS_PREFIX}user_answers"].get(str(i)) # FIX: Consistent Key Types for user_answers (already str(i))
-        if user_ans == question['answer']:
+        user_ans_key = ss[f"{SS_PREFIX}user_answers"].get(str(i)) # This should be the key 'A', 'B', etc.
+        correct_ans_key = question.get('answer')
+
+        if user_ans_key == correct_ans_key:
             correct_answers += 1
         else:
             wrong_questions.append({
                 "index": i,
                 "question": question,
-                "user_answer": user_ans,
-                "correct_answer": question['answer']
+                "user_answer_key": user_ans_key, # Store the key of user's answer
+                "correct_answer_key": correct_ans_key # Store the key of correct answer
             })
     
     total_questions = len(ss[f"{SS_PREFIX}quiz_questions"])
     score_percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
 
-    duration = None
+    duration_str = "N/A"
     if ss[f"{SS_PREFIX}quiz_start_time"] and ss[f"{SS_PREFIX}quiz_end_time"]:
         duration = ss[f"{SS_PREFIX}quiz_end_time"] - ss[f"{SS_PREFIX}quiz_start_time"]
+        total_seconds = duration.total_seconds()
+        minutes = int(total_seconds // 60)
+        seconds = int(total_seconds % 60)
+
+        if minutes > 0:
+            duration_str = f"{minutes} min {seconds} sec"
+        elif seconds > 0:
+            duration_str = f"{seconds} sec"
+        else: # Less than a second
+            duration_str = f"{total_seconds:.2f} sec"
 
     ss[f"{SS_PREFIX}quiz_result"] = {
         "score": score_percentage,
@@ -259,17 +314,19 @@ def _calculate_results(ss):
         "wrong": len(wrong_questions),
         "total": total_questions,
         "wrong_questions": wrong_questions,
-        "duration": str(duration) if duration else "N/A",
+        "duration": duration_str,
         "timestamp": datetime.now().isoformat(),
-        "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"]
+        "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"],
+        "topic": ss[f"{SS_PREFIX}current_quiz_topic"] # Include topic in result
     }
     
     # Append result to persisted history
-    append_message("quiz_score", {
+    # This uses the new dedicated function from utils.py
+    append_quiz_score_entry({
         "timestamp": datetime.now().isoformat(),
         "score": score_percentage,
         "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"],
-        "topic": ss[f"{SS_PREFIX}current_quiz_topic"] # NEW: Include the quiz topic
+        "topic": ss[f"{SS_PREFIX}current_quiz_topic"]
     })
 
 def _display_quiz_results(ss):
@@ -279,12 +336,23 @@ def _display_quiz_results(ss):
         st.error("No quiz results available.")
         return
 
-    st.subheader("Quiz Results")
-    st.markdown(f"**Score: {result['score']:.2f}%**")
-    st.info(f"Correct: {result['correct']} | Wrong: {result['wrong']} | Total: {result['total']}")
-    st.write(f"Duration: {result['duration']}")
-    st.write(f"Difficulty: {result['difficulty']}")
-    st.write(f"Topic: {result.get('topic', 'N/A')}") # Display topic
+    st.subheader("📊 Quiz Results")
+
+    # Use columns for key metrics for a cleaner look
+    res_col1, res_col2, res_col3 = st.columns(3)
+    with res_col1:
+        st.metric(label="Score", value=f"{result['score']:.2f}%")
+    with res_col2:
+        st.metric(label="Correct Answers", value=result['correct'])
+    with res_col3:
+        st.metric(label="Wrong Answers", value=result['wrong'])
+    
+    # Display other relevant information
+    st.write(f"Total Questions: {result['total']}")
+    st.write(f"⏱️ Duration: {result['duration']}")
+    st.write(f"🏋️ Difficulty: {result['difficulty']}")
+    st.write(f"📚 Topic: {ss.get(f'{SS_PREFIX}current_quiz_topic', 'N/A')}")
+    st.markdown("---") # Visual separator
 
     # FIX: "Retry Wrong Questions" When None Wrong - Disable or hide button
     wrong_questions_count = result['wrong']
@@ -303,7 +371,7 @@ def _display_quiz_results(ss):
             ss[f"{SS_PREFIX}quiz_result"] = None
             ss[f"{SS_PREFIX}quiz_questions"] = [q['question'] for q in result['wrong_questions']]
             ss[f"{SS_PREFIX}quiz_bookmarks"] = [] # Clear bookmarks when retrying wrong questions
-            # When retrying wrong questions, maintain the original topic and difficulty
+            # Maintain the original topic and difficulty for the retry session
             ss[f"{SS_PREFIX}current_quiz_topic"] = result.get('topic', 'General Knowledge')
             ss[f"{SS_PREFIX}current_quiz_difficulty"] = result.get('difficulty', 'Medium')
             st.rerun()
@@ -315,54 +383,70 @@ def _display_quiz_results(ss):
     if wrong_questions_count > 0:
         st.markdown("---")
         st.subheader("Review Wrong Answers")
-        for wrong_q in result['wrong_questions']:
-            q_data = wrong_q['question']
-            q_index = wrong_q['index']
-            st.markdown(f"**Q{q_index + 1}: {q_data['question']}**")
-            st.error(f"Your answer: {wrong_q['user_answer']}")
-            st.success(f"Correct answer: {wrong_q['correct_answer']}")
-            st.markdown(f"Options: {', '.join(q_data['options'])}")
+        for wrong_q_info in result['wrong_questions']:
+            q_data = wrong_q_info['question'] # Full question dict
+            q_index = wrong_q_info['index']
+            user_answered_key = wrong_q_info['user_answer_key'] 
+            correct_answer_key = wrong_q_info['correct_answer_key']
+
+            st.markdown(f"**Q{q_index + 1}: {q_data.get('question', 'N/A')}**")
+
+            options_in_q = q_data.get('options', {})
+            st.markdown("**Options:**")
+            for opt_key, opt_text in options_in_q.items():
+                if opt_key == correct_answer_key:
+                    st.success(f"- {opt_key}) {opt_text} (Correct Answer)")
+                elif opt_key == user_answered_key:
+                    st.error(f"- {opt_key}) {opt_text} (Your Answer)")
+                else:
+                    st.markdown(f"- {opt_key}) {opt_text}")
+            
+            # Explicitly state the user's answer if it was wrong, for clarity,
+            # especially if it wasn't highlighted in the list (e.g., if user_answered_key was None or unexpected).
+            if user_answered_key != correct_answer_key:
+                user_answer_display_text = "Not answered"
+                if user_answered_key is not None:
+                    if user_answered_key in options_in_q:
+                        user_answer_display_text = f"{user_answered_key}) {options_in_q[user_answered_key]}"
+                    else:
+                        user_answer_display_text = str(user_answered_key) # Display the raw recorded answer if not a valid key
+                # The loop above already highlights the user's choice if it's a valid option.
+                # This explicit message can be redundant but ensures clarity if highlighting failed or answer was unusual.
+                # To avoid redundancy if already highlighted:
+                # if not (user_answered_key in options_in_q): # Only show this if not already highlighted in the list
+                #    st.error(f"Your recorded answer: {user_answer_display_text}")
+                # For now, the highlighting in the loop is the primary indicator.
+                pass # The highlighting within the option list loop should cover displaying the user's wrong answer.
+ 
+            explanation = q_data.get('explanation', 'No explanation available for this question.')
+            with st.expander("View Explanation", expanded=True): # Show explanation by default
+                st.info(explanation if explanation else "_No explanation provided._")
             st.markdown("---")
 
     if ss[f"{SS_PREFIX}quiz_bookmarks"]:
         st.markdown("---")
         st.subheader("Bookmarked Questions")
         for i, b_q in enumerate(ss[f"{SS_PREFIX}quiz_bookmarks"]):
-            st.markdown(f"**Q{i+1}: {b_q['question']}**")
-            st.write(f"Options: {', '.join(b_q['options'])}")
-            st.info(f"Correct Answer: {b_q['answer']}")
-            if b_q.get("chapter"):
+            st.markdown(f"**Bookmarked Q: {b_q.get('question', 'N/A')}**")
+            options_in_bookmark = b_q.get('options', {})
+            correct_answer_key_bookmark = b_q.get('answer')
+            st.markdown("**Options:**")
+            for opt_key, opt_text in options_in_bookmark.items():
+                if opt_key == correct_answer_key_bookmark:
+                    st.success(f"- {opt_key}) {opt_text} (Correct Answer)")
+                else:
+                    st.markdown(f"- {opt_key}) {opt_text}")
+
+            explanation = b_q.get('explanation', 'No explanation available.')
+            with st.expander("View Explanation", expanded=True): # Show explanation by default
+                 st.info(explanation if explanation else "_No explanation provided._")
+            if b_q.get("chapter"): # This field might not be present for AI generated questions
                 st.caption(f"Chapter: {b_q['chapter']}")
             st.markdown("---")
 
-
-def _generate_result_text(quiz_info: Dict[str, Any], correct_count: int, total_count: int) -> str:
-    """
-    Generates a text summary of the quiz results.
-    Args:
-        quiz_info (dict): Dictionary containing quiz metadata.
-        correct_count (int): Number of correct answers.
-        total_count (int): Total number of questions.
-    Returns:
-        str: A formatted text summary.
-    """
-    score = (correct_count / total_count) * 100 if total_count > 0 else 0
-    duration = quiz_info.get("duration", "N/A")
-    difficulty = quiz_info.get("difficulty", "N/A")
-    topic = quiz_info.get("topic", "N/A")
-
-    result_text = f"Quiz Completed!\n"
-    result_text += f"Score: {score:.2f}%\n"
-    result_text += f"Correct Answers: {correct_count}/{total_count}\n"
-    result_text += f"Difficulty: {difficulty}\n"
-    result_text += f"Topic: {topic}\n" # Include topic in text summary
-    result_text += f"Time Taken: {duration}\n\n"
-    result_text += "Review your answers below."
-    return result_text
-
 # Main function for the quiz interface
-def quiz_interface():
-    st.title("🧠 NCC Quiz Challenge")
+def quiz_interface(model, model_error): # Accept model and model_error
+    st.title("🧠 NCC AI Quiz Challenge")
     st.write("Test your knowledge about NCC topics!")
 
     # Use a common session state object for brevity and clarity
@@ -372,7 +456,7 @@ def quiz_interface():
     _initialize_quiz_state(ss)
 
     if not ss[f"{SS_PREFIX}quiz_active"]:
-        _display_quiz_creation_form(ss)
+        _display_quiz_creation_form(ss, model, model_error) # Pass model and model_error
     elif not ss[f"{SS_PREFIX}quiz_submitted"]:
         _display_active_quiz(ss)
     else:
@@ -384,14 +468,16 @@ def quiz_interface():
     score_history = ss.get(f"{SS_PREFIX}quiz_score_history", [])
     if score_history:
         for i, entry in enumerate(reversed(score_history)): # Show most recent first
-            timestamp = datetime.fromisoformat(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
-            st.sidebar.write(f"**{i+1}.** {timestamp} | Score: {entry['score']:.2f}% | Diff: {entry['difficulty']} | Topic: {entry.get('topic', 'N/A')}") # Display topic
+            try:
+                timestamp_str = datetime.fromisoformat(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
+            except (TypeError, ValueError):
+                timestamp_str = "Unknown Time"
+            st.sidebar.write(f"**{i+1}.** {timestamp_str} | Score: {entry.get('score', 0):.2f}% | Diff: {entry.get('difficulty', 'N/A')} | Topic: {entry.get('topic', 'N/A')}")
     else:
         st.sidebar.info("No quiz history yet. Take a quiz to build your history!")
 
     # Option to clear quiz history
     if st.sidebar.button("Clear Quiz History", key="clear_quiz_history_sidebar"):
-        clear_history("quiz_score")
+        clear_quiz_score_history() # Use new dedicated function
         _reset_quiz_state(ss) # Reset quiz state after clearing history
         st.rerun()
-

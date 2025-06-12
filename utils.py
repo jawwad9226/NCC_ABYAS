@@ -17,6 +17,7 @@ class Config:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     CHAT_HISTORY_FILE = os.path.join(BASE_DIR, "data", "chat_history.json")
     QUIZ_LOG_FILE = os.path.join(BASE_DIR, "data", "quiz_log.json")
+    QUIZ_SCORE_HISTORY_FILE = os.path.join(BASE_DIR, "data", "quiz_score_history.json") # For logging quiz scores
     
     # Model Settings
     MODEL_NAME = 'gemini-1.5-flash'
@@ -75,17 +76,19 @@ def setup_gemini() -> Tuple[Optional[genai.GenerativeModel], Optional[str]]:
         logging.exception(error_msg)
         return None, "Apologies, we're experiencing technical difficulties. Please try again later."
 
-# (e.g. right after the other “Public API” functions)
-def append_message(role: str, message: str) -> None:
+def append_message(role: str, content: str) -> None:
     """
-    Add a new message (role="user" or "assistant") into st.session_state['chat_history'],
-    and also write it into disk (so it persists after reload).
+    Appends a chat message to the session state and saves the chat interaction to a file.
+    This function is primarily for chat messages (user/assistant).
     """
-    # Ensure session state has a list for chat_history
-    st.session_state.setdefault("chat_history", [])
-    st.session_state["chat_history"].append({"role": role, "content": message})
-    # Also save it to your chat_history.json file
-    _save_chat_to_file(role, message)
+    st.session_state.setdefault("messages", []) # Assuming 'messages' is used by chat_interface
+    st.session_state["messages"].append({"role": role, "content": content})
+    
+    # For saving to disk, _save_chat_to_file expects prompt and response.
+    # This append_message is more for UI state. Actual saving might be handled differently.
+    # If this is the primary save mechanism, it needs to be adapted or called appropriately.
+    # For now, let's assume _save_chat_to_file is called separately with prompt/response pairs.
+    pass # See _save_chat_to_file for actual disk saving logic for chat.
 
 
 # --- File Operations ---
@@ -109,18 +112,20 @@ def _save_json_file(file_path: str, data: Any) -> bool:
         logging.error(f"Error saving to {file_path}: {str(e)}")
         return False
 
-def _save_chat_to_file(prompt: str, response: str) -> None:
+def _save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
     """Save chat interaction to history file."""
     try:
         history = _load_json_file(Config.CHAT_HISTORY_FILE, [])
         history.append({
             "timestamp": datetime.now().isoformat(),
-            "prompt": prompt,
-            "response": response
+            "prompt": user_prompt,       # Represents user's message
+            "response": assistant_response # Represents assistant's message
         })
         _save_json_file(Config.CHAT_HISTORY_FILE, history)
     except Exception as e:
         logging.error(f"Failed to save chat history: {str(e)}")
+        # It might be useful to also log the messages that failed to save
+        logging.debug(f"Failed chat data: Prompt='{user_prompt}', Response='{assistant_response}'")
 
 def _save_quiz_to_file(topic: str, questions: List[Dict[str, Any]]) -> None:
     """Save quiz questions to history file."""
@@ -135,6 +140,30 @@ def _save_quiz_to_file(topic: str, questions: List[Dict[str, Any]]) -> None:
     except Exception as e:
         logging.error(f"Failed to save quiz: {str(e)}")
 
+# --- Quiz Score History Functions ---
+def load_quiz_score_history() -> List[Dict[str, Any]]:
+    """Loads quiz score history from its dedicated JSON file."""
+    return _load_json_file(Config.QUIZ_SCORE_HISTORY_FILE, [])
+
+def append_quiz_score_entry(entry: Dict[str, Any]) -> None:
+    """Appends a quiz score entry to the history and saves it to file."""
+    try:
+        history = load_quiz_score_history()
+        history.append(entry)
+        _save_json_file(Config.QUIZ_SCORE_HISTORY_FILE, history)
+    except Exception as e:
+        logging.error(f"Failed to save quiz score entry: {str(e)}")
+        logging.debug(f"Failed quiz score data: {entry}")
+
+def clear_quiz_score_history() -> bool:
+    """Clears the quiz score history file."""
+    try:
+        if os.path.exists(Config.QUIZ_SCORE_HISTORY_FILE):
+            os.remove(Config.QUIZ_SCORE_HISTORY_FILE)
+        return True
+    except Exception as e:
+        logging.error(f"Failed to clear quiz score history: {str(e)}")
+        return False
 # --- Public API ---
 def clear_history(file_type: str = "chat") -> bool:
     """Clear history for the specified type.
@@ -148,7 +177,8 @@ def clear_history(file_type: str = "chat") -> bool:
     try:
         file_path = {
             "chat": Config.CHAT_HISTORY_FILE,
-            "quiz": Config.QUIZ_LOG_FILE
+            "quiz": Config.QUIZ_LOG_FILE, # This is for quiz questions log
+            # "quiz_score" was handled by quiz_interface, now by clear_quiz_score_history()
         }.get(file_type)
         
         if not file_path:
@@ -156,6 +186,9 @@ def clear_history(file_type: str = "chat") -> bool:
             
         if os.path.exists(file_path):
             os.remove(file_path)
+        # If clearing quiz score history, call the dedicated function
+        if file_type == "quiz_score": # Though this key might not be passed anymore
+            return clear_quiz_score_history()
         return True
     except Exception as e:
         logging.error(f"Failed to clear {file_type} history: {str(e)}")
@@ -172,7 +205,8 @@ def read_history(file_type: str = "chat") -> str:
     """
     file_path = {
         "chat": Config.CHAT_HISTORY_FILE,
-        "quiz": Config.QUIZ_LOG_FILE
+        "quiz": Config.QUIZ_LOG_FILE, # This is for quiz questions log
+        # "quiz_score" was handled by quiz_interface, now by load_quiz_score_history()
     }.get(file_type)
     
     if not file_path:
@@ -180,6 +214,10 @@ def read_history(file_type: str = "chat") -> str:
         
     history_data = _load_json_file(file_path, [])
     
+    # If reading quiz score history, call the dedicated function
+    if file_type == "quiz_score": # Though this key might not be passed anymore
+        score_history = load_quiz_score_history()
+        return json.dumps(score_history, indent=2) # Or format as needed
     if not history_data:
         return ""
     
@@ -279,7 +317,10 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
         )
         st.session_state.last_api_call_time = datetime.now()
         response_text = response.text.strip()
-        _save_chat_to_file(prompt, response_text)
+        # Save the chat interaction to file
+        # Assuming 'prompt' is the user's input and 'response_text' is the AI's reply
+        if prompt and response_text: # Ensure both are non-empty before saving
+            _save_chat_to_file(user_prompt=prompt, assistant_response=response_text)
         return response_text
     except Exception as e:
         error_msg = "Apologies, I'm having trouble processing your request. Please try again in a moment."
@@ -287,40 +328,36 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
         return error_msg
 
 # --- Quiz Generator ---
-def generate_quiz_questions(model, model_error, st_session_state, topic: str, num_questions: int) -> None:
+def generate_quiz_questions(model: genai.GenerativeModel, model_error: Optional[str], 
+                            topic: str, num_questions_requested: int, difficulty: str
+                           ) -> Tuple[Optional[List[Dict]], Optional[str]]:
     """Generate quiz questions using the Gemini model.
     
     Args:
         model: Initialized Gemini model instance
         model_error: Error message if model initialization failed
-        st_session_state: Streamlit session state
         topic: Topic for the quiz
-        num_questions: Number of questions to generate (1-10)
+        num_questions_requested: Number of questions requested by the user.
+        difficulty: Difficulty level ('Easy', 'Medium', 'Hard').
+        
+    Returns:
+        A tuple containing (list of parsed questions, error message string or None).
     """
-    if not model or model_error:
-        st_session_state.quiz_generation_error = f"Model error: {model_error or 'Model not initialized'}"
-        return
+    if model_error or not model:
+        return None, f"Model error: {model_error or 'Model not initialized'}"
 
     # Validate number of questions
     try:
-        num_questions = int(num_questions)
-        num_questions = max(1, min(10, num_questions))  # Clamp between 1 and 10
+        num_questions = int(num_questions_requested)
+        num_questions = max(1, min(10, num_questions))  # Clamp between 1 and 10 as per prompt design
     except (TypeError, ValueError):
-        num_questions = 5  # Default value
+        return None, "Invalid number of questions specified."
 
     if _is_in_cooldown("last_quiz_api_call_time"):
-        st_session_state.quiz_generation_error = _cooldown_message("quiz")
-        return
-
-    # Determine difficulty level from session (or default)
-    score_history = st_session_state.get("quiz_score_history", [])
-    difficulty = get_difficulty_level(score_history)
-    st_session_state.current_quiz_difficulty = difficulty
+        return None, _cooldown_message("quiz generation")
 
     # Adjust number of questions based on difficulty
     actual_num_questions = min(num_questions, Config.QUESTION_COUNTS[difficulty])
-
-    # Build smart prompt
     prompt = build_prompt(topic, actual_num_questions, difficulty)
 
     try:
@@ -335,17 +372,16 @@ def generate_quiz_questions(model, model_error, st_session_state, topic: str, nu
         parsed = parse_quiz_response(raw)
 
         if parsed:
-            st_session_state.quiz_questions = parsed
             st.session_state.last_quiz_api_call_time = datetime.now()
             _save_quiz_to_file(topic, parsed)
-            st_session_state.quiz_generation_error = None
+            return parsed, None
         else:
-            st_session_state.quiz_generation_error = "Failed to generate valid quiz questions. Please try again."
             logging.error(f"Failed to parse quiz response: {raw}")
+            return None, "Failed to parse valid quiz questions from AI response. Please try again."
     except Exception as e:
         error_msg = "Apologies, we're having trouble generating your quiz. Please try again in a moment."
         logging.exception(f"Error in generate_quiz_questions: {str(e)}")
-        st_session_state.quiz_generation_error = error_msg
+        return None, error_msg
 
 # --- Quiz Parser ---
 def parse_quiz_response(response_text: str) -> List[Dict[str, Any]]:

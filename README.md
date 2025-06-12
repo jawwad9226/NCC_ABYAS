@@ -5,11 +5,13 @@ An intelligent AI-powered assistant designed specifically for NCC (National Cade
 ## ✨ Current Features
 
 ### 💬 Chat Assistant
+
 - Interactive Q&A about NCC topics
 - Detailed explanations of NCC concepts
 - Real-time responses to cadet queries
 
 ### 🎯 Knowledge Quiz
+
 - AI-generated quiz questions
 - Multiple-choice format
 - Topic-based question generation
@@ -18,6 +20,7 @@ An intelligent AI-powered assistant designed specifically for NCC (National Cade
 ## 🚀 Upcoming Features
 
 ### 📚 Question Generation System
+
 - **MCQ Generator**: Trained on previous year question (PYQ) patterns
 - **Adaptive Difficulty**: Questions adjust based on cadet's performance
 - **Comprehensive Question Banks**:
@@ -29,12 +32,14 @@ An intelligent AI-powered assistant designed specifically for NCC (National Cade
   - Leadership Principles
 
 ### 🎓 Study Assistant
+
 - **Topic-wise Explanations**: Detailed notes on NCC subjects
 - **Interactive Q&A**: Personalized doubt clearing
 - **Progress Tracking**: Monitor learning journey
 - **Weak Area Identification**: AI-powered analysis of performance
 
 ### 📝 Exam Preparation
+
 - **Timed Mock Tests**: Simulate real exam conditions
 - **Performance Analytics**: Detailed feedback and statistics
 - **Improvement Suggestions**: Personalized study recommendations
@@ -43,24 +48,29 @@ An intelligent AI-powered assistant designed specifically for NCC (National Cade
 ## 🛠️ Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/jawwad9226/ncc_ai_assistant.git
    cd ncc_ai_assistant
    ```
 
 2. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. Set up environment variables:
+
    - Create a `.env` file
    - Add your Gemini API key:
-     ```
+
+     ```env
      GEMINI_API_KEY=your_api_key_here
      ```
 
 4. Run the application:
+
    ```bash
    streamlit run main.py
    ```

@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class Section:
     """Represents a section within a chapter of the NCC syllabus."""
     name: str
+    page_number: Optional[int] = None # Added for PDF navigation
     content: Optional[str] = None  # Optional field for more detailed content
 
 @dataclass
@@ -33,7 +34,7 @@ class SyllabusData:
 # Assuming the JSON file is in the same directory as this script or a specific path
 # If your original script had a more complex way to determine BASE_DIR, replicate that here.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_SYLLABUS_FILENAME = "ncc_syllabus.json" # Default filename
+DEFAULT_SYLLABUS_FILENAME = os.path.join("data", "syllabus.json") # Default filename
 
 def load_syllabus_data(file_name: str = DEFAULT_SYLLABUS_FILENAME) -> Optional[SyllabusData]:
     """
@@ -42,79 +43,77 @@ def load_syllabus_data(file_name: str = DEFAULT_SYLLABUS_FILENAME) -> Optional[S
 
     Args:
         file_name (str): The name of the syllabus JSON file.
-                         It's expected to be in the same directory as this script,
+                         It's expected to be in the data directory,
                          or an absolute path can be provided.
 
     Returns:
         Optional[SyllabusData]: A SyllabusData object if successful, None otherwise.
     """
     # Construct the full path to the syllabus file
-    if os.path.isabs(file_name):
-        full_path = file_name
+    if not os.path.isabs(file_name):
+        # If relative path, assume it's relative to the script directory
+        # file_name is expected to be like "data/syllabus.json"
+        # BASE_DIR is the directory of syllabus_manager.py
+        # This correctly forms project_root/data/syllabus.json if syllabus_manager.py is in project_root
+        # or project_root/some_module/data/syllabus.json if syllabus_manager.py is in project_root/some_module
+        file_path = os.path.join(BASE_DIR, file_name)
     else:
-        full_path = os.path.join(BASE_DIR, file_name)
+        file_path = file_name
 
-    logging.info(f"Attempting to load syllabus data from '{full_path}'")
-
+    # More robust check for file existence before opening
+    if not os.path.exists(file_path):
+        logging.error(f"Syllabus file not found at path: {file_path}")
+        return None
     try:
-        with open(full_path, "r", encoding="utf-8") as f:
-            raw_syllabus_dict = json.load(f)
-            logging.info(f"Successfully loaded raw syllabus data from '{full_path}'.")
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
 
-        if not raw_syllabus_dict:
-            logging.warning(f"Syllabus data file '{full_path}' is empty.")
+        # Validate the basic structure
+        if 'version' not in data or 'chapters' not in data:
+            logging.error("Invalid syllabus format: missing 'version' or 'chapters' field")
             return None
-
-        # --- NEW: Convert raw dict to dataclass objects ---
-        syllabus_version = raw_syllabus_dict.get("version", "unknown") # Expects 'version' key
-        chapters_data = raw_syllabus_dict.get("chapters", [])
+            
+        syllabus = SyllabusData(version=data['version'])
         
-        parsed_chapters: List[Chapter] = []
-        if not isinstance(chapters_data, list):
-            logging.error(f"'chapters' field is not a list in '{full_path}'. Found: {type(chapters_data)}")
+        # Process chapters
+        if isinstance(data['chapters'], list): # Expecting a list of chapter dicts
+            for chapter_data_item in data['chapters']:
+                if not isinstance(chapter_data_item, dict):
+                    logging.warning(f"Skipping non-dictionary item in chapters list: {chapter_data_item}")
+                    continue
+                
+                # Assuming chapter title is a key like "title" or use a default
+                chapter_title = chapter_data_item.get('title', 'Untitled Chapter')
+                chapter = Chapter(title=chapter_title)
+                
+                # Process sections if they exist and are a list of dicts
+                if 'sections' in chapter_data_item and isinstance(chapter_data_item['sections'], list):
+                    for section_data_item in chapter_data_item['sections']:
+                        if not isinstance(section_data_item, dict):
+                            logging.warning(f"Skipping non-dictionary item in sections list for chapter '{chapter_title}': {section_data_item}")
+                            continue
+                        
+                        section = Section(
+                            name=section_data_item.get('name', 'Untitled Section'), # Assuming section name key is 'name'
+                            content=section_data_item.get('content', ''), # Assuming section content key is 'content'
+                            page_number=section_data_item.get('page_number') # Get page number
+                        )
+                        chapter.sections.append(section)
+                syllabus.chapters.append(chapter)
+        else:
+            logging.error("Invalid syllabus format: 'chapters' field is not a list.")
             return None
-
-        for chapter_dict in chapters_data:
-            if not isinstance(chapter_dict, dict):
-                logging.warning(f"Skipping chapter item as it's not a dictionary: {chapter_dict}")
-                continue
-            
-            chapter_title = chapter_dict.get("title")
-            if not chapter_title:
-                logging.warning(f"Skipping chapter due to missing title: {chapter_dict}")
-                continue
-
-            parsed_sections: List[Section] = []
-            sections_data = chapter_dict.get("sections", [])
-            if not isinstance(sections_data, list):
-                logging.warning(f"Skipping sections in chapter '{chapter_title}' as 'sections' is not a list. Found: {type(sections_data)}")
-            else:
-                for section_dict in sections_data:
-                    if not isinstance(section_dict, dict):
-                        logging.warning(f"Skipping section item in chapter '{chapter_title}' as it's not a dictionary: {section_dict}")
-                        continue
-
-                    section_name = section_dict.get("name")
-                    if not section_name:
-                        logging.warning(f"Skipping section due to missing name in chapter '{chapter_title}': {section_dict}")
-                        continue
-                    parsed_sections.append(Section(name=section_name, content=section_dict.get("content")))
-            
-            parsed_chapters.append(Chapter(title=chapter_title, sections=parsed_sections))
+        return syllabus
         
-        syllabus_obj = SyllabusData(version=syllabus_version, chapters=parsed_chapters)
-        logging.info("Syllabus data successfully converted to dataclass objects.")
-        return syllabus_obj
-
-    except FileNotFoundError:
-        logging.error(f"Syllabus file not found at '{full_path}'. Please ensure it exists.")
-        return None
     except json.JSONDecodeError as e:
-        logging.error(f"Error decoding JSON from '{full_path}': {e}")
-        return None
+        logging.error(f"Error parsing syllabus JSON: {e}")
+    except FileNotFoundError:
+        logging.error(f"Syllabus file not found at '{file_path}'. Please ensure it exists and the path is correct.")
+        # st.error(f"Syllabus file not found at '{file_path}'.") # Cannot use st.error here
     except Exception as e:
-        logging.error(f"An unexpected error occurred while loading syllabus data: {e}", exc_info=True)
-        return None
+        logging.error(f"Error loading syllabus: {e}")
+        
+    return None
 
 def get_syllabus_topics(syllabus_data: Optional[SyllabusData]) -> List[str]:
     """
@@ -193,6 +192,7 @@ def search_syllabus(syllabus_data: Optional[SyllabusData], query: str) -> List[D
                     "chapter_title": chapter.title,
                     "section_name": section.name,
                     "match_type": "section",
+                    "page_number": section.page_number, # Add page number to search results
                     # Provide section content if available, otherwise just the name
                     "content_preview": f"Section: {section.name}" + (f" - Content: {section.content[:50]}..." if section.content else "")
                 }
@@ -213,6 +213,7 @@ def search_syllabus(syllabus_data: Optional[SyllabusData], query: str) -> List[D
                             "chapter_title": chapter.title,
                             "section_name": section.name,
                             "match_type": "section_content",
+                            "page_number": section.page_number, # Add page number
                             "content_preview": f"Content in section '{section.name}': ...{section.content[max(0, section.content.lower().find(query_lower)-20) : section.content.lower().find(query_lower)+len(query_lower)+20]}..."
                         })
 
@@ -232,29 +233,33 @@ if __name__ == "__main__":
             {
                 "title": "The NCC General",
                 "sections": [
-                    {"name": "Aims of NCC", "content": "To develop character, comradeship, discipline, leadership..."},
-                    {"name": "Organization of NCC", "content": "Details about NCC organization structure."},
-                    {"name": "NCC Song", "content": "Hum Sab Bharatiya Hain..."}
+                    {"name": "Aims of NCC", "page_number": 5, "content": "To develop character, comradeship, discipline, leadership..."},
+                    {"name": "Organization of NCC", "page_number": 7, "content": "Details about NCC organization structure."},
+                    {"name": "NCC Song", "page_number": 10, "content": "Hum Sab Bharatiya Hain..."}
                 ]
             },
             {
                 "title": "National Integration",
                 "sections": [
-                    {"name": "Importance of National Integration", "content": "Unity in diversity..."},
-                    {"name": "Role of NCC in Nation Building", "content": "Contributions of NCC cadets."}
+                    {"name": "Importance of National Integration", "page_number": 12, "content": "Unity in diversity..."},
+                    {"name": "Role of NCC in Nation Building", "page_number": 15, "content": "Contributions of NCC cadets."}
                 ]
             },
             {
                 "title": "Drill",
                 "sections": [
-                    {"name": "Foot Drill", "content": "Commands like Savdhan, Vishram..."},
-                    {"name": "Arms Drill", "content": "Handling of rifles..."}
+                    {"name": "Foot Drill", "page_number": 20, "content": "Commands like Savdhan, Vishram..."},
+                    {"name": "Arms Drill", "page_number": 25, "content": "Handling of rifles..."}
                 ]
             }
         ]
     }
     # Create the dummy JSON file in the same directory as the script
-    dummy_file_path = os.path.join(BASE_DIR, DEFAULT_SYLLABUS_FILENAME)
+    # Ensure the 'data' directory exists for the dummy file
+    data_dir_for_dummy = os.path.join(BASE_DIR, "data")
+    if not os.path.exists(data_dir_for_dummy):
+        os.makedirs(data_dir_for_dummy, exist_ok=True)
+    dummy_file_path = os.path.join(data_dir_for_dummy, "syllabus.json") # Assuming DEFAULT_SYLLABUS_FILENAME is "data/syllabus.json"
     try:
         with open(dummy_file_path, "w", encoding="utf-8") as f:
             json.dump(dummy_syllabus_content, f, indent=4)
@@ -264,7 +269,7 @@ if __name__ == "__main__":
 
 
     # Test loading the syllabus
-    syllabus_data_obj = load_syllabus_data() # Uses DEFAULT_SYLLABUS_FILENAME
+    syllabus_data_obj = load_syllabus_data(DEFAULT_SYLLABUS_FILENAME) # Explicitly pass filename
 
     if syllabus_data_obj:
         logging.info(f"Syllabus Version: {syllabus_data_obj.version}")
@@ -306,4 +311,3 @@ if __name__ == "__main__":
     #         logging.info(f"Cleaned up dummy syllabus file: '{dummy_file_path}'.")
     # except OSError as e:
     #     logging.error(f"Error removing dummy syllabus file: {e}")
-
