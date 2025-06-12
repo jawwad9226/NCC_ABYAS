@@ -164,22 +164,22 @@ def main():
 
     # --- Helper function for PDF embedding ---
     def display_pdf(file_path: str, height: int = 750, page: Optional[int] = None):
-        """Embeds a PDF file in the Streamlit app using st.components.v1.html."""
+        """
+        Embeds a PDF file in the Streamlit app using st.components.v1.iframe.
+        The page navigation (#page=N) relies on browser/PDF plugin support and may not always work as expected.
+        """
         try:
             with open(file_path, "rb") as f:
                 base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-
-            pdf_src = f"data:application/pdf;base64,{base64_pdf}"
-            if page:
-                pdf_src += f"#page={page}"
-
-            # Using st.components.v1.html for embedding
-            # The height for components.html should accommodate the iframe's height.
-            # Keying the component with the page number ensures it re-renders when the page changes.
-            components.html(
-                f'<iframe src="{pdf_src}" width="100%" height="{height}px" style="border:none;" type="application/pdf"></iframe>',
-                height=height + 20  # Add a little extra height for the component wrapper
-            )
+    
+            # Default to page 1 if no specific page is requested or if page is 0/None
+            current_page_to_display = page if page and page > 0 else 1
+            pdf_src_with_page_anchor = f"data:application/pdf;base64,{base64_pdf}#page={current_page_to_display}"
+            
+            # Use st.components.v1.iframe for embedding
+            # The `scrolling=True` argument can be helpful if the PDF content overflows.
+            components.iframe(pdf_src_with_page_anchor, height=height + 20, scrolling=True) # Added a bit extra height
+            # st.caption(f"Debug: Attempting to display PDF page: {current_page_to_display}") # Uncomment for debugging
             return True
         except FileNotFoundError:
             st.error(f"🚨 PDF Error: File not found at '{file_path}'. Please ensure 'Ncc-CadetHandbook.pdf' is in the application's root directory.")

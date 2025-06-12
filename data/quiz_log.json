@@ -328,5 +328,59 @@
         "timestamp": "2025-06-11T22:45:24.665524"
       }
     ]
+  },
+  {
+    "timestamp": "2025-06-12T17:58:44.299766",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "A newly enrolled NCC cadet is assigned to a Platoon.  Which of the following best describes the primary role of the Platoon Commander in relation to the cadet?",
+        "options": {
+          "A": "To act as a mentor and guide, providing individual support and career advice.",
+          "B": "To ensure the cadet's physical fitness and participation in all physical training activities.",
+          "C": "To be responsible for the cadet's overall discipline, training, and welfare within the Platoon.",
+          "D": "To act as a liaison between the cadet and their parents or guardians."
+        },
+        "answer": "C",
+        "explanation": "The Platoon Commander is directly responsible for the training, discipline, and well-being of the cadets within their Platoon. While other options may be aspects of the relationship, the primary role centers on leadership and management within the Platoon structure.",
+        "timestamp": "2025-06-12T17:58:44.297883"
+      },
+      {
+        "question": "During an NCC camp, a cadet witnesses another cadet engaging in a serious breach of discipline. What is the most appropriate course of action for the cadet?",
+        "options": {
+          "A": "Ignore the incident to avoid conflict.",
+          "B": "Report the incident to their Platoon Commander or a senior officer.",
+          "C": "Confront the cadet directly and try to resolve the issue privately.",
+          "D": "Post about the incident on social media to alert others."
+        },
+        "answer": "B",
+        "explanation": "Reporting the breach of discipline through the proper chain of command is crucial for maintaining order and discipline within the NCC.  Ignoring the incident or taking matters into their own hands is inappropriate and potentially harmful.",
+        "timestamp": "2025-06-12T17:58:44.297936"
+      },
+      {
+        "question": "An NCC cadet is tasked with planning a small-scale community service project. Which of the following is the LEAST important consideration in the planning process?",
+        "options": {
+          "A": "Identifying the specific needs of the community.",
+          "B": "Developing a detailed budget and securing necessary resources.",
+          "C": "Determining the cadet's personal enjoyment of the project.",
+          "D": "Establishing clear objectives and timelines for the project."
+        },
+        "answer": "C",
+        "explanation": "While personal satisfaction is a positive outcome, the primary focus of a community service project should be on addressing community needs effectively.  The other options are crucial aspects of successful project planning.",
+        "timestamp": "2025-06-12T17:58:44.297972"
+      },
+      {
+        "question": "Understanding the principles of leadership is crucial for NCC cadets. Which of the following best exemplifies transformational leadership within an NCC context?",
+        "options": {
+          "A": "Strictly enforcing rules and regulations to maintain order.",
+          "B": "Inspiring cadets to achieve their full potential through motivation and shared vision.",
+          "C": "Delegating tasks to cadets without providing guidance or support.",
+          "D": "Focusing solely on completing tasks efficiently, regardless of team morale."
+        },
+        "answer": "B",
+        "explanation": "Transformational leadership focuses on inspiring and motivating individuals to work towards a common goal and achieve more than they thought possible.  Options A, C, and D represent other leadership styles, but not transformational leadership.",
+        "timestamp": "2025-06-12T17:58:44.298010"
+      }
+    ]
   }
 ]
