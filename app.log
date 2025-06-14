@@ -32,3 +32,8 @@
 2025-06-13 10:56:20,660 - INFO - file_cache is only supported with oauth2client<4.0.0
 2025-06-13 10:56:21,016 - INFO - file_cache is only supported with oauth2client<4.0.0
 2025-06-13 10:57:02,281 - INFO - NumExpr defaulting to 4 threads.
+2025-06-14 23:37:10,146 - INFO - NumExpr defaulting to 4 threads.
+2025-06-14 23:37:16,030 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-14 23:37:16,605 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-14 23:37:17,018 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-14 23:37:17,421 - INFO - file_cache is only supported with oauth2client<4.0.0

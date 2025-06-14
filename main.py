@@ -174,10 +174,10 @@ def main():
         clear_history("bookmark") # Assuming you might add this later
         st.rerun()
 
-    # Optional Dev Tools
-    if st.sidebar.checkbox("🔍 Dev Tools"):
-        st.sidebar.write("### Session State Dump")
-        st.sidebar.json(st.session_state)
+    # Initialize and display dev tools
+    from dev_tools import DevTools
+    dev_tools = DevTools()
+    dev_tools.display_dev_tools()
 
     # --- Helper function for PDF viewer component ---
     def display_pdf_viewer(file_path: str, height: int = 750):
