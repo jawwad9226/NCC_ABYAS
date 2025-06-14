@@ -69,11 +69,16 @@ class DevTools:
             else:
                 categories["Other"][key] = value
 
-        # Display each category in an expander
-        for category, items in categories.items():
-            if items:  # Only show categories that have items
-                with st.expander(f"{category} State Variables"):
+        # Create tabs for each category
+        category_tabs = st.tabs([f"📁 {category}" for category in categories.keys()])
+        
+        # Display each category in its own tab
+        for tab, (category, items) in zip(category_tabs, categories.items()):
+            with tab:
+                if items:
                     st.json(self._clean_for_json(items))
+                else:
+                    st.info(f"No {category} variables in session state")
 
     def _clean_for_json(self, obj: Any) -> Any:
         """Clean objects for JSON serialization"""
@@ -140,126 +145,126 @@ class DevTools:
             if 'active_tab' not in st.session_state:
                 st.session_state.active_tab = 'System'
                 
-            # Create collapsible container for dev tools
-            with st.expander("🛠️ Developer Tools", expanded=True):
+            # Create dev tools container
+            st.markdown("## 🛠️ Developer Tools")
                 # Create tabs for different tool categories
-                system_tab, state_tab, perf_tab, logs_tab, controls_tab = st.tabs([
-                    "🖥️ System",
-                    "💾 State",
-                    "📊 Performance",
-                    "📝 Logs",
-                    "⚙️ Controls"
-                ])
+            system_tab, state_tab, perf_tab, logs_tab, controls_tab = st.tabs([
+                "🖥️ System",
+                "💾 State",
+                "📊 Performance",
+                "📝 Logs",
+                "⚙️ Controls"
+            ])
+            
+            # System Information Tab
+            with system_tab:
+                st.markdown("### System Information")
+                sys_info = self.get_system_info()
                 
-                # System Information Tab
-                with system_tab:
-                    st.markdown("### System Information")
-                    sys_info = self.get_system_info()
+                # Display system info in a more organized way
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("OS", sys_info["OS"])
+                    st.metric("Python Version", sys_info["Python Version"])
+                    st.metric("Streamlit Version", sys_info["Streamlit Version"])
+                with col2:
+                    st.metric("Memory Usage", sys_info["Memory Usage"])
+                    st.metric("CPU Usage", sys_info["CPU Usage"])
+                    st.metric("Last Updated", datetime.now().strftime("%H:%M:%S"))
                     
-                    # Display system info in a more organized way
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.metric("OS", sys_info["OS"])
-                        st.metric("Python Version", sys_info["Python Version"])
-                        st.metric("Streamlit Version", sys_info["Streamlit Version"])
-                    with col2:
-                        st.metric("Memory Usage", sys_info["Memory Usage"])
-                        st.metric("CPU Usage", sys_info["CPU Usage"])
-                        st.metric("Last Updated", datetime.now().strftime("%H:%M:%S"))
+                if st.button("🔄 Refresh System Info", key="refresh_sys"):
+                    st.rerun()
+            
+            # Session State Tab
+            with state_tab:
+                st.markdown("### Session State Explorer")
+                self.display_session_state()
+                if st.button("🔄 Refresh State", key="refresh_state"):
+                    st.rerun()
+            
+            # Performance Tab
+            with perf_tab:
+                st.markdown("### Performance Metrics")
                     
-                    if st.button("🔄 Refresh System Info", key="refresh_sys"):
-                        st.rerun()
+                # Add auto-refresh option
+                auto_refresh = st.checkbox("🔄 Auto-refresh (5s)", value=False)
+                if auto_refresh:
+                    st.empty()
+                    st.rerun()
                 
-                # Session State Tab
-                with state_tab:
-                    st.markdown("### Session State Explorer")
-                    self.display_session_state()
-                    if st.button("🔄 Refresh State", key="refresh_state"):
-                        st.rerun()
+                # Show metrics in columns
+                metric_cols = st.columns(2)
+                with metric_cols[0]:
+                    self.show_performance_metrics()
+                with metric_cols[1]:
+                    st.markdown("#### Resource Usage History")
+                    # Add placeholder for future graph implementation
+                    st.info("Performance history graph coming soon!")
                 
-                # Performance Tab
-                with perf_tab:
-                    st.markdown("### Performance Metrics")
-                    
-                    # Add auto-refresh option
-                    auto_refresh = st.checkbox("🔄 Auto-refresh (5s)", value=False)
-                    if auto_refresh:
-                        st.empty()
-                        st.rerun()
-                    
-                    # Show metrics in columns
-                    metric_cols = st.columns(2)
-                    with metric_cols[0]:
-                        self.show_performance_metrics()
-                    with metric_cols[1]:
-                        st.markdown("#### Resource Usage History")
-                        # Add placeholder for future graph implementation
-                        st.info("Performance history graph coming soon!")
+            # Logs Tab
+            with logs_tab:
+                st.markdown("### Application Logs")
                 
-                # Logs Tab
-                with logs_tab:
-                    st.markdown("### Application Logs")
-                    
-                    # Add log controls
-                    col1, col2 = st.columns([2, 1])
-                    with col1:
-                        log_levels = st.multiselect(
-                            "Log Levels",
-                            ["DEBUG", "INFO", "WARNING", "ERROR"],
-                            default=["ERROR", "WARNING"]
-                        )
-                    with col2:
-                        num_lines = st.number_input(
-                            "Lines to show",
-                            min_value=10,
-                            max_value=200,
-                            value=50,
-                            step=10
-                        )
-                    
-                    self.show_logs(num_lines)
-                    
-                    # Add log controls
-                    if st.button("🔄 Refresh Logs", key="refresh_logs"):
-                        st.rerun()
-                    
-                    if st.button("📝 Clear Logs"):
-                        try:
-                            open("logs/app.log", "w").close()
-                            st.success("Logs cleared successfully!")
-                        except Exception as e:
-                            st.error(f"Error clearing logs: {e}")
-                
-                # Controls Tab
-                with controls_tab:
-                    st.markdown("### Developer Controls")
-                    
-                    # Organize controls in columns
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.markdown("#### Session Management")
-                        if st.button("🧹 Clear Session State", use_container_width=True):
-                            for key in list(st.session_state.keys()):
-                                del st.session_state[key]
-                            st.success("Session state cleared!")
-                            st.rerun()
-                        
-                        if st.button("🔄 Force Reload App", use_container_width=True):
-                            st.rerun()
-                    
-                    with col2:
-                        st.markdown("#### Testing & Debug")
-                        if st.button("🧪 Run Tests", use_container_width=True):
-                            st.info("Test functionality coming soon!")
-                        
-                        if st.button("📊 Generate Debug Report", use_container_width=True):
-                            st.info("Debug report generation coming soon!")
-                    
-                    # Add experimental features section
-                    st.markdown("#### ⚡ Experimental Features")
-                    exp_features = st.multiselect(
-                        "Enable experimental features",
-                        ["Performance Monitoring", "Auto Log Rotation", "State Time Travel"],
-                        help="Warning: These features are experimental and may not work as expected."
+                # Add log controls
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    log_levels = st.multiselect(
+                        "Log Levels",
+                        ["DEBUG", "INFO", "WARNING", "ERROR"],
+                        default=["ERROR", "WARNING"]
                     )
+                with col2:
+                    num_lines = st.number_input(
+                        "Lines to show",
+                        min_value=10,
+                        max_value=200,
+                        value=50,
+                        step=10
+                    )
+                    
+                self.show_logs(num_lines)
+                
+                # Add log controls
+                if st.button("🔄 Refresh Logs", key="refresh_logs"):
+                    st.rerun()
+                
+                if st.button("📝 Clear Logs"):
+                    try:
+                        open("logs/app.log", "w").close()
+                        st.success("Logs cleared successfully!")
+                    except Exception as e:
+                        st.error(f"Error clearing logs: {e}")
+            
+            # Controls Tab
+            with controls_tab:
+                st.markdown("### Developer Controls")
+                    
+                # Organize controls in columns
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("#### Session Management")
+                    if st.button("🧹 Clear Session State", use_container_width=True):
+                        for key in list(st.session_state.keys()):
+                            del st.session_state[key]
+                        st.success("Session state cleared!")
+                        st.rerun()
+                    
+                    if st.button("🔄 Force Reload App", use_container_width=True):
+                        st.rerun()
+                
+                with col2:
+                    st.markdown("#### Testing & Debug")
+                    if st.button("🧪 Run Tests", use_container_width=True):
+                        st.info("Test functionality coming soon!")
+                    
+                    if st.button("📊 Generate Debug Report", use_container_width=True):
+                        st.info("Debug report generation coming soon!")
+                
+                # Add experimental features section
+                st.markdown("#### ⚡ Experimental Features")
+                exp_features = st.multiselect(
+                    "Enable experimental features",
+                    ["Performance Monitoring", "Auto Log Rotation", "State Time Travel"],
+                    help="Warning: These features are experimental and may not work as expected."
+                )
