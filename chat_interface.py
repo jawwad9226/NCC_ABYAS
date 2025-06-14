@@ -89,7 +89,7 @@ def chat_interface():
                 st.info("Chat clearing cancelled.")
                 st.rerun()
     with col2:
-        with st.expander("📜 View Chat History", expanded=False):
+        with st.expander("📜 View Chat History", expanded=True):
             history_lines = read_history("chat").splitlines()
             if history_lines:
                 for line in history_lines[-50:]:  # Show only last 50 lines

@@ -1,102 +1,60 @@
 {
   "version": "1.0",
-  "videos": [
+  "NCC Basics": [
     {
-      "id": "drill_basics",
-      "title": "NCC Drill Training Basics",
-      "url": "https://www.youtube.com/embed/45a6V4bSe0A",
-      "description": "Learn the fundamentals of NCC drill training including basic commands and formations.",
-      "duration": "12:45",
-      "category": "Drill",
-      "thumbnail": "https://img.youtube.com/vi/45a6V4bSe0A/maxresdefault.jpg",
-      "tags": ["basic", "drill", "training"]
+      "id": "dQw4w9WgXcQ",
+      "url": "https://youtu.be/r9GN6zNWpCU?si=oj5Gke3IATW2orWL",
+      "title_override": "NCC Special Briefing (Override)",
+      "description_override": "This is a custom description that will always be used for this video, overriding any YouTube description.",
+      "tags": ["official", "briefing", "ncc_intro"]
     },
     {
-      "id": "advanced_drill",
-      "title": "Advanced Drill Commands",
-      "url": "https://www.youtube.com/embed/8Q-4ckqIedU",
-      "description": "Advanced drill commands and ceremonial movements for senior cadets.",
-      "duration": "15:30",
-      "category": "Drill",
-      "thumbnail": "https://img.youtube.com/vi/8Q-4ckqIedU/maxresdefault.jpg",
-      "tags": ["advanced", "drill", "ceremonial"]
+      "url": "https://youtu.be/BCiLRTqKUtc?si=BivNe1mMbbHHgzPf",
+      "title": "Cadet Life (Initial Title from JSON)",
+      "description": "A glimpse into the daily life of an NCC cadet. This description will be used if API fails or if 'description_override' is not present.",
+      "tags": ["cadet_life", "experience"]
     },
     {
-      "id": "parade_commands",
-      "title": "NCC Parade Commands",
-      "url": "https://www.youtube.com/embed/3qMkZ-s5vYQ",
-      "description": "Complete guide to NCC parade commands and execution.",
-      "duration": "18:15",
-      "category": "Drill",
-      "thumbnail": "https://img.youtube.com/vi/3qMkZ-s5vYQ/maxresdefault.jpg",
-      "tags": ["parade", "commands", "drill"]
+      "id": "manual_intro_001",
+      "title": "NCC Introduction (Manual Entry)",
+      "url": "https://youtu.be/7x2mOuPZefM?si=GH-lH-ffJ5fd4A_C",
+      "description": "A manually added video about NCC introduction. Not from YouTube.",
+      "duration": "05:30",
+      "category": "NCC Basics",
+      "tags": ["introduction", "manual"]
+    }
+  ],
+  "Drill and Parade": [
+    {
+      "id": "oHg5SJYRHA0",
+      "url": "https://youtu.be/iXzGjyk1wOw?si=jLygNpVv7QSLkK3I",
+      "description": "Basic drill commands and parade formations. This description might be overridden by YouTube if no 'description_override' is set.",
+      "tags": ["drill", "parade", "commands"]
     },
     {
-      "id": "fire_drill",
-      "title": "Fire Drill & Earthquake Tips",
-      "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      "description": "Safety procedures for fire drills and earthquake preparedness.",
-      "duration": "08:20",
-      "category": "Safety",
-      "thumbnail": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      "tags": ["safety", "emergency", "drill"]
-    },
+      "title": "Advanced Drill Techniques",
+      "url": "https://youtu.be/7Alqo7zpfxs?si=Cn0zSQvzm3-LiYgw",
+      "tags": ["advanced_drill", "techniques"]
+    }
+  ],
+  "Map Reading": [
     {
-      "id": "rifle_handling",
-      "title": "Handling .22 Rifle in NCC",
-      "url": "https://www.youtube.com/embed/XD3Ha0Ah7Fs",
-      "description": "Proper handling and safety procedures for .22 rifles in NCC training.",
-      "duration": "18:22",
-      "category": "Weapon Training",
-      "thumbnail": "https://img.youtube.com/vi/XD3Ha0Ah7Fs/maxresdefault.jpg",
-      "tags": ["rifle", "safety", "weapons"]
-    },
+      "id": "yetAnotherVideoID",
+      "title": "Introduction to Map Symbols",
+      "url": "https://youtu.be/QWTFKMukwFc?si=tWQqYo6rp6BSTtdn",
+      "description": "Learn the common symbols found on topographical maps.",
+      "tags": ["map_reading", "symbols", "navigation"]
+    }
+  ],
+  "Local Videos (Example)": [
     {
-      "id": "weapon_safety",
-      "title": "Weapon Safety Protocols",
-      "url": "https://www.youtube.com/embed/9X_ViIPA-Gc",
-      "description": "Essential safety measures and protocols for weapon handling.",
-      "duration": "10:15",
-      "category": "Weapon Training",
-      "thumbnail": "https://img.youtube.com/vi/9X_ViIPA-Gc/maxresdefault.jpg",
-      "tags": ["safety", "protocols", "weapons"]
-    },
-    {
-      "id": "map_reading",
-      "title": "Basics of Map and Compass",
-      "url": "https://www.youtube.com/embed/F9UxuFgdnK0",
-      "description": "Introduction to map reading and compass use for navigation.",
-      "duration": "14:30",
-      "category": "Map Reading",
-      "thumbnail": "https://img.youtube.com/vi/F9UxuFgdnK0/maxresdefault.jpg",
-      "tags": ["map", "compass", "navigation"]
-    },
-    {
-      "id": "first_aid",
-      "title": "NCC First Aid Demo",
-      "url": "https://www.youtube.com/embed/ntEZWYKnQQk",
-      "description": "Demonstration of basic first aid techniques for NCC cadets.",
-      "duration": "22:10",
-      "category": "First Aid",
-      "thumbnail": "https://img.youtube.com/vi/ntEZWYKnQQk/maxresdefault.jpg",
-      "tags": ["first aid", "emergency", "medical"]
-    },
-    {
-      "id": "leadership",
-      "title": "Leadership in NCC",
-      "url": "https://www.youtube.com/embed/XrfF4jFq53E",
-      "description": "Developing leadership skills through NCC training programs.",
-      "duration": "16:45",
-      "category": "Leadership",
-      "thumbnail": "https://img.youtube.com/vi/XrfF4jFq53E/maxresdefault.jpg",
-      "tags": ["leadership", "skills", "development"]
-    },
-    {
-      "id": "disaster_mgmt",
-      "youtube_id": "1xRCa6Gs1LQ",
-      "title": "Fire Drill & Earthquake Tips",
-      "category": "Disaster Management",
-      "tags": ["disaster", "safety", "emergency"]
+      "id": "local_drill_practice_01",
+      "title": "Local Unit Drill Practice - Session 1",
+      "url": "https://youtu.be/O3MivByw8zk?si=OkXoG7V8r8uo8ebZ",
+      "description": "Recording of the drill practice held on 2024-07-15.",
+      "duration": "25:17",
+      "category": "Local Videos (Example)",
+      "tags": ["local", "drill", "unit_specific"]
     }
   ]
 }

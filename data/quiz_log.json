@@ -382,5 +382,47 @@
         "timestamp": "2025-06-12T17:58:44.298010"
       }
     ]
+  },
+  {
+    "timestamp": "2025-06-13T10:20:09.892200",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps",
+          "B": "National Civil Corps",
+          "C": "National Community Corps",
+          "D": "National Cadet Committee"
+        },
+        "answer": "A",
+        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
+        "timestamp": "2025-06-13T10:20:09.890741"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To provide military training for future soldiers.",
+          "B": "To develop character, discipline, and leadership qualities in young citizens.",
+          "C": "To solely focus on promoting physical fitness among youth.",
+          "D": "To prepare students for competitive exams."
+        },
+        "answer": "B",
+        "explanation": "While NCC provides some military training, its primary goal is character development, discipline, and leadership skills in young people.",
+        "timestamp": "2025-06-13T10:20:09.890782"
+      },
+      {
+        "question": "What is the age range for enrollment in the NCC?",
+        "options": {
+          "A": "10-15 years",
+          "B": "15-18 years",
+          "C": "17-21 years",
+          "D": "12-17 years"
+        },
+        "answer": "B",
+        "explanation": "The typical age range for joining the NCC is between 15 and 18 years old, although specific requirements may vary slightly depending on the state and the specific wing.",
+        "timestamp": "2025-06-13T10:20:09.890800"
+      }
+    ]
   }
 ]

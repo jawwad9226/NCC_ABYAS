@@ -1,29 +1,47 @@
 import streamlit as st
-import pandas as pd
 from datetime import datetime
-import numpy as np # For mean calculation if needed, pandas handles it mostly
+import json
 
-# Define the session state prefix used in quiz_interface
-SS_PREFIX = "quiz_ss_"
+try:
+    import pandas as pd
+except ImportError:
+    st.error("Pandas library is not installed. This dashboard cannot function without it. Please install it: `pip install pandas`")
+    st.stop()
 
-def display_progress_dashboard(ss):
+try:
+    import numpy as np # For mean calculation if needed, pandas handles it mostly
+except ImportError:
+    # Numpy is often a dependency of pandas, but good to check.
+    st.warning("NumPy library is not installed. Some calculations might be affected if not pulled in by Pandas.")
+    # Not stopping, as pandas might still work for basic operations.
+
+def display_progress_dashboard(session_state, quiz_history_raw_string: str):
     st.header("📊 Progress Dashboard")
 
-    # Use the correct session state key with prefix
-    score_history_data = ss.get(f"{SS_PREFIX}quiz_score_history", [])
-
-    if not score_history_data:
+    if not quiz_history_raw_string:
         st.info("No quiz data yet. Take a quiz to see your progress here.")
         return
 
+    raw_quiz_entries = []
+    malformed_entries = 0
+    for line in quiz_history_raw_string.strip().splitlines():
+        if line.strip():
+            try:
+                raw_quiz_entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                malformed_entries += 1
+    
+    if malformed_entries > 0:
+        st.caption(f"ℹ️ Note: {malformed_entries} history entries could not be parsed and were skipped.")
+
     # Prepare data: Filter for valid entries and parse timestamps
     processed_data = []
-    for i, entry in enumerate(score_history_data):
-        score = entry.get('score')
+    timestamp_parse_errors = 0
+    for i, entry in enumerate(raw_quiz_entries):
+        score = entry.get('score_percentage', entry.get('score')) # Check for score_percentage first
         timestamp_str = entry.get('timestamp')
         topic = entry.get('topic', 'Unknown Topic') # Get topic, default if missing
         difficulty = entry.get('difficulty', 'Unknown') # Get difficulty
-
         if isinstance(score, (int, float)) and timestamp_str:
             try:
                 dt_obj = datetime.fromisoformat(timestamp_str)
@@ -36,10 +54,12 @@ def display_progress_dashboard(ss):
                     'Difficulty': difficulty
                 })
             except ValueError:
-                # Log or handle entries with bad timestamps if necessary
-                # st.warning(f"Could not parse timestamp: {timestamp_str} for entry {i+1}")
-                pass 
+                timestamp_parse_errors +=1
+    
+    if timestamp_parse_errors > 0:
+        st.caption(f"ℹ️ Note: {timestamp_parse_errors} entries had issues parsing timestamps and were skipped.")
 
+    
     if not processed_data:
         st.info("No valid quiz data with scores and timestamps found for the dashboard.")
         return
@@ -114,29 +134,33 @@ def display_progress_dashboard(ss):
 
     # ─── Date Filter (if timestamps exist) ───────────────────
     st.subheader("📆 Quiz Timeline (Filter by Date)")
-    if not df.empty and 'Timestamp' in df.columns:
-        min_date = df['Timestamp'].min().date()
-        max_date = df['Timestamp'].max().date()
-        
-        date_filter_values = [min_date, max_date]
-        if min_date > max_date: date_filter_values = [max_date, min_date]
+    if not df.empty and 'Timestamp' in df.columns and not df['Timestamp'].dropna().empty:
+        try:
+            min_date = df['Timestamp'].min().date()
+            max_date = df['Timestamp'].max().date()
+            
+            date_filter_values = [min_date, max_date]
+            # This check might be redundant if min_date and max_date are derived correctly
+            # if min_date > max_date: date_filter_values = [max_date, min_date] 
 
-        date_filter = st.date_input(
-            "Filter by Date Range",
-            value=date_filter_values,
-            min_value=min_date,
-            max_value=max_date,
-            key="date_filter_range"
-        )
-        if len(date_filter) == 2:
-            start_date_dt, end_date_dt = pd.to_datetime(date_filter[0]), pd.to_datetime(date_filter[1])
-            mask = (df['Timestamp'] >= start_date_dt) & (df['Timestamp'] <= end_date_dt + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)) # Inclusive end date
-            filtered_df = df.loc[mask]
-            if not filtered_df.empty:
-                st.line_chart(filtered_df.set_index('Timestamp')[['Score (%)']])
+            date_filter = st.date_input(
+                "Filter by Date Range",
+                value=date_filter_values,
+                min_value=min_date,
+                max_value=max_date,
+                key="date_filter_range"
+            )
+            if len(date_filter) == 2:
+                start_date_dt, end_date_dt = pd.to_datetime(date_filter[0]), pd.to_datetime(date_filter[1])
+                mask = (df['Timestamp'] >= start_date_dt) & (df['Timestamp'] <= end_date_dt + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)) # Inclusive end date
+                filtered_df = df.loc[mask]
+                if not filtered_df.empty:
+                    st.line_chart(filtered_df.set_index('Timestamp')[['Score (%)']])
+                else:
+                    st.info("No quizzes in the selected date range.")
             else:
-                st.info("No quizzes in the selected date range.")
-        else:
-            st.info("Please select a valid date range (start and end date).")
+                st.info("Please select a valid date range (start and end date).")
+        except Exception as e:
+            st.warning(f"Could not display date filter or timeline: {e}")
     else:
         st.info("Not enough data to display quiz timeline.")
