@@ -16,6 +16,10 @@ from utils import (
     clear_history,
     read_history
 )
+from src.utils import (
+    apply_theme,
+    get_theme_config
+)
 from video_guides import video_guides as display_video_guides
 from quiz_interface import quiz_interface
 
@@ -30,6 +34,15 @@ def main():
     Main entry point for the NCC AI Assistant Streamlit application.
     Handles overall structure, navigation, theme, and routing to different features.
     """
+    st.set_page_config(
+        page_title="NCC AI Assistant",
+        page_icon="🎓",
+        layout="wide"
+    )
+    
+    # --- App Header ---
+    st.sidebar.title("NCC AI Assistant")
+
 
     # --- Gemini Model Initialization & Error Handling ---
     # This should be the very first thing to ensure the model is ready or an error is displayed early.
@@ -44,10 +57,29 @@ def main():
     if "theme_mode" not in st.session_state:
         st.session_state.theme_mode = "Dark"
 
-    # --- Sidebar - Theme Toggle & Info ---
+    # --- Sidebar - Settings & Theme ---
     st.sidebar.header("Settings")
-
-    # Theme Toggle
+    
+    # Modern Theme Toggle with icon tooltips
+    st.sidebar.markdown("""
+        <div class="theme-toggle">
+            <label class="toggle-switch">
+                <input type="checkbox" 
+                    onchange="handleThemeChange(this.checked)"
+                    {}
+                >
+                <span class="toggle-slider"></span>
+            </label>
+            <span>🌙 Dark Mode</span>
+        </div>
+        <script>
+        function handleThemeChange(isDark) {{
+            const event = new CustomEvent('theme-change', {{ detail: {{ isDark }} }});
+            window.dispatchEvent(event);
+        }}
+        </script>
+    """.format('checked' if st.session_state.theme_mode == "Dark" else ''),
+    unsafe_allow_html=True)
     theme_options = ["Dark", "Light"]  # Dark first to match default
     current_theme_idx = theme_options.index(st.session_state.theme_mode)
     new_theme = st.sidebar.radio(
@@ -62,99 +94,16 @@ def main():
         st.session_state.theme_mode = new_theme
         st.rerun()
 
-    # Apply Custom CSS for Theme
-    if st.session_state.theme_mode == "Dark":
-        st.markdown(
-            """
-            <style>
-            body {
-                background-color: #0e1117;
-                color: #fafafa;
-            }
-            .stApp {
-                background-color: #0e1117;
-            }
-            .stButton>button {
-                background-color: #262730;
-                color: #fafafa;
-                border: 1px solid #262730;
-            }
-            .stButton>button:hover {
-                border: 1px solid #0068c9;
-                color: #0068c9;
-            }
-            .stTextInput>div>div>input {
-                background-color: #262730;
-                color: #fafafa;
-                border: 1px solid #31333F;
-            }
-            .stSelectbox>div>div>div {
-                background-color: #262730;
-                color: #fafafa;
-                border: 1px solid #31333F;
-            }
-            .stExpander {
-                background-color: #262730;
-                border: 1px solid #31333F;
-                border-radius: 0.25rem;
-            }
-            .stExpander>div>div>p {
-                color: #fafafa !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            """
-            <style>
-            body {
-                background-color: #ffffff;
-                color: #333333;
-            }
-            .stApp {
-                background-color: #ffffff;
-            }
-            .stButton>button {
-                background-color: #f0f2f6;
-                color: #333333;
-                border: 1px solid #f0f2f6;
-            }
-            .stButton>button:hover {
-                border: 1px solid #0068c9;
-                color: #0068c9;
-            }
-            .stTextInput>div>div>input {
-                background-color: #ffffff;
-                color: #333333;
-                border: 1px solid #e0e0e0;
-            }
-            .stSelectbox>div>div>div {
-                background-color: #ffffff;
-                color: #333333;
-                border: 1px solid #e0e0e0;
-            }
-            .stExpander {
-                background-color: #f0f2f6;
-                border: 1px solid #e0e0e0;
-                border-radius: 0.25rem;
-            }
-            .stExpander>div>div>p {
-                color: #333333 !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+    # Apply theme
+    apply_theme(st.session_state.theme_mode)
 
     st.sidebar.markdown("---") # Separator
 
     # Sidebar Navigation
-    app_mode = st.sidebar.radio(
-        "Go to",
+    app_mode = st.sidebar.radio( # This will be the primary navigation
+        "Navigation",
         ["💬 Chat Assistant", "🎯 Knowledge Quiz", "📚 Syllabus Viewer", "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"],
-        key="app_mode_radio"
+        key="app_mode_radio_primary" # Changed key for clarity
     )
 
     st.sidebar.markdown("---") # Separator
@@ -174,16 +123,25 @@ def main():
         clear_history("bookmark") # Assuming you might add this later
         st.rerun()
 
-    # Initialize and display dev tools
-    from dev_tools import DevTools
-    dev_tools = DevTools()
-    dev_tools.display_dev_tools()
+    # --- Dev Tools Link ---
+    if st.sidebar.button("🛠️ Open Dev Tools", key="open_dev_tools"):
+        js = f'''
+            <script>
+            window.open("http://localhost:8501/dev_tools", "_blank");
+            </script>
+        '''
+        st.markdown(js, unsafe_allow_html=True)
+        
+    # Handle dev tools route
+    if st.query_params.get("page") == ["dev_tools"]:
+        from dev_tools import dev_tools
+        dev_tools()
 
     # --- Helper function for PDF viewer component ---
     def display_pdf_viewer(file_path: str, height: int = 750):
         """
         Embeds a PDF file in the Streamlit app using streamlit_pdf_viewer.
-        Assumes metadata like total_pages is handled externally for controls.
+        Features a modern control bar with icon-only buttons and tooltips.
         """
         try:
             if not os.path.exists(file_path):
@@ -193,18 +151,99 @@ def main():
                 st.error("🚨 Invalid file type. Only PDF files are supported.")
                 return False
 
-            # The streamlit_pdf_viewer component itself
+            # Modern control bar
+            st.markdown("""
+                <div class="pdf-control-bar">
+                    <div class="pdf-controls left">
+                        <button class="pdf-btn" data-tooltip="Previous Page">◀️</button>
+                        <input type="number" class="page-input" min="1" value="1">
+                        <button class="pdf-btn" data-tooltip="Next Page">▶️</button>
+                    </div>
+                    <div class="pdf-controls center">
+                        <button class="pdf-btn" data-tooltip="Zoom Out">🔍-</button>
+                        <select class="zoom-select">
+                            <option value="0.5">50%</option>
+                            <option value="1" selected>100%</option>
+                            <option value="1.5">150%</option>
+                            <option value="2">200%</option>
+                        </select>
+                        <button class="pdf-btn" data-tooltip="Zoom In">🔍+</button>
+                    </div>
+                    <div class="pdf-controls right">
+                        <button class="pdf-btn" data-tooltip="Toggle Outline">📑</button>
+                        <button class="pdf-btn" data-tooltip="Search">🔎</button>
+                        <button class="pdf-btn" data-tooltip="Download">⬇️</button>
+                    </div>
+                </div>
+                <style>
+                .pdf-control-bar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: #f8f9fa;
+                    padding: 8px;
+                    border-radius: 8px;
+                    margin-bottom: 1rem;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
+                .pdf-controls {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .pdf-btn {
+                    padding: 6px 12px;
+                    border: none;
+                    background: transparent;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .pdf-btn:hover {
+                    background: #e9ecef;
+                }
+                .page-input {
+                    width: 50px;
+                    text-align: center;
+                    border: 1px solid #dee2e6;
+                    border-radius: 4px;
+                    padding: 4px;
+                }
+                .zoom-select {
+                    padding: 4px;
+                    border: 1px solid #dee2e6;
+                    border-radius: 4px;
+                    background: white;
+                }
+                [data-tooltip]:hover:before {
+                    content: attr(data-tooltip);
+                    position: absolute;
+                    top: -24px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    padding: 4px 8px;
+                    background: rgba(0,0,0,0.8);
+                    color: white;
+                    font-size: 12px;
+                    border-radius: 4px;
+                    white-space: nowrap;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+            # The PDF viewer component
             pdf_viewer(
                 file_path,
                 height=height,
                 width="100%"
             )
             return True
+            
         except ImportError:
-            st.error("🚨 PDF viewer component (streamlit-pdf-viewer) not installed properly or failed to import.")
+            st.error("🚨 PDF viewer component (streamlit-pdf-viewer) not installed properly.")
             return False
         except Exception as e:
-            st.error(f"🚨 Error displaying PDF with streamlit-pdf-viewer: {str(e)}")
+            st.error(f"🚨 Error displaying PDF: {str(e)}")
             return False
 
 
@@ -514,22 +553,37 @@ def main():
             st.subheader("Recent Chat Interactions")
             chat_history_content = read_history("chat")
             
-            if st.button("🧹 Clear Chat History", key="clear_chat_button"):
-                st.session_state.confirm_clear_chat = True
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if st.button("🧹 Clear Chat History", key="clear_chat_button"):
+                    st.session_state.confirm_clear_chat = True
+            with col2:
+                if st.download_button(
+                    "⬇️ Download Full Transcript",
+                    chat_history_content,
+                    file_name="chat_transcript.txt",
+                    mime="text/plain",
+                    key="download_full_chat"
+                ):
+                    st.success("Chat transcript downloaded!")
             
             if st.session_state.get("confirm_clear_chat", False):
-                st.warning("Are you sure you want to clear the chat history? This cannot be undone.")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Yes, Clear Chat History", key="confirm_yes_chat"):
-                        clear_history("chat")
-                        st.session_state.confirm_clear_chat = False
-                        st.success("Chat history cleared!")
-                        st.rerun()
-                with col2:
-                    if st.button("No, Keep Chat History", key="confirm_no_chat"):
-                        st.session_state.confirm_clear_chat = False
-                        st.info("Chat history not cleared.")
+                with st.form(key="confirm_clear_chat_form"):
+                    st.warning("⚠️ Are you sure you want to clear the chat history?")
+                    st.error("This action cannot be undone!")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        confirm = st.form_submit_button("Yes, Clear History", type="primary")
+                        if confirm:
+                            clear_history("chat")
+                            st.session_state.confirm_clear_chat = False
+                            st.success("Chat history cleared!")
+                            st.rerun()
+                    with col2:
+                        cancel = st.form_submit_button("No, Keep History")
+                        if cancel:
+                            st.session_state.confirm_clear_chat = False
+                            st.info("Operation cancelled. Chat history preserved.")
 
             if chat_history_content:
                 lines = chat_history_content.strip().splitlines()
@@ -648,5 +702,233 @@ def main():
                 except ImportError:
                     st.caption("Pandas and NumPy would be needed for this preview.")
 
+    def render_syllabus_section():
+        """Render the syllabus viewer section with modern navigation."""
+        # Load syllabus data
+        from syllabus_manager import load_syllabus_data, search_syllabus
+        syllabus_data = load_syllabus_data()
+        
+        # Determine PDF file path
+        ncc_handbook_pdf_path = os.path.join(os.path.dirname(__file__), "Ncc-CadetHandbook.pdf")
+
+        # Add syllabus navigation options to sidebar
+        st.sidebar.markdown(
+            """
+            <div class="syllabus-nav">
+                <h3>📚 Syllabus Navigation</h3>
+                <div class="nav-options">
+                    <button class="nav-btn active" data-section="structure">
+                        <span>🔍</span>Browse Structure
+                    </button>
+                    <button class="nav-btn" data-section="handbook">
+                        <span>📖</span>View Handbook
+                    </button>
+                    <button class="nav-btn" data-section="bookmarks">
+                        <span>🔖</span>Bookmarks
+                    </button>
+                </div>
+            </div>
+            <style>
+            .syllabus-nav {
+                padding: 1rem 0;
+            }
+            .syllabus-nav h3 {
+                margin-bottom: 1rem;
+                font-size: 1.1rem;
+            }
+            .nav-options {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .nav-btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.5rem 1rem;
+                border: none;
+                background: transparent;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-align: left;
+                width: 100%;
+            }
+            .nav-btn:hover {
+                background: rgba(255,255,255,0.1);
+            }
+            .nav-btn.active {
+                background: rgba(255,255,255,0.15);
+            }
+            .nav-btn span {
+                font-size: 1.2rem;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # Initialize view state if not exists
+        if "syllabus_view" not in st.session_state:
+            st.session_state.syllabus_view = "structure"
+
+        # Handle navigation clicks via query params
+        params = st.query_params
+        if "view" in params:
+            st.session_state.syllabus_view = params["view"][0]
+
+        # Render content based on selected view
+        if st.session_state.syllabus_view == "structure":
+            st.header("📚 Browse Syllabus")
+            query = st.text_input("🔍 Search Topics", key="syllabus_search")
+            
+            if syllabus_data:
+                if query:
+                    search_results = search_syllabus(syllabus_data, query)
+                    if search_results:
+                        for result in search_results:
+                            with st.expander(f"📎 {result['title']}", expanded=True):
+                                st.write(result['content'])
+                    else:
+                        st.info(f"No results found for '{query}'")
+                else:
+                    for chapter in syllabus_data.chapters:
+                        with st.expander(f"📘 {chapter.title}", expanded=False):
+                            for section in chapter.sections:
+                                st.markdown(f"### {section.title}")
+                                st.write(section.content)
+            else:
+                st.error("Failed to load syllabus data")
+
+        elif st.session_state.syllabus_view == "handbook":
+            st.header("📖 NCC Handbook")
+            # Modern PDF controls are already implemented
+            if not display_pdf_viewer(ncc_handbook_pdf_path, height=800):
+                st.error("Failed to load PDF viewer")
+
+        else:  # bookmarks view
+            st.header("🔖 Bookmarked Content")
+            if "syllabus_bookmarks" not in st.session_state:
+                st.session_state.syllabus_bookmarks = []
+            
+            if not st.session_state.syllabus_bookmarks:
+                st.info("No bookmarks yet! Click the 🔖 icon next to any topic to bookmark it.")
+            else:
+                for bookmark in st.session_state.syllabus_bookmarks:
+                    with st.expander(f"📎 {bookmark['title']}", expanded=True):
+                        st.write(bookmark['content'])
+                        if st.button("🗑️", key=f"remove_{bookmark['id']}"):
+                            st.session_state.syllabus_bookmarks.remove(bookmark)
+                            st.rerun()
+
+def render_video_card(video, show_tags=False):
+    """Render a video card with modern styling and hidden tags."""
+    st.markdown(f"""
+        <div class="video-card">
+            <img src="{video.thumbnail}" class="thumbnail" alt="Video thumbnail">
+            <div class="video-info">
+                <h3>{video.title}</h3>
+                <p class="description">{video.description[:150]}...</p>
+                <div class="video-meta">
+                    <span class="duration">⏱️ {video.duration}</span>
+                    <span class="category">📂 {video.category}</span>
+                </div>
+                {'<div class="tags">' + ' '.join([f'<span class="tag">{tag}</span>' for tag in video.tags]) + '</div>' if show_tags else ''}
+                <a href="{video.url}" target="_blank" class="watch-btn">Watch Now</a>
+            </div>
+        </div>
+        <style>
+        .video-card {{
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin: 1rem 0;
+            transition: transform 0.2s;
+        }}
+        .video-card:hover {{
+            transform: translateY(-2px);
+        }}
+        .thumbnail {{
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }}
+        .video-info {{
+            padding: 1rem;
+        }}
+        .video-info h3 {{
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+        }}
+        .description {{
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }}
+        .video-meta {{
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }}
+        .watch-btn {{
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }}
+        .watch-btn:hover {{
+            background: #0056b3;
+        }}
+        .tags {{
+            display: none; /* Hide tags visually */
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+def display_video_guides():
+    """Display video guides with modern styling."""
+    st.title("🎥 NCC Video Guides")
+
+    # Load videos from data file
+    if hasattr(st.session_state, 'video_data'):
+        videos = st.session_state.video_data
+    else:
+        try:
+            with open('data/videos.json', 'r') as f:
+                videos = json.load(f)
+            st.session_state.video_data = videos
+        except Exception as e:
+            st.error(f"Failed to load video data: {e}")
+            return
+
+    # Search functionality (includes hidden tags)
+    search_query = st.text_input("🔍 Search videos by title, description, or topic", key="video_search")
+    
+    if search_query:
+        filtered_videos = []
+        for video in videos:
+            # Search in title, description, category, and tags
+            searchable_text = f"{video['title']} {video['description']} {video['category']} {' '.join(video['tags'])}".lower()
+            if search_query.lower() in searchable_text:
+                filtered_videos.append(video)
+    else:
+        filtered_videos = videos
+
+    # Display videos in a grid
+    cols = st.columns(2)
+    for idx, video in enumerate(filtered_videos):
+        with cols[idx % 2]:
+            render_video_card(video)
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+        st.exception(e)

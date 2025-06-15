@@ -6,15 +6,20 @@ import sys
 import platform
 import psutil
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List
 import logging
 from pathlib import Path
+import numpy as np
+import pandas as pd
 
 class DevTools:
     def __init__(self):
         self.setup_logging()
+        # Initialize performance history if not exists
+        if "performance_history" not in st.session_state:
+            st.session_state.performance_history = []
         
     @staticmethod
     def setup_logging():
@@ -30,6 +35,44 @@ class DevTools:
                 logging.FileHandler(log_file)
             ]
         )
+
+    def update_performance_history(self):
+        """Update performance history with current metrics"""
+        current_time = datetime.now()
+        metrics = {
+            'timestamp': current_time,
+            'memory_usage': psutil.Process().memory_info().rss / 1024 / 1024,  # MB
+            'cpu_usage': psutil.cpu_percent(),
+            'disk_usage': psutil.disk_usage('/').percent
+        }
+        
+        # Keep only last hour of data
+        one_hour_ago = current_time - timedelta(hours=1)
+        st.session_state.performance_history = [
+            m for m in st.session_state.performance_history 
+            if m['timestamp'] > one_hour_ago
+        ]
+        st.session_state.performance_history.append(metrics)
+
+    def plot_performance_history(self):
+        """Plot performance metrics over time"""
+        if not st.session_state.performance_history:
+            st.info("Collecting performance data...")
+            return
+            
+        # Convert to DataFrame for easier plotting
+        df = pd.DataFrame(st.session_state.performance_history)
+        df.set_index('timestamp', inplace=True)
+        
+        # Create three separate line charts
+        st.line_chart(df['memory_usage'], use_container_width=True)
+        st.caption("Memory Usage (MB) over time")
+        
+        st.line_chart(df['cpu_usage'], use_container_width=True)
+        st.caption("CPU Usage (%) over time")
+        
+        st.line_chart(df['disk_usage'], use_container_width=True)
+        st.caption("Disk Usage (%) over time")
 
     def get_system_info(self) -> Dict[str, str]:
         """Get system information"""
@@ -93,178 +136,72 @@ class DevTools:
 
     def show_performance_metrics(self):
         """Display performance metrics"""
-        metrics_col1, metrics_col2 = st.columns(2)
+        # Update performance history
+        self.update_performance_history()
         
+        # Current metrics
+        metrics_col1, metrics_col2 = st.columns(2)
         with metrics_col1:
             st.metric(
                 "Memory Usage (MB)", 
                 f"{psutil.Process().memory_info().rss / 1024 / 1024:.1f}"
             )
-            
+            st.metric(
+                "Disk Usage (%)", 
+                f"{psutil.disk_usage('/').percent:.1f}"
+            )
         with metrics_col2:
             st.metric(
                 "CPU Usage (%)", 
                 f"{psutil.cpu_percent()}"
             )
+            st.metric(
+                "Python Threads", 
+                len(psutil.Process().threads())
+            )
+            
+        # Performance history graphs
+        st.subheader("Performance History")
+        self.plot_performance_history()
 
-    def show_logs(self, num_lines: int = 50):
-        """Display application logs"""
-        try:
-            log_file = Path("logs/app.log")
-            if log_file.exists():
-                with log_file.open('r') as f:
-                    logs = f.readlines()[-num_lines:]
-                    
-                log_level_filter = st.multiselect(
-                    "Filter by log level",
-                    ["INFO", "WARNING", "ERROR", "DEBUG"],
-                    default=["ERROR", "WARNING"]
-                )
-                
-                filtered_logs = [
-                    log for log in logs 
-                    if any(level in log for level in log_level_filter)
-                ]
-                
-                if filtered_logs:
-                    st.code("".join(filtered_logs), language="text")
-                else:
-                    st.info(f"No logs found matching the selected levels: {', '.join(log_level_filter)}")
-            else:
-                st.info("No logs found")
-        except Exception as e:
-            st.error(f"Error reading logs: {str(e)}")
-
-    def display_dev_tools(self):
-        """Main method to display all development tools"""
-        st.sidebar.markdown("---")
-        show_tools = st.sidebar.checkbox("🛠️ Developer Tools", value=False)
+def dev_tools():
+    """Main function to display dev tools in a new tab"""
+    dev = DevTools()
+    
+    st.set_page_config(
+        page_title="NCC AI Assistant - Dev Tools",
+        page_icon="🛠️",
+        layout="wide"
+    )
+    
+    st.title("🛠️ Developer Tools")
+    
+    # Main tabs
+    tool_tabs = st.tabs([
+        "📊 Performance",
+        "💾 Session State",
+        "🖥️ System Info",
+        "📝 Logs"
+    ])
+    
+    # Performance Tab
+    with tool_tabs[0]:
+        dev.show_performance_metrics()
         
-        if show_tools:
-            # Create a new tab for dev tools
-            if 'active_tab' not in st.session_state:
-                st.session_state.active_tab = 'System'
-                
-            # Create dev tools container
-            st.markdown("## 🛠️ Developer Tools")
-                # Create tabs for different tool categories
-            system_tab, state_tab, perf_tab, logs_tab, controls_tab = st.tabs([
-                "🖥️ System",
-                "💾 State",
-                "📊 Performance",
-                "📝 Logs",
-                "⚙️ Controls"
-            ])
-            
-            # System Information Tab
-            with system_tab:
-                st.markdown("### System Information")
-                sys_info = self.get_system_info()
-                
-                # Display system info in a more organized way
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("OS", sys_info["OS"])
-                    st.metric("Python Version", sys_info["Python Version"])
-                    st.metric("Streamlit Version", sys_info["Streamlit Version"])
-                with col2:
-                    st.metric("Memory Usage", sys_info["Memory Usage"])
-                    st.metric("CPU Usage", sys_info["CPU Usage"])
-                    st.metric("Last Updated", datetime.now().strftime("%H:%M:%S"))
-                    
-                if st.button("🔄 Refresh System Info", key="refresh_sys"):
-                    st.rerun()
-            
-            # Session State Tab
-            with state_tab:
-                st.markdown("### Session State Explorer")
-                self.display_session_state()
-                if st.button("🔄 Refresh State", key="refresh_state"):
-                    st.rerun()
-            
-            # Performance Tab
-            with perf_tab:
-                st.markdown("### Performance Metrics")
-                    
-                # Add auto-refresh option
-                auto_refresh = st.checkbox("🔄 Auto-refresh (5s)", value=False)
-                if auto_refresh:
-                    st.empty()
-                    st.rerun()
-                
-                # Show metrics in columns
-                metric_cols = st.columns(2)
-                with metric_cols[0]:
-                    self.show_performance_metrics()
-                with metric_cols[1]:
-                    st.markdown("#### Resource Usage History")
-                    # Add placeholder for future graph implementation
-                    st.info("Performance history graph coming soon!")
-                
-            # Logs Tab
-            with logs_tab:
-                st.markdown("### Application Logs")
-                
-                # Add log controls
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    log_levels = st.multiselect(
-                        "Log Levels",
-                        ["DEBUG", "INFO", "WARNING", "ERROR"],
-                        default=["ERROR", "WARNING"]
-                    )
-                with col2:
-                    num_lines = st.number_input(
-                        "Lines to show",
-                        min_value=10,
-                        max_value=200,
-                        value=50,
-                        step=10
-                    )
-                    
-                self.show_logs(num_lines)
-                
-                # Add log controls
-                if st.button("🔄 Refresh Logs", key="refresh_logs"):
-                    st.rerun()
-                
-                if st.button("📝 Clear Logs"):
-                    try:
-                        open("logs/app.log", "w").close()
-                        st.success("Logs cleared successfully!")
-                    except Exception as e:
-                        st.error(f"Error clearing logs: {e}")
-            
-            # Controls Tab
-            with controls_tab:
-                st.markdown("### Developer Controls")
-                    
-                # Organize controls in columns
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("#### Session Management")
-                    if st.button("🧹 Clear Session State", use_container_width=True):
-                        for key in list(st.session_state.keys()):
-                            del st.session_state[key]
-                        st.success("Session state cleared!")
-                        st.rerun()
-                    
-                    if st.button("🔄 Force Reload App", use_container_width=True):
-                        st.rerun()
-                
-                with col2:
-                    st.markdown("#### Testing & Debug")
-                    if st.button("🧪 Run Tests", use_container_width=True):
-                        st.info("Test functionality coming soon!")
-                    
-                    if st.button("📊 Generate Debug Report", use_container_width=True):
-                        st.info("Debug report generation coming soon!")
-                
-                # Add experimental features section
-                st.markdown("#### ⚡ Experimental Features")
-                exp_features = st.multiselect(
-                    "Enable experimental features",
-                    ["Performance Monitoring", "Auto Log Rotation", "State Time Travel"],
-                    help="Warning: These features are experimental and may not work as expected."
-                )
+    # Session State Tab
+    with tool_tabs[1]:
+        dev.display_session_state()
+        
+    # System Info Tab
+    with tool_tabs[2]:
+        st.json(dev.get_system_info())
+        
+    # Logs Tab
+    with tool_tabs[3]:
+        log_file = Path("logs/app.log")
+        if log_file.exists():
+            with log_file.open() as f:
+                logs = f.read()
+            st.text_area("Application Logs", logs, height=400)
+        else:
+            st.warning("No log file found")

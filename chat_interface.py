@@ -5,6 +5,11 @@ import os
 from pathlib import Path
 import uuid
 
+# Standard library imports
+import json
+from datetime import datetime
+import uuid
+
 # Import from utils
 from utils import (
     read_history,
@@ -12,7 +17,8 @@ from utils import (
     clear_history,
     setup_gemini,
     get_ncc_response,
-    Config
+    Config,
+    _load_json_file  # Import the helper function
 )
 
 # Initialize Gemini model
@@ -65,53 +71,89 @@ def chat_interface():
                     append_message("chat", f"User: {q} *(Sent at {timestamp})*")
                     st.rerun()
 
-    # --- Clear Chat Confirmation ---
-    col1, col2, col3 = st.columns([1, 1, 3])
-    with col1:
-        # Add uuid to the key to ensure it's unique on reruns
+    # Initialize chat history tab state if not exists
+    if "show_history" not in st.session_state:
+        st.session_state.show_history = False
+    if "selected_conversation" not in st.session_state:
+        st.session_state.selected_conversation = None
+    
+    # Top bar with actions
+    col_actions1, col_actions2, col_spacer = st.columns([1, 1, 2])
+    
+    with col_actions1:
+        if st.button("🕒 View History", key="view_history_btn", use_container_width=True):
+            st.session_state.show_history = not st.session_state.show_history
+    
+    with col_actions2:
         clear_chat_key = f"clear_chat_btn_{st.session_state.widget_keys['clear_chat']}"
-        if st.button("🧹 Clear Chat", key=clear_chat_key, help="Erase all chat history from this session and disk."):
+        if st.button("🧹", key=clear_chat_key, help="Clear Chat"):
             st.session_state.confirm_clear = True
 
-    if st.session_state.confirm_clear:
-        st.warning("Are you sure you want to clear the chat history? This cannot be undone.")
+    # History view or confirmation dialog
+    if st.session_state.show_history:
+        with st.container():
+            st.markdown("### 📜 Chat History")
+            # Load and parse chat history from JSON
+            history = _load_json_file(Config.LOG_PATHS['chat']['history'], [])
+            
+            if history:
+                # Group conversations by date
+                from itertools import groupby
+                from datetime import datetime
+                
+                # Sort history by timestamp
+                history.sort(key=lambda x: x.get('timestamp', ''))
+                
+                # Group by date
+                for date, items in groupby(history, key=lambda x: x.get('timestamp', '')[:10]):
+                    items = list(items)  # Convert iterator to list
+                    with st.expander(f"📅 {date}", expanded=True):
+                        for item in items:
+                            # Create a clickable conversation preview
+                            prompt = item.get('prompt', '')
+                            timestamp = item.get('timestamp', '').split('T')[1][:8]  # Extract time HH:MM:SS
+                            preview = f"🕒 {timestamp} - {prompt[:50]}..."
+                            
+                            if st.button(preview, key=f"conv_{item.get('timestamp', '')}"):
+                                st.session_state.selected_conversation = item
+                                st.rerun()
+                
+                # Show full conversation if one is selected
+                if st.session_state.selected_conversation:
+                    st.markdown("### Selected Conversation")
+                    with st.chat_message("user"):
+                        st.write(st.session_state.selected_conversation['prompt'])
+                    with st.chat_message("assistant"):
+                        st.write(st.session_state.selected_conversation['response'])
+                
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    st.download_button(
+                        "⬇️ Download History",
+                        data=json.dumps(history, indent=2),
+                        file_name="chat_history.json",
+                        mime="application/json",
+                        key="download_history"
+                    )
+            else:
+                st.info("No chat history available yet.")
+
+    elif st.session_state.confirm_clear:
+        st.warning("Are you sure you want to clear the chat history?")
         col_yes, col_no = st.columns(2)
         with col_yes:
-            if st.button("Yes, clear", key=f"confirm_yes_{st.session_state.widget_keys['confirm_yes']}"):
+            if st.button("Yes", key=f"confirm_yes_{st.session_state.widget_keys['confirm_yes']}"):
                 st.session_state.messages = []
-                clear_history("chat") # Clear on-disk history
+                clear_history("chat")
                 st.session_state.confirm_clear = False
+                st.session_state.show_history = False
                 st.success("Chat history cleared!")
                 st.rerun()
         with col_no:
-            if st.button("No, keep chat", key=f"confirm_no_{st.session_state.widget_keys['confirm_no']}"):
+            if st.button("No", key=f"confirm_no_{st.session_state.widget_keys['confirm_no']}"):
                 st.session_state.confirm_clear = False
-                st.info("Chat clearing cancelled.")
+                st.info("Operation cancelled.")
                 st.rerun()
-    with col2:
-        with st.expander("📜 View Chat History", expanded=True):
-            history_lines = read_history("chat").splitlines()
-            if history_lines:
-                for line in history_lines[-50:]:  # Show only last 50 lines
-                    st.text(line) # Using st.text to preserve raw line formatting
-                if len(history_lines) > 50:
-                    st.info(f"...and {len(history_lines)-50} more lines (view full history by downloading).")
-            else:
-                st.info("No chat history found yet.")
-    with col3:
-        # Download Full History
-        history_content = read_history("chat")
-        if history_content:
-            st.download_button(
-                label="⬇️ Download Full History",
-                data=history_content,
-                file_name="chat_history.txt",
-                mime="text/plain",
-                key=f"download_chat_history_btn_{uuid.uuid4()}",
-                help="Download the complete chat history as a text file."
-            )
-        else:
-            st.button("⬇️ Download Full History", key=f"download_chat_history_disabled_btn_{uuid.uuid4()}", disabled=True, help="No chat history to download yet.")
 
 
     st.markdown("---")

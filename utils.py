@@ -13,27 +13,57 @@ from pathlib import Path
 # --- Configuration ---
 @dataclass
 class Config:
-    # File Paths
+    # Base Directories
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    CHAT_HISTORY_FILE = os.path.join(BASE_DIR, "data", "chat_history.json")
-    QUIZ_LOG_FILE = os.path.join(BASE_DIR, "data", "quiz_log.json")
-    QUIZ_SCORE_HISTORY_FILE = os.path.join(BASE_DIR, "data", "quiz_score_history.json") # For logging quiz scores
+    DATA_DIR = os.path.join(BASE_DIR, "data")
+    LOGS_DIR = os.path.join(BASE_DIR, "logs")
+
+    # Ensure directories exist
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(LOGS_DIR, exist_ok=True)
+
+    # Legacy file paths (for backward compatibility)
+    CHAT_HISTORY_FILE = os.path.join(DATA_DIR, "chat_history.json")
+    QUIZ_LOG_FILE = os.path.join(DATA_DIR, "quiz_log.json")
+    QUIZ_SCORE_HISTORY_FILE = os.path.join(DATA_DIR, "quiz_score_history.json")
+    APP_LOG_FILE = os.path.join(LOGS_DIR, "app.log")
     
-    # Model Settings
+    # Centralized file paths mapping
+    LOG_PATHS = {
+        'chat': {
+            'history': os.path.join(DATA_DIR, "chat_history.json"),
+            'transcript': os.path.join(DATA_DIR, "chat_transcript.txt")
+        },
+        'quiz': {
+            'log': os.path.join(DATA_DIR, "quiz_log.json"),
+            'scores': os.path.join(DATA_DIR, "quiz_score_history.json"),
+            'transcript': os.path.join(DATA_DIR, "quiz_transcript.txt"),
+            'bookmarks': os.path.join(DATA_DIR, "quiz_bookmarks.json")
+        },
+        'bookmark': {
+            'data': os.path.join(DATA_DIR, "bookmarks.json")
+        },
+        'app': {
+            'log': os.path.join(LOGS_DIR, "app.log")
+        }
+    }
+    
+    # Model Settings (moved to avoid duplication)
     MODEL_NAME = 'gemini-1.5-flash'
     TEMP_CHAT = 0.3
     TEMP_QUIZ = 0.4
     MAX_TOKENS_CHAT = 1000
     MAX_TOKENS_QUIZ = 2000
     API_CALL_COOLDOWN_MINUTES = 2
+    
     # Quiz Settings
     QUESTION_COUNTS = {"Easy": 3, "Medium": 5, "Hard": 8}
     
     # Ensure data directory exists
     @classmethod
     def ensure_data_dir(cls):
-        os.makedirs(os.path.join(cls.BASE_DIR, "data"), exist_ok=True)
-
+        os.makedirs(cls.DATA_DIR, exist_ok=True)
+        os.makedirs(cls.LOGS_DIR, exist_ok=True)
 # Initialize data directory
 Config.ensure_data_dir()
 
@@ -45,7 +75,7 @@ logging.basicConfig(
     level=logging.INFO, 
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(os.path.join(Config.BASE_DIR, "app.log")),
+        logging.FileHandler(Config.LOG_PATHS['app']['log']),
         logging.StreamHandler()
     ]
 )
@@ -113,18 +143,30 @@ def _save_json_file(file_path: str, data: Any) -> bool:
         return False
 
 def _save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
-    """Save chat interaction to history file."""
+    """Save chat interaction to history file and transcript."""
     try:
-        history = _load_json_file(Config.CHAT_HISTORY_FILE, [])
+        # Save to JSON history
+        history_path = Config.LOG_PATHS['chat']['history']
+        history = _load_json_file(history_path, [])
         history.append({
             "timestamp": datetime.now().isoformat(),
-            "prompt": user_prompt,       # Represents user's message
-            "response": assistant_response # Represents assistant's message
+            "prompt": user_prompt,
+            "response": assistant_response
         })
-        _save_json_file(Config.CHAT_HISTORY_FILE, history)
+        _save_json_file(history_path, history)
+
+        # Append to transcript file
+        transcript_path = Config.LOG_PATHS['chat']['transcript']
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with open(transcript_path, 'a', encoding='utf-8') as f:
+                f.write(f"\n[{timestamp}] USER: {user_prompt}\n")
+                f.write(f"[{timestamp}] AI: {assistant_response}\n")
+        except Exception as e:
+            logging.error(f"Failed to append to chat transcript: {str(e)}")
+            
     except Exception as e:
         logging.error(f"Failed to save chat history: {str(e)}")
-        # It might be useful to also log the messages that failed to save
         logging.debug(f"Failed chat data: Prompt='{user_prompt}', Response='{assistant_response}'")
 
 def _save_quiz_to_file(topic: str, questions: List[Dict[str, Any]]) -> None:
@@ -143,7 +185,7 @@ def _save_quiz_to_file(topic: str, questions: List[Dict[str, Any]]) -> None:
 # --- Quiz Score History Functions ---
 def load_quiz_score_history() -> List[Dict[str, Any]]:
     """Loads quiz score history from its dedicated JSON file."""
-    return _load_json_file(Config.QUIZ_SCORE_HISTORY_FILE, [])
+    return _load_json_file(Config.LOG_PATHS['quiz']['scores'], [])
 
 def append_quiz_score_entry(entry: Dict[str, Any]) -> None:
     """Appends a quiz score entry to the history and saves it to file."""
@@ -158,8 +200,9 @@ def append_quiz_score_entry(entry: Dict[str, Any]) -> None:
 def clear_quiz_score_history() -> bool:
     """Clears the quiz score history file."""
     try:
-        if os.path.exists(Config.QUIZ_SCORE_HISTORY_FILE):
-            os.remove(Config.QUIZ_SCORE_HISTORY_FILE)
+        scores_path = Config.LOG_PATHS['quiz']['scores']
+        if os.path.exists(scores_path):
+            os.remove(scores_path)
         return True
     except Exception as e:
         logging.error(f"Failed to clear quiz score history: {str(e)}")
@@ -175,21 +218,36 @@ def clear_history(file_type: str = "chat") -> bool:
         bool: True if successful, False otherwise
     """
     try:
-        file_path = {
-            "chat": Config.CHAT_HISTORY_FILE,
-            "quiz": Config.QUIZ_LOG_FILE, # This is for quiz questions log
-            # "quiz_score" was handled by quiz_interface, now by clear_quiz_score_history()
-        }.get(file_type)
+        # Handle special case for quiz scores first
+        if file_type == "quiz_score":
+            return clear_quiz_score_history()
         
-        if not file_path:
+        # Map file_type to the appropriate path in LOG_PATHS
+        paths_to_clear = []
+        if file_type == "chat":
+            paths_to_clear = [
+                Config.LOG_PATHS['chat']['history'],
+                Config.LOG_PATHS['chat']['transcript']
+            ]
+        elif file_type == "quiz":
+            paths_to_clear = [
+                Config.LOG_PATHS['quiz']['log'],
+                Config.LOG_PATHS['quiz']['transcript']
+            ]
+        
+        if not paths_to_clear:
             return False
             
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        # If clearing quiz score history, call the dedicated function
-        if file_type == "quiz_score": # Though this key might not be passed anymore
-            return clear_quiz_score_history()
-        return True
+        success = True
+        for path in paths_to_clear:
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    logging.error(f"Failed to clear {path}: {str(e)}")
+                    success = False
+                    
+        return success
     except Exception as e:
         logging.error(f"Failed to clear {file_type} history: {str(e)}")
         return False
@@ -203,21 +261,22 @@ def read_history(file_type: str = "chat") -> str:
     Returns:
         Formatted string of history items
     """
-    file_path = {
-        "chat": Config.CHAT_HISTORY_FILE,
-        "quiz": Config.QUIZ_LOG_FILE, # This is for quiz questions log
-        # "quiz_score" was handled by quiz_interface, now by load_quiz_score_history()
-    }.get(file_type)
+    # Special case for quiz scores
+    if file_type == "quiz_score":
+        score_history = load_quiz_score_history()
+        return json.dumps(score_history, indent=2)
+        
+    # Get the appropriate path from LOG_PATHS
+    file_path = None
+    if file_type == "chat":
+        file_path = Config.LOG_PATHS['chat']['history']
+    elif file_type == "quiz":
+        file_path = Config.LOG_PATHS['quiz']['log']
     
     if not file_path:
         return ""
         
     history_data = _load_json_file(file_path, [])
-    
-    # If reading quiz score history, call the dedicated function
-    if file_type == "quiz_score": # Though this key might not be passed anymore
-        score_history = load_quiz_score_history()
-        return json.dumps(score_history, indent=2) # Or format as needed
     if not history_data:
         return ""
     
