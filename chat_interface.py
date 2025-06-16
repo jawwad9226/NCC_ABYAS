@@ -1,19 +1,15 @@
 import streamlit as st
 from datetime import datetime
+from itertools import groupby
 import time  # For simulating cooldown display
 import os
-from pathlib import Path
-import uuid
-
-# Standard library imports
 import json
-from datetime import datetime
+from pathlib import Path
 import uuid
 
 # Import from utils
 from utils import (
     read_history,
-    append_message,
     clear_history,
     setup_gemini,
     get_ncc_response,
@@ -67,8 +63,8 @@ def chat_interface():
                 if st.button(q, key=safe_key):
                     # Append user message with timestamp
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    st.session_state.messages.append({"role": "user", "content": f"{q} *(Sent at {timestamp})*"})
-                    append_message("chat", f"User: {q} *(Sent at {timestamp})*")
+                    st.session_state.messages.append({"role": "user", "content": q, "timestamp": timestamp})
+                    # Saving to file is handled by get_ncc_response -> _save_chat_to_file
                     st.rerun()
 
     # Initialize chat history tab state if not exists
@@ -97,14 +93,11 @@ def chat_interface():
             history = _load_json_file(Config.LOG_PATHS['chat']['history'], [])
             
             if history:
-                # Group conversations by date
-                from itertools import groupby
-                from datetime import datetime
-                
                 # Sort history by timestamp
                 history.sort(key=lambda x: x.get('timestamp', ''))
                 
                 # Group by date
+                from itertools import groupby  # This import is fine here as it's just for groupby functionality
                 for date, items in groupby(history, key=lambda x: x.get('timestamp', '')[:10]):
                     items = list(items)  # Convert iterator to list
                     with st.expander(f"📅 {date}", expanded=True):
@@ -160,8 +153,8 @@ def chat_interface():
 
     # Display chat messages from session state
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]): # Streamlit automatically handles bubble styling based on role
-            st.write(message["content"])
+        with st.chat_message(message["role"]):
+            st.write(f"{message['content']} *(at {message.get('timestamp', '')})*")
 
     # Chat input with unique key
     chat_input_key = f"chat_input_{st.session_state.widget_keys['chat_input']}"
@@ -174,12 +167,11 @@ def chat_interface():
 
         # Append user message with timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.session_state.messages.append({"role": "user", "content": f"{prompt} *(Sent at {timestamp})*"})
-        append_message("chat", f"User: {prompt} *(Sent at {timestamp})*")
+        st.session_state.messages.append({"role": "user", "content": prompt, "timestamp": timestamp})
 
         # Display user message immediately
         with st.chat_message("user"):
-            st.write(f"{prompt} *(Sent at {timestamp})*")
+            st.write(f"{prompt} *(at {timestamp})*")
 
         # Get assistant response
         with st.chat_message("assistant"):
@@ -201,14 +193,14 @@ def chat_interface():
                         st.session_state.cooldown_time_remaining = 0 # Fallback
                     st.warning(response) # Display the cooldown message
                     # Do not append to messages or history if it's a cooldown message
-                    st.session_state.messages.pop() # Remove the last user message if it was a cooldown
-                    append_message("chat", f"Assistant: {response} *(Cooldown)*")
+                    # The user message was already added, let it stay. The AI response is the cooldown message.
+                    st.session_state.messages.append({"role": "assistant", "content": response, "timestamp": datetime.now().strftime('%H:%M:%S')})
                 else:
                     st.session_state.cooldown_active = False
                     st.session_state.cooldown_time_remaining = 0
-                    st.write(f"{response} *(Answered at {datetime.now().strftime('%H:%M:%S')})*")
-                    st.session_state.messages.append({"role": "assistant", "content": f"{response} *(Answered at {datetime.now().strftime('%H:%M:%S')})*"})
-                    append_message("assistant", response)
+                    assistant_timestamp = datetime.now().strftime('%H:%M:%S')
+                    st.write(f"{response} *(at {assistant_timestamp})*")
+                    st.session_state.messages.append({"role": "assistant", "content": response, "timestamp": assistant_timestamp})
 
         # Rerun to update chat display
         st.rerun()

@@ -60,26 +60,7 @@ def main():
     # --- Sidebar - Settings & Theme ---
     st.sidebar.header("Settings")
     
-    # Modern Theme Toggle with icon tooltips
-    st.sidebar.markdown("""
-        <div class="theme-toggle">
-            <label class="toggle-switch">
-                <input type="checkbox" 
-                    onchange="handleThemeChange(this.checked)"
-                    {}
-                >
-                <span class="toggle-slider"></span>
-            </label>
-            <span>🌙 Dark Mode</span>
-        </div>
-        <script>
-        function handleThemeChange(isDark) {{
-            const event = new CustomEvent('theme-change', {{ detail: {{ isDark }} }});
-            window.dispatchEvent(event);
-        }}
-        </script>
-    """.format('checked' if st.session_state.theme_mode == "Dark" else ''),
-    unsafe_allow_html=True)
+    # Theme Selection
     theme_options = ["Dark", "Light"]  # Dark first to match default
     current_theme_idx = theme_options.index(st.session_state.theme_mode)
     new_theme = st.sidebar.radio(
@@ -138,10 +119,10 @@ def main():
         dev_tools()
 
     # --- Helper function for PDF viewer component ---
-    def display_pdf_viewer(file_path: str, height: int = 750):
+    def display_pdf_viewer(file_path: str, height: int = 750, page_number: int = 1):
         """
         Embeds a PDF file in the Streamlit app using streamlit_pdf_viewer.
-        Features a modern control bar with icon-only buttons and tooltips.
+        Note: Page navigation is handled by the viewer's built-in controls.
         """
         try:
             if not os.path.exists(file_path):
@@ -151,91 +132,23 @@ def main():
                 st.error("🚨 Invalid file type. Only PDF files are supported.")
                 return False
 
-            # Modern control bar
-            st.markdown("""
-                <div class="pdf-control-bar">
-                    <div class="pdf-controls left">
-                        <button class="pdf-btn" data-tooltip="Previous Page">◀️</button>
-                        <input type="number" class="page-input" min="1" value="1">
-                        <button class="pdf-btn" data-tooltip="Next Page">▶️</button>
-                    </div>
-                    <div class="pdf-controls center">
-                        <button class="pdf-btn" data-tooltip="Zoom Out">🔍-</button>
-                        <select class="zoom-select">
-                            <option value="0.5">50%</option>
-                            <option value="1" selected>100%</option>
-                            <option value="1.5">150%</option>
-                            <option value="2">200%</option>
-                        </select>
-                        <button class="pdf-btn" data-tooltip="Zoom In">🔍+</button>
-                    </div>
-                    <div class="pdf-controls right">
-                        <button class="pdf-btn" data-tooltip="Toggle Outline">📑</button>
-                        <button class="pdf-btn" data-tooltip="Search">🔎</button>
-                        <button class="pdf-btn" data-tooltip="Download">⬇️</button>
-                    </div>
-                </div>
-                <style>
-                .pdf-control-bar {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    background: #f8f9fa;
-                    padding: 8px;
-                    border-radius: 8px;
-                    margin-bottom: 1rem;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                }
-                .pdf-controls {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                .pdf-btn {
-                    padding: 6px 12px;
-                    border: none;
-                    background: transparent;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                .pdf-btn:hover {
-                    background: #e9ecef;
-                }
-                .page-input {
-                    width: 50px;
-                    text-align: center;
-                    border: 1px solid #dee2e6;
-                    border-radius: 4px;
-                    padding: 4px;
-                }
-                .zoom-select {
-                    padding: 4px;
-                    border: 1px solid #dee2e6;
-                    border-radius: 4px;
-                    background: white;
-                }
-                [data-tooltip]:hover:before {
-                    content: attr(data-tooltip);
-                    position: absolute;
-                    top: -24px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    padding: 4px 8px;
-                    background: rgba(0,0,0,0.8);
-                    color: white;
-                    font-size: 12px;
-                    border-radius: 4px;
-                    white-space: nowrap;
-                }
-                </style>
-            """, unsafe_allow_html=True)
-
+            # Display a note about browser compatibility
+            st.info("💡 PDF navigation is available through the built-in controls. If you experience any issues, you can download the PDF to view it locally.", icon="ℹ️")
+            
+            # Add a download button for the PDF
+            with open(file_path, "rb") as f:
+                st.download_button(
+                    label="📥 Download PDF",
+                    data=f.read(),
+                    file_name=os.path.basename(file_path),
+                    mime="application/pdf"
+                )
+            
             # The PDF viewer component
             pdf_viewer(
                 file_path,
                 height=height,
-                width="100%"
+                width="100%"  # The page navigation is handled by the viewer's built-in controls
             )
             return True
             
@@ -504,7 +417,11 @@ def main():
                 st.info("💡 Due to browser limitations, PDF navigation might not work in all browsers. If you can't navigate pages, please use the download option to view the PDF locally.")
 
                 # Display the PDF
-                if not display_pdf_viewer(ncc_handbook_pdf_path, height=800):
+                if not display_pdf_viewer(
+                    ncc_handbook_pdf_path, 
+                    height=800, 
+                    page_number=st.session_state.get('pdf_current_page', 1)
+                ):
                     st.warning("Could not display PDF in the browser. You can download it instead:")
                     
                 # Always offer download option
@@ -671,7 +588,8 @@ def main():
         st.header("📊 Your Learning Progress")
         try:
             from progress_dashboard import display_progress_dashboard
-            quiz_history_raw = read_history("quiz") # Pass data to the dashboard
+            # Pass quiz score history to the dashboard, not the quiz log
+            quiz_history_raw = read_history("quiz_score") 
             display_progress_dashboard(st.session_state, quiz_history_raw)
         except ImportError:
             st.info(
@@ -701,230 +619,6 @@ def main():
                     st.bar_chart(df_bar.set_index('Section'))
                 except ImportError:
                     st.caption("Pandas and NumPy would be needed for this preview.")
-
-    def render_syllabus_section():
-        """Render the syllabus viewer section with modern navigation."""
-        # Load syllabus data
-        from syllabus_manager import load_syllabus_data, search_syllabus
-        syllabus_data = load_syllabus_data()
-        
-        # Determine PDF file path
-        ncc_handbook_pdf_path = os.path.join(os.path.dirname(__file__), "Ncc-CadetHandbook.pdf")
-
-        # Add syllabus navigation options to sidebar
-        st.sidebar.markdown(
-            """
-            <div class="syllabus-nav">
-                <h3>📚 Syllabus Navigation</h3>
-                <div class="nav-options">
-                    <button class="nav-btn active" data-section="structure">
-                        <span>🔍</span>Browse Structure
-                    </button>
-                    <button class="nav-btn" data-section="handbook">
-                        <span>📖</span>View Handbook
-                    </button>
-                    <button class="nav-btn" data-section="bookmarks">
-                        <span>🔖</span>Bookmarks
-                    </button>
-                </div>
-            </div>
-            <style>
-            .syllabus-nav {
-                padding: 1rem 0;
-            }
-            .syllabus-nav h3 {
-                margin-bottom: 1rem;
-                font-size: 1.1rem;
-            }
-            .nav-options {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            .nav-btn {
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 0.5rem 1rem;
-                border: none;
-                background: transparent;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: all 0.2s;
-                text-align: left;
-                width: 100%;
-            }
-            .nav-btn:hover {
-                background: rgba(255,255,255,0.1);
-            }
-            .nav-btn.active {
-                background: rgba(255,255,255,0.15);
-            }
-            .nav-btn span {
-                font-size: 1.2rem;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # Initialize view state if not exists
-        if "syllabus_view" not in st.session_state:
-            st.session_state.syllabus_view = "structure"
-
-        # Handle navigation clicks via query params
-        params = st.query_params
-        if "view" in params:
-            st.session_state.syllabus_view = params["view"][0]
-
-        # Render content based on selected view
-        if st.session_state.syllabus_view == "structure":
-            st.header("📚 Browse Syllabus")
-            query = st.text_input("🔍 Search Topics", key="syllabus_search")
-            
-            if syllabus_data:
-                if query:
-                    search_results = search_syllabus(syllabus_data, query)
-                    if search_results:
-                        for result in search_results:
-                            with st.expander(f"📎 {result['title']}", expanded=True):
-                                st.write(result['content'])
-                    else:
-                        st.info(f"No results found for '{query}'")
-                else:
-                    for chapter in syllabus_data.chapters:
-                        with st.expander(f"📘 {chapter.title}", expanded=False):
-                            for section in chapter.sections:
-                                st.markdown(f"### {section.title}")
-                                st.write(section.content)
-            else:
-                st.error("Failed to load syllabus data")
-
-        elif st.session_state.syllabus_view == "handbook":
-            st.header("📖 NCC Handbook")
-            # Modern PDF controls are already implemented
-            if not display_pdf_viewer(ncc_handbook_pdf_path, height=800):
-                st.error("Failed to load PDF viewer")
-
-        else:  # bookmarks view
-            st.header("🔖 Bookmarked Content")
-            if "syllabus_bookmarks" not in st.session_state:
-                st.session_state.syllabus_bookmarks = []
-            
-            if not st.session_state.syllabus_bookmarks:
-                st.info("No bookmarks yet! Click the 🔖 icon next to any topic to bookmark it.")
-            else:
-                for bookmark in st.session_state.syllabus_bookmarks:
-                    with st.expander(f"📎 {bookmark['title']}", expanded=True):
-                        st.write(bookmark['content'])
-                        if st.button("🗑️", key=f"remove_{bookmark['id']}"):
-                            st.session_state.syllabus_bookmarks.remove(bookmark)
-                            st.rerun()
-
-def render_video_card(video, show_tags=False):
-    """Render a video card with modern styling and hidden tags."""
-    st.markdown(f"""
-        <div class="video-card">
-            <img src="{video.thumbnail}" class="thumbnail" alt="Video thumbnail">
-            <div class="video-info">
-                <h3>{video.title}</h3>
-                <p class="description">{video.description[:150]}...</p>
-                <div class="video-meta">
-                    <span class="duration">⏱️ {video.duration}</span>
-                    <span class="category">📂 {video.category}</span>
-                </div>
-                {'<div class="tags">' + ' '.join([f'<span class="tag">{tag}</span>' for tag in video.tags]) + '</div>' if show_tags else ''}
-                <a href="{video.url}" target="_blank" class="watch-btn">Watch Now</a>
-            </div>
-        </div>
-        <style>
-        .video-card {{
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-            margin: 1rem 0;
-            transition: transform 0.2s;
-        }}
-        .video-card:hover {{
-            transform: translateY(-2px);
-        }}
-        .thumbnail {{
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }}
-        .video-info {{
-            padding: 1rem;
-        }}
-        .video-info h3 {{
-            margin: 0 0 0.5rem 0;
-            font-size: 1.1rem;
-        }}
-        .description {{
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-        }}
-        .video-meta {{
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-            color: #666;
-        }}
-        .watch-btn {{
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }}
-        .watch-btn:hover {{
-            background: #0056b3;
-        }}
-        .tags {{
-            display: none; /* Hide tags visually */
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-
-def display_video_guides():
-    """Display video guides with modern styling."""
-    st.title("🎥 NCC Video Guides")
-
-    # Load videos from data file
-    if hasattr(st.session_state, 'video_data'):
-        videos = st.session_state.video_data
-    else:
-        try:
-            with open('data/videos.json', 'r') as f:
-                videos = json.load(f)
-            st.session_state.video_data = videos
-        except Exception as e:
-            st.error(f"Failed to load video data: {e}")
-            return
-
-    # Search functionality (includes hidden tags)
-    search_query = st.text_input("🔍 Search videos by title, description, or topic", key="video_search")
-    
-    if search_query:
-        filtered_videos = []
-        for video in videos:
-            # Search in title, description, category, and tags
-            searchable_text = f"{video['title']} {video['description']} {video['category']} {' '.join(video['tags'])}".lower()
-            if search_query.lower() in searchable_text:
-                filtered_videos.append(video)
-    else:
-        filtered_videos = videos
-
-    # Display videos in a grid
-    cols = st.columns(2)
-    for idx, video in enumerate(filtered_videos):
-        with cols[idx % 2]:
-            render_video_card(video)
 
 if __name__ == "__main__":
     try:

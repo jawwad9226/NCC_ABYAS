@@ -39,31 +39,32 @@ SYLLABUS_SCHEMA = {
 VIDEOS_SCHEMA = {
     "type": "object",
     "properties": {
-        "categories": {
+        "version": {"type": "string"}
+    },
+    "patternProperties": {
+        # This pattern matches any property key that is NOT "version"
+        # These keys are expected to be category names.
+        "^(?!version$).*$": { 
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string"},
-                    "videos": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "title": {"type": "string"},
-                                "url": {"type": "string"},
-                                "description": {"type": "string"},
-                                "duration": {"type": "string"}
-                            },
-                            "required": ["title", "url"]
-                        }
-                    }
+                    "id": {"type": "string"}, # Can be YouTube ID or manual
+                    "title": {"type": "string"},
+                    "url": {"type": "string", "format": "uri-reference"},
+                    "description": {"type": "string"},
+                    "duration": {"type": "string"}, # Format like "HH:MM:SS" or "MM:SS"
+                    "thumbnail": {"type": "string", "format": "uri-reference"}, # URL or local path placeholder
+                    "tags": {"type": "array", "items": {"type": "string"}},
+                    # Optional fields for overriding API-fetched data
+                    "title_override": {"type": "string"},
+                    "description_override": {"type": "string"}
                 },
-                "required": ["name", "videos"]
+                "required": ["title", "url"] # Core requirements for a video entry
             }
         }
     },
-    "required": ["categories"]
+    "additionalProperties": False # No other top-level keys unless defined (like 'version' or category names)
 }
 
 def validate_json_file(file_path: str, schema: Dict[str, Any]) -> tuple[bool, Optional[str]]:

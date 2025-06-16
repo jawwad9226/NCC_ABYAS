@@ -4,13 +4,23 @@
 # Python bytecode
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # Log files and temporary data
-chat_history.txt
-quiz_log.txt
+logs/
+data/chat_history.json
+data/chat_transcript.txt
+data/quiz_log.json
+data/quiz_score_history.json
+data/quiz_transcript.txt
+data/quiz_bookmarks.json
+data/bookmarks.json 
+# app.log in root (if it's an old artifact and logs/app.log is used)
+app.log 
 
-# Specific file if it's a typo/duplicate and not needed
-requirement.txt
+# requirements.txt should usually be tracked, remove if you meant to ignore it
+# requirement.txt 
 
 # Other common Python ignores (optional, but good practice)
 # Virtual environment
@@ -20,3 +30,42 @@ venv/
 # IDE files
 .idea/
 .vscode/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# dotenv
+.env
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pytest
+.pytest_cache/
+.coverage

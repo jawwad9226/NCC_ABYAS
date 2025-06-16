@@ -22,9 +22,7 @@ class Config:
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(LOGS_DIR, exist_ok=True)
 
-    # Legacy file paths (for backward compatibility)
-    CHAT_HISTORY_FILE = os.path.join(DATA_DIR, "chat_history.json")
-    QUIZ_LOG_FILE = os.path.join(DATA_DIR, "quiz_log.json")
+    # Centralized file paths (ensure these are used consistently)
     QUIZ_SCORE_HISTORY_FILE = os.path.join(DATA_DIR, "quiz_score_history.json")
     APP_LOG_FILE = os.path.join(LOGS_DIR, "app.log")
     
@@ -106,20 +104,6 @@ def setup_gemini() -> Tuple[Optional[genai.GenerativeModel], Optional[str]]:
         logging.exception(error_msg)
         return None, "Apologies, we're experiencing technical difficulties. Please try again later."
 
-def append_message(role: str, content: str) -> None:
-    """
-    Appends a chat message to the session state and saves the chat interaction to a file.
-    This function is primarily for chat messages (user/assistant).
-    """
-    st.session_state.setdefault("messages", []) # Assuming 'messages' is used by chat_interface
-    st.session_state["messages"].append({"role": role, "content": content})
-    
-    # For saving to disk, _save_chat_to_file expects prompt and response.
-    # This append_message is more for UI state. Actual saving might be handled differently.
-    # If this is the primary save mechanism, it needs to be adapted or called appropriately.
-    # For now, let's assume _save_chat_to_file is called separately with prompt/response pairs.
-    pass # See _save_chat_to_file for actual disk saving logic for chat.
-
 
 # --- File Operations ---
 def _load_json_file(file_path: str, default: Any = None) -> Any:
@@ -172,13 +156,14 @@ def _save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
 def _save_quiz_to_file(topic: str, questions: List[Dict[str, Any]]) -> None:
     """Save quiz questions to history file."""
     try:
-        history = _load_json_file(Config.QUIZ_LOG_FILE, [])
+        quiz_log_path = Config.LOG_PATHS['quiz']['log']
+        history = _load_json_file(quiz_log_path, [])
         history.append({
             "timestamp": datetime.now().isoformat(),
             "topic": topic,
             "questions": questions
         })
-        _save_json_file(Config.QUIZ_LOG_FILE, history)
+        _save_json_file(quiz_log_path, history)
     except Exception as e:
         logging.error(f"Failed to save quiz: {str(e)}")
 
@@ -191,7 +176,7 @@ def append_quiz_score_entry(entry: Dict[str, Any]) -> None:
     """Appends a quiz score entry to the history and saves it to file."""
     try:
         history = load_quiz_score_history()
-        history.append(entry)
+        history.append(entry) # entry is a dict
         _save_json_file(Config.QUIZ_SCORE_HISTORY_FILE, history)
     except Exception as e:
         logging.error(f"Failed to save quiz score entry: {str(e)}")
@@ -214,7 +199,7 @@ def clear_history(file_type: str = "chat") -> bool:
     Args:
         file_type: Type of history to clear ('chat' or 'quiz')
     
-    Returns:
+    Returns:    
         bool: True if successful, False otherwise
     """
     try:
@@ -232,7 +217,9 @@ def clear_history(file_type: str = "chat") -> bool:
         elif file_type == "quiz":
             paths_to_clear = [
                 Config.LOG_PATHS['quiz']['log'],
-                Config.LOG_PATHS['quiz']['transcript']
+                Config.LOG_PATHS['quiz']['transcript'],
+                # Config.LOG_PATHS['quiz']['scores'] is handled by clear_quiz_score_history
+                Config.LOG_PATHS['quiz']['bookmarks'] 
             ]
         
         if not paths_to_clear:
@@ -264,7 +251,10 @@ def read_history(file_type: str = "chat") -> str:
     # Special case for quiz scores
     if file_type == "quiz_score":
         score_history = load_quiz_score_history()
-        return json.dumps(score_history, indent=2)
+        # Ensure score_history is a list of dicts before dumping
+        if isinstance(score_history, list):
+            return json.dumps(score_history, indent=2)
+        return "[]" # Return empty JSON array string if not a list
         
     # Get the appropriate path from LOG_PATHS
     file_path = None
@@ -272,6 +262,8 @@ def read_history(file_type: str = "chat") -> str:
         file_path = Config.LOG_PATHS['chat']['history']
     elif file_type == "quiz":
         file_path = Config.LOG_PATHS['quiz']['log']
+    elif file_type == "bookmark": # For general bookmarks if needed
+        file_path = Config.LOG_PATHS['bookmark']['data']
     
     if not file_path:
         return ""
@@ -297,6 +289,10 @@ def read_history(file_type: str = "chat") -> str:
             for i, q in enumerate(questions, 1):
                 formatted_lines.append(f"  Q{i}: {q.get('question', 'No question')}")
                 formatted_lines.append(f"  Answer: {q.get('answer', 'No answer')}")
+            formatted_lines.append("")
+        elif file_type == "bookmark":
+            # Assuming bookmarks are stored as a list of dicts with 'title' and 'page'
+            formatted_lines.append(json.dumps(item, indent=2))
             formatted_lines.append("")  # Empty line between quizzes
     
     return "\n".join(formatted_lines)
@@ -501,29 +497,6 @@ def _is_in_cooldown(time_key: str) -> bool:
 def _cooldown_message(scope: str) -> str:
     """Generate cooldown message for the given scope."""
     return f"🕒 Cooldown active. Please wait before generating another {scope}."
-
-# --- Adaptive Difficulty & Prompting Helpers ---
-
-def get_difficulty_level(score_history: List[float]) -> str:
-    """
-    Determines the current difficulty level based on user's score history.
-    
-    Args:
-        score_history: List of previous quiz scores (0-1)
-        
-    Returns:
-        str: 'Easy', 'Medium', or 'Hard'
-    """
-    if not score_history:
-        return "Medium"
-        
-    avg_score = sum(score_history) / len(score_history)
-    
-    if avg_score < 0.4:
-        return "Easy"
-    elif avg_score > 0.7:
-        return "Hard"
-    return "Medium"
 
 def build_prompt(topic: str, num_q: int, difficulty: str) -> str:
     """

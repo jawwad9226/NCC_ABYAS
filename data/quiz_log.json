@@ -40,5 +40,257 @@
         "timestamp": "2025-06-15T18:13:08.096241"
       }
     ]
+  },
+  {
+    "timestamp": "2025-06-16T11:17:07.940163",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps",
+          "B": "National Civil Corps",
+          "C": "National Community Corps",
+          "D": "National Cadet Committee"
+        },
+        "answer": "A",
+        "explanation": "NCC is the abbreviation for National Cadet Corps.",
+        "timestamp": "2025-06-16T11:17:07.939142"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To promote tourism",
+          "B": "To develop leadership qualities in young citizens",
+          "C": "To train individuals for specific government jobs",
+          "D": "To organize national-level sporting events"
+        },
+        "answer": "B",
+        "explanation": "The NCC focuses on developing leadership, character, and discipline in young citizens.",
+        "timestamp": "2025-06-16T11:17:07.939196"
+      },
+      {
+        "question": "What is the primary age group eligible to join the NCC?",
+        "options": {
+          "A": "10-14 years",
+          "B": "15-18 years",
+          "C": "18-21 years",
+          "D": "21-25 years"
+        },
+        "answer": "B",
+        "explanation": "While specific age limits might vary slightly based on the country and specific wing, the primary age group for NCC enrollment is generally between 15 and 18 years.",
+        "timestamp": "2025-06-16T11:17:07.939223"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-16T11:21:59.297985",
+    "topic": "Civil Defence",
+    "questions": [
+      {
+        "question": "What is the primary purpose of Civil Defence?",
+        "options": {
+          "A": "To maintain law and order during peacetime.",
+          "B": "To protect civilians during emergencies and disasters.",
+          "C": "To provide military support during wartime.",
+          "D": "To manage national infrastructure projects."
+        },
+        "answer": "B",
+        "explanation": "Civil Defence focuses on protecting the civilian population from threats such as natural disasters, terrorist attacks, and other emergencies.",
+        "timestamp": "2025-06-16T11:21:59.278709"
+      },
+      {
+        "question": "Which of the following is a key component of Civil Defence preparedness?",
+        "options": {
+          "A": "Advanced military training for civilians.",
+          "B": "Development and implementation of emergency plans.",
+          "C": "Construction of large-scale underground bunkers.",
+          "D": "Stockpiling of advanced weaponry for civilian use."
+        },
+        "answer": "B",
+        "explanation": "Developing and implementing emergency plans, including evacuation procedures and communication strategies, is crucial for effective Civil Defence.",
+        "timestamp": "2025-06-16T11:21:59.278745"
+      },
+      {
+        "question": "What is a common term for a designated safe place where people can seek shelter during an emergency?",
+        "options": {
+          "A": "Emergency Response Centre",
+          "B": "Civil Defence Headquarters",
+          "C": "Public Shelter",
+          "D": "Military Base"
+        },
+        "answer": "C",
+        "explanation": "Public shelters are designated safe locations where people can take refuge during emergencies to protect themselves from immediate danger.",
+        "timestamp": "2025-06-16T11:21:59.278762"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-16T12:08:12.883453",
+    "topic": "Map Reading",
+    "questions": [
+      {
+        "question": "A map has a scale of 1:50,000.  Two points on the map are 4 centimeters apart. What is the actual distance between these two points in kilometers?",
+        "options": {
+          "A": "2 kilometers",
+          "B": "20 kilometers",
+          "C": "200 kilometers",
+          "D": "2000 kilometers"
+        },
+        "answer": "B",
+        "explanation": "4 cm on the map represents 4 cm * 50,000 = 200,000 cm in reality.  Converting centimeters to kilometers (100,000 cm = 1 km), we get 200,000 cm / 100,000 cm/km = 2 km.",
+        "timestamp": "2025-06-16T12:08:12.864041"
+      },
+      {
+        "question": "You are using a topographic map to plan a hike.  You notice a contour line with a value of 1000 meters and another with a value of 1050 meters, very close together. What does this indicate about the terrain in that area?",
+        "options": {
+          "A": "A gentle, gradual slope",
+          "B": "A steep, cliff-like incline",
+          "C": "A flat, level area",
+          "D": "A valley"
+        },
+        "answer": "B",
+        "explanation": "Closely spaced contour lines indicate a steep slope.  The closer the lines, the steeper the terrain.",
+        "timestamp": "2025-06-16T12:08:12.864117"
+      },
+      {
+        "question": "A map uses a north arrow that is oriented 15 degrees east of true north.  If a feature is shown on the map as being 30 degrees north of east, what is its true bearing?",
+        "options": {
+          "A": "15 degrees north of east",
+          "B": "45 degrees north of east",
+          "C": "30 degrees north of east",
+          "D": "15 degrees north of west"
+        },
+        "answer": "B",
+        "explanation": "The map's north arrow is 15 degrees east of true north.  Therefore, to find the true bearing, you need to adjust the map bearing by adding 15 degrees.  30 degrees (map bearing) + 15 degrees (correction) = 45 degrees north of east (true bearing).",
+        "timestamp": "2025-06-16T12:08:12.864146"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-16T12:12:28.631787",
+    "topic": "Weapon Training",
+    "questions": [
+      {
+        "question": "You're teaching a student to draw their sidearm from a holster. They consistently draw too slowly and struggle to acquire a proper firing grip.  What's the MOST likely contributing factor to this issue?",
+        "options": {
+          "A": "Insufficient dry-fire practice.",
+          "B": "Overemphasis on weapon retention techniques.",
+          "C": "Lack of understanding of fundamental grip principles.",
+          "D": "Improper holster selection."
+        },
+        "answer": "C",
+        "explanation": "While all options can contribute, a weak understanding of proper grip (high, consistent, and controlled) directly impacts draw speed and accuracy.  A poor grip makes acquiring a stable firing position difficult, slowing the entire process.",
+        "timestamp": "2025-06-16T12:12:28.630753"
+      },
+      {
+        "question": "During a force-on-force scenario, your student fails to effectively utilize cover and concealment, resulting in multiple simulated \"hits.\"  What immediate training adjustment should you prioritize?",
+        "options": {
+          "A": "Increase the speed of the drills.",
+          "B": "Focus on advanced shooting techniques.",
+          "C": "Emphasize tactical movement and positioning relative to cover.",
+          "D": "Introduce more complex threat scenarios."
+        },
+        "answer": "C",
+        "explanation": "The student's failure highlights a lack of understanding of cover and concealment principles.  Before progressing to more advanced techniques or faster drills, the fundamental skill of using cover effectively must be addressed.",
+        "timestamp": "2025-06-16T12:12:28.630816"
+      },
+      {
+        "question": "You observe a student exhibiting flinching during live fire.  They've already mastered basic marksmanship fundamentals. What's the BEST approach to address this issue?",
+        "options": {
+          "A": "Immediately increase the rate of fire.",
+          "B": "Implement snap shooting drills.",
+          "C": "Utilize dry-fire practice focusing on controlled trigger manipulation and breath control.",
+          "D": "Switch to a different firearm."
+        },
+        "answer": "C",
+        "explanation": "Flinching often stems from anticipation of recoil. Dry-fire practice allows for focused work on trigger control and breath control without the distraction of recoil, helping the student build muscle memory and confidence.  The other options could exacerbate the problem.",
+        "timestamp": "2025-06-16T12:12:28.630855"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-16T12:14:33.146427",
+    "topic": "Weapon Training",
+    "questions": [
+      {
+        "question": "What is the primary goal of weapon safety training?",
+        "options": {
+          "A": "To improve shooting accuracy.",
+          "B": "To minimize the risk of accidents.",
+          "C": "To enhance physical fitness.",
+          "D": "To learn advanced combat techniques."
+        },
+        "answer": "B",
+        "explanation": "Weapon safety training focuses on preventing accidents through proper handling, storage, and use of weapons.",
+        "timestamp": "2025-06-16T12:14:33.145208"
+      },
+      {
+        "question": "What does the term \"zeroing\" refer to in weapon training?",
+        "options": {
+          "A": "Cleaning and maintaining a weapon.",
+          "B": "Adjusting a weapon's sights to accurately hit a target at a specific distance.",
+          "C": "The process of loading ammunition into a weapon.",
+          "D": "The technique of aiming and firing a weapon rapidly."
+        },
+        "answer": "B",
+        "explanation": "Zeroing is the process of adjusting the sights of a firearm to ensure accurate shots at a specific range.",
+        "timestamp": "2025-06-16T12:14:33.145248"
+      },
+      {
+        "question": "Which of the following is a crucial element of proper weapon handling?",
+        "options": {
+          "A": "Ignoring safety rules when in a hurry.",
+          "B": "Keeping your finger on the trigger until ready to fire.",
+          "C": "Treating every weapon as if it were loaded.",
+          "D": "Pointing the weapon at bystanders while practicing."
+        },
+        "answer": "C",
+        "explanation": "Treating every weapon as if it were loaded is a fundamental safety rule to prevent accidental discharges.  This prioritizes safety above all else.",
+        "timestamp": "2025-06-16T12:14:33.145265"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-16T14:15:19.616992",
+    "topic": "Map Reading",
+    "questions": [
+      {
+        "question": "What is a map legend (or key)?",
+        "options": {
+          "A": "The title of the map",
+          "B": "A list of symbols and their meanings on a map",
+          "C": "The scale of the map",
+          "D": "The north arrow on a map"
+        },
+        "answer": "B",
+        "explanation": "A map legend explains what the different symbols and colors on the map represent.",
+        "timestamp": "2025-06-16T14:15:19.597326"
+      },
+      {
+        "question": "What does a north arrow on a map indicate?",
+        "options": {
+          "A": "The direction of the prevailing wind",
+          "B": "The location of the map's creator",
+          "C": "The direction of true north",
+          "D": "The scale of the map"
+        },
+        "answer": "C",
+        "explanation": "The north arrow shows the orientation of the map and points towards geographic north.",
+        "timestamp": "2025-06-16T14:15:19.597371"
+      },
+      {
+        "question": "What is the scale of a map?",
+        "options": {
+          "A": "The size of the map in centimeters",
+          "B": "The ratio between the distance on the map and the corresponding distance on the ground",
+          "C": "The colors used on the map",
+          "D": "The date the map was created"
+        },
+        "answer": "B",
+        "explanation": "The map scale indicates how much smaller the map representation is compared to the real-world area it depicts.  For example, a scale of 1:100,000 means 1 cm on the map represents 100,000 cm (or 1 km) on the ground.",
+        "timestamp": "2025-06-16T14:15:19.597400"
+      }
+    ]
   }
 ]

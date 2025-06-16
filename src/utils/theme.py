@@ -251,12 +251,8 @@ def apply_theme(mode: str) -> None:
     """
     st.markdown(css, unsafe_allow_html=True)
     
-    # Set Streamlit's global theme options using the 'base' config
-    # Ensure mode is 'dark' or 'light' as strings for theme.base
-    # st.set_option('theme.base', mode.lower()) # This line causes the error and should be removed or commented.
-                                             # theme.base must be set in config.toml or via command line.
-    # st.set_option('theme.primaryColor', base_theme["primaryColor"]) # Cannot be set on the fly
-    # st.set_option('theme.backgroundColor', base_theme["backgroundColor"]) # Cannot be set on the fly
-    # st.set_option('theme.secondaryBackgroundColor', base_theme["secondaryBackgroundColor"]) # Cannot be set on the fly
-    # st.set_option('theme.textColor', base_theme["textColor"]) # Cannot be set on the fly
-    # st.set_option('theme.font', 'sans serif') # Example: "sans serif", "serif", or "monospace"
+    # Note: Base theme properties like 'theme.base', 'theme.primaryColor', 
+    # 'theme.backgroundColor', 'theme.secondaryBackgroundColor', 'theme.textColor', 
+    # and 'theme.font' should be set in the .streamlit/config.toml file.
+    # They cannot be set dynamically using st.set_option() after the app has started.
+    # The CSS above is for more granular control over component styling within the chosen base theme.
