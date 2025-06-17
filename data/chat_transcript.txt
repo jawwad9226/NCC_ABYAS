@@ -57,3 +57,18 @@ Joining the NCC offers several benefits to cadets, including:
 
 
 **In short:** The NCC is more than just military training; it's a holistic youth development program that aims to build well-rounded, responsible, and patriotic citizens.
+
+[2025-06-16 16:21:20] USER: how many engineering college of maharshtra has ncc tell me
+[2025-06-16 16:21:20] AI: I do not have access to a real-time, updated database of all engineering colleges in Maharashtra and their specific affiliations with the National Cadet Corps (NCC).  This kind of information changes frequently.
+
+To find this information, I recommend you try the following:
+
+* **Check the NCC Website:** The official website of the NCC (likely the Directorate General NCC) might have a list of affiliated institutions or a searchable database.
+* **Contact the Maharashtra Directorate of Technical Education:** This state-level body is responsible for technical education and may have a list of colleges and their extra-curricular activities, including NCC.
+* **Search Online Directories:** Search online for "engineering colleges in Maharashtra" and then individually check each college's website for information about NCC.
+
+
+Keep in mind that not all engineering colleges will have an NCC unit.
+
+[2025-06-16 16:53:51] USER: how many states in india
+[2025-06-16 16:53:51] AI: India has 28 states.

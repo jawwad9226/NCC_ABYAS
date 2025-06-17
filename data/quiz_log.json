@@ -292,5 +292,137 @@
         "timestamp": "2025-06-16T14:15:19.597400"
       }
     ]
+  },
+  {
+    "timestamp": "2025-06-16T16:19:43.075741",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "A NCC cadet is tasked with leading a small group in a navigation exercise using a map and compass.  Which of the following is the MOST crucial skill for successful navigation in this scenario?",
+        "options": {
+          "A": "Knowledge of advanced map symbols related to terrain features.",
+          "B": "Ability to accurately calculate grid references and bearings.",
+          "C": "Understanding of basic map reading principles and compass usage, coupled with practical application.",
+          "D": "Proficiency in using GPS technology for precise location identification."
+        },
+        "answer": "C",
+        "explanation": "While all options are helpful,  basic map reading and compass skills are foundational.  Advanced skills are built upon this base. GPS reliance is discouraged in many NCC exercises to promote fundamental navigational skills.",
+        "timestamp": "2025-06-16T16:19:43.058046"
+      },
+      {
+        "question": "During a community project, a group of NCC cadets encounters a situation requiring them to make a quick, informed decision under pressure.  Which leadership quality is MOST vital in this scenario?",
+        "options": {
+          "A": "Charisma and public speaking ability.",
+          "B": "Detailed planning and meticulous preparation.",
+          "C": "Decisiveness and sound judgment.",
+          "D": "Technical expertise in the specific project task."
+        },
+        "answer": "C",
+        "explanation": "While other qualities are valuable, decisive leadership is crucial in time-sensitive situations.  Quick, informed decisions based on sound judgment are essential for effective action.",
+        "timestamp": "2025-06-16T16:19:43.058083"
+      },
+      {
+        "question": "A cadet is preparing a presentation on the history of the NCC. Which aspect should they emphasize to best highlight the organization's enduring relevance?",
+        "options": {
+          "A": "Detailed accounts of past military campaigns involving NCC cadets.",
+          "B": "A chronological listing of all NCC regulations and amendments.",
+          "C": "The evolution of the NCC's role in national development and youth empowerment.",
+          "D": "A focus on the specific uniforms and insignia used throughout the NCC's history."
+        },
+        "answer": "C",
+        "explanation": "Focusing on the NCC's evolving role in national development and youth empowerment demonstrates its continued importance and relevance in contemporary society.",
+        "timestamp": "2025-06-16T16:19:43.058100"
+      },
+      {
+        "question": "Several cadets are tasked with organizing a fundraising event for a local charity.  Which aspect of teamwork is MOST critical for the success of this event?",
+        "options": {
+          "A": "Individual skill mastery in specific event-planning tasks.",
+          "B": "Effective delegation and coordination of roles and responsibilities.",
+          "C": "Uniformity in opinions and approaches to problem-solving.",
+          "D": "Prior experience in organizing large-scale fundraising events."
+        },
+        "answer": "B",
+        "explanation": "Effective teamwork hinges on proper delegation and coordination.  While individual skills are important, efficient collaboration through well-defined roles is crucial for a successful outcome.",
+        "timestamp": "2025-06-16T16:19:43.058115"
+      },
+      {
+        "question": "An NCC cadet is participating in a field exercise involving obstacle courses and physical challenges.  Which combination of qualities is MOST likely to contribute to their success?",
+        "options": {
+          "A": "Exceptional physical strength and aggressive competitiveness.",
+          "B": "Persistence, problem-solving skills, and physical fitness.",
+          "C": "Advanced knowledge of first aid and emergency procedures.",
+          "D": "Superior leadership skills and the ability to motivate others."
+        },
+        "answer": "B",
+        "explanation": "While strength and leadership are helpful, persistence and problem-solving are key for navigating challenges. Physical fitness is essential for completing the physical tasks.  First aid knowledge is important but not the primary factor for success in the described scenario.",
+        "timestamp": "2025-06-16T16:19:43.058129"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-16T16:54:49.887450",
+    "topic": "Map Reading",
+    "questions": [
+      {
+        "question": "A map depicts a contour interval of 20 meters.  Two contour lines are 4 centimeters apart on the map.  What is the approximate slope of the terrain represented?",
+        "options": {
+          "A": "1:50",
+          "B": "1:100",
+          "C": "1:5",
+          "D": "1:20"
+        },
+        "answer": "A",
+        "explanation": "The contour lines are 4cm apart on the map representing 20m of elevation change.  Converting cm to meters (4cm = 0.04m), the slope is 20m / 0.04m = 500.  Expressed as a ratio, this is approximately 1:50.",
+        "timestamp": "2025-06-16T16:54:49.886518"
+      },
+      {
+        "question": "You are navigating using a topographic map and compass. You identify a prominent peak on the map and take a bearing to it. However, your compass bearing differs significantly from the map bearing.  Which of the following is LEAST likely to be the cause of this discrepancy?",
+        "options": {
+          "A": "Local magnetic declination was not accounted for.",
+          "B": "The map is outdated and the terrain has changed significantly.",
+          "C": "You are experiencing minor atmospheric refraction.",
+          "D": "Your compass is malfunctioning."
+        },
+        "answer": "C",
+        "explanation": "While atmospheric refraction can affect compass readings, its effect is generally minor and less likely to cause a significant discrepancy compared to declination error, map inaccuracy, or compass malfunction.",
+        "timestamp": "2025-06-16T16:54:49.886554"
+      },
+      {
+        "question": "A map uses a scale of 1:50,000.  A river is depicted as 2cm wide on the map.  Which statement is most accurate regarding the actual width of the river?",
+        "options": {
+          "A": "The river is exactly 1km wide.",
+          "B": "The river is approximately 1km wide.",
+          "C": "The river is likely less than 1km wide, but the exact width cannot be determined without further information.",
+          "D": "The river is likely more than 1km wide, but the exact width cannot be determined without further information."
+        },
+        "answer": "B",
+        "explanation": "2cm on the map represents 2cm * 50,000 = 100,000cm in reality. Converting to kilometers, this is 1km.  However, map representations are approximations, so \"approximately\" is the most accurate descriptor.",
+        "timestamp": "2025-06-16T16:54:49.886571"
+      },
+      {
+        "question": "Analyzing a map showing isohyets (lines of equal rainfall), you observe closely spaced isohyets in a particular region. What can you infer about this region?",
+        "options": {
+          "A": "The region experiences uniform rainfall distribution.",
+          "B": "The region experiences minimal rainfall.",
+          "C": "The region experiences a steep rainfall gradient.",
+          "D": "The region experiences consistent, moderate rainfall."
+        },
+        "answer": "C",
+        "explanation": "Closely spaced isohyets indicate a rapid change in rainfall amount over a short distance, signifying a steep rainfall gradient.",
+        "timestamp": "2025-06-16T16:54:49.886586"
+      },
+      {
+        "question": "A map uses UTM coordinates. You are given the coordinates of two points and need to determine the distance between them.  Which method would be MOST accurate for calculating the distance?",
+        "options": {
+          "A": "Using a simple Pythagorean theorem calculation on the easting and northing differences.",
+          "B": "Measuring the distance directly on the map using a ruler and applying the map scale.",
+          "C": "Using a geographic information system (GIS) software with appropriate geodetic calculations.",
+          "D": "Estimating the distance based on the visual representation on the map."
+        },
+        "answer": "C",
+        "explanation": "UTM coordinates are based on a projected coordinate system, and simple Pythagorean calculations will not account for the curvature of the Earth.  GIS software offers the most accurate method for calculating distances using appropriate geodetic calculations that consider the Earth's shape.",
+        "timestamp": "2025-06-16T16:54:49.886600"
+      }
+    ]
   }
 ]
