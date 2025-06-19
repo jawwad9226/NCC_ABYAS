@@ -1,4 +1,3 @@
-
 import os
 import json
 import streamlit as st
@@ -200,7 +199,6 @@ class VideoLibrary:
 
 def video_guides():
     """Display the video guides section."""
-    st.header("🎥 NCC Video Guides")
     st.write("Explore a collection of helpful videos related to NCC topics.")
     
     if not YOUTUBE_API_KEY:

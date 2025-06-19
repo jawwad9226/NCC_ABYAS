@@ -106,5 +106,23 @@
     "score": 40.0,
     "difficulty": "Hard",
     "topic": "Map Reading"
+  },
+  {
+    "timestamp": "2025-06-19T11:54:38.777079",
+    "score": 66.66666666666666,
+    "difficulty": "Easy",
+    "topic": "NCC General"
+  },
+  {
+    "timestamp": "2025-06-19T12:16:51.508786",
+    "score": 40.0,
+    "difficulty": "Easy",
+    "topic": "NCC General"
+  },
+  {
+    "timestamp": "2025-06-19T12:18:26.631688",
+    "score": 0.0,
+    "difficulty": "Easy",
+    "topic": "NCC General"
   }
 ]

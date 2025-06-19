@@ -16,108 +16,85 @@ except ImportError:
     # Not stopping, as pandas might still work for basic operations.
 
 def display_progress_dashboard(session_state, quiz_history_raw_string: str):
-    st.header("📊 Progress Dashboard")
+    """Display and manage the user's learning progress dashboard."""
+    
+    # Developer preview toggle with clear label
+    if st.checkbox(
+        "Show Dashboard Preview",
+        key="dev_dashboard_preview",
+        help="View example charts and statistics (for development)",
+        value=False,
+        label_visibility="visible"
+    ):
+        st.subheader("Example: Quiz Performance Trends")
+        try:
+            import pandas as pd
+            import numpy as np
 
-    if not quiz_history_raw_string:
+            # Visualization controls with proper labels
+            chart_type = st.selectbox(
+                "Chart Type",
+                ["Line Chart", "Bar Chart", "Area Chart"],
+                key="chart_type_select",
+                help="Choose how to visualize your quiz scores",
+                label_visibility="visible"
+            )
+
+            time_range = st.selectbox(
+                "Time Period",
+                ["Last Week", "Last Month", "Last 3 Months", "All Time"],
+                key="time_range_select",
+                help="Select the time period to analyze",
+                label_visibility="visible"
+            )
+
+            # Sample data generation for preview
+            now = pd.Timestamp.now()
+            date_range = pd.date_range(end=now, periods=30)
+            sample_data = {
+                "Timestamp": date_range,
+                "Score (%)": np.random.randint(50, 100, size=len(date_range)),
+                "Difficulty": np.random.choice(["Easy", "Medium", "Hard"], size=len(date_range)),
+                "Topic": np.random.choice(["Math", "Science", "History"], size=len(date_range))
+            }
+            sample_df = pd.DataFrame(sample_data)
+
+            # Filtering sample data based on time range selection
+            if time_range == "Last Week":
+                filtered_df = sample_df[sample_df['Timestamp'] >= now - pd.Timedelta(weeks=1)]
+            elif time_range == "Last Month":
+                filtered_df = sample_df[sample_df['Timestamp'] >= now - pd.Timedelta(days=30)]
+            elif time_range == "Last 3 Months":
+                filtered_df = sample_df[sample_df['Timestamp'] >= now - pd.Timedelta(days=90)]
+            else:  # "All Time"
+                filtered_df = sample_df
+
+            # Chart type selection
+            if chart_type == "Line Chart":
+                st.line_chart(filtered_df.set_index('Timestamp')[['Score (%)']])
+            elif chart_type == "Bar Chart":
+                st.bar_chart(filtered_df.set_index('Timestamp')[['Score (%)']])
+            else:  # "Area Chart"
+                st.area_chart(filtered_df.set_index('Timestamp')[['Score (%)']])
+
+            st.success("This is how your performance trends could look like!")
+
+        except Exception as e:
+            st.error(f"Error displaying preview: {e}")
+            st.stop()
+
+    # Set up the dataframe for visualization
+    try:
+        df = pd.DataFrame([json.loads(line) for line in quiz_history_raw_string.strip().splitlines() if line.strip()])
+        if not df.empty:
+            df['Timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.sort_values('Timestamp')
+    except (json.JSONDecodeError, pd.errors.EmptyDataError):
+        df = pd.DataFrame()  # Create empty DataFrame if no valid data
+
+    if df.empty:
         st.info("No quiz data yet. Take a quiz to see your progress here.")
         return
-
-    raw_quiz_entries = []
-    malformed_entries = 0
-
-    try:
-        # Attempt to parse the entire string as a JSON array
-        parsed_json_data = json.loads(quiz_history_raw_string)
-        if isinstance(parsed_json_data, list):
-            # If it's already a list of dicts (from quiz_score_history.json)
-            raw_quiz_entries = parsed_json_data
-            # Optional: Add validation for each entry in parsed_json_data if needed
-            # for entry in parsed_json_data:
-            #     if not isinstance(entry, dict) or 'score' not in entry or 'timestamp' not in entry:
-            #         malformed_entries += 1 
-            # if malformed_entries > 0:
-            #     st.caption(f"ℹ️ Note: {malformed_entries} entries in the parsed list were malformed.")
-            # raw_quiz_entries = [e for e in raw_quiz_entries if isinstance(e, dict) and 'score' in e and 'timestamp' in e]
-        else:
-            # Parsed, but not a list - this is an unexpected format.
-            st.warning(
-                "Quiz history data was parsed but is not in the expected list format. "
-                "Attempting line-by-line parsing as a fallback."
-            )
-            # Force fallback to line-by-line by re-raising a common error type
-            raise json.JSONDecodeError("Parsed JSON is not a list.", quiz_history_raw_string, 0)
-
-    except json.JSONDecodeError:
-        # This block catches:
-        # 1. Failure to parse quiz_history_raw_string as a single JSON entity.
-        # 2. The case where it parsed but wasn't a list (due to the re-raise above).
-        st.caption("Attempting line-by-line parsing of quiz history...")
-        lines = quiz_history_raw_string.strip().splitlines()
-        
-        if not lines and quiz_history_raw_string.strip(): # If string is not empty but splitlines is empty (e.g. "{}")
-            try: 
-                entry = json.loads(quiz_history_raw_string.strip())
-                if isinstance(entry, dict): 
-                    raw_quiz_entries.append(entry)
-                else: 
-                    malformed_entries += 1
-            except json.JSONDecodeError:
-                 malformed_entries +=1 
-        elif lines:
-            for line_content in lines:
-                line_strip = line_content.strip()
-                if line_strip: 
-                    try:
-                        entry = json.loads(line_strip)
-                        raw_quiz_entries.append(entry)
-                    except json.JSONDecodeError:
-                        malformed_entries += 1
-        
-        if malformed_entries > 0:
-            st.caption(f"ℹ️ Note: {malformed_entries} line(s) could not be parsed as valid JSON entries and were skipped.")
-        
-        if not raw_quiz_entries and (lines or quiz_history_raw_string.strip()):
-            st.error("Failed to parse any valid quiz entries from the provided data.")
-            return
-            
-    except Exception as e: # Catch any other unexpected errors during parsing
-        st.error(f"An unexpected error occurred while processing quiz history: {str(e)}")
-        return
-
-    # Prepare data: Filter for valid entries and parse timestamps
-    processed_data = []
-    timestamp_parse_errors = 0
-    for i, entry in enumerate(raw_quiz_entries):
-        score = entry.get('score') # 'score' is the key in quiz_score_history.json
-        timestamp_str = entry.get('timestamp')
-        topic = entry.get('topic', 'Unknown Topic') # Get topic, default if missing
-        difficulty = entry.get('difficulty', 'Unknown') # Get difficulty
-        if isinstance(score, (int, float)) and timestamp_str:
-            try:
-                dt_obj = datetime.fromisoformat(timestamp_str)
-                processed_data.append({
-                    'Quiz': i + 1,
-                    'Score (%)': score,
-                    'Timestamp': dt_obj,
-                    'Date': dt_obj.strftime('%Y-%m-%d %H:%M'), # More precise date
-                    'Topic': topic,
-                    'Difficulty': difficulty
-                })
-            except ValueError:
-                timestamp_parse_errors +=1
-    
-    if timestamp_parse_errors > 0:
-        st.caption(f"ℹ️ Note: {timestamp_parse_errors} entries had issues parsing timestamps and were skipped.")
-
-    if not raw_quiz_entries: # Check if raw_quiz_entries is empty after all parsing attempts
-        st.info("No quiz data entries found after parsing.")
-        return
-    elif not processed_data: # Check if processed_data is empty after filtering
-        st.info("No valid quiz data with scores and timestamps found for the dashboard.")
-        return
-
-    df = pd.DataFrame(processed_data)
-    df['Timestamp'] = pd.to_datetime(df['Timestamp']) # Ensure Timestamp is datetime dtype
 
     # ─── Score Over Time ─────────────────────────────────────
     st.subheader("📈 Score Over Time")

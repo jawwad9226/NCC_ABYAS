@@ -424,5 +424,229 @@
         "timestamp": "2025-06-16T16:54:49.886600"
       }
     ]
+  },
+  {
+    "timestamp": "2025-06-19T11:54:31.520020",
+    "topic": "NCC General",
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps",
+          "B": "National Civil Corps",
+          "C": "National Community Corps",
+          "D": "National Cadet Committee"
+        },
+        "answer": "A",
+        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
+        "timestamp": "2025-06-19T11:54:31.502031"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To provide military training for future soldiers.",
+          "B": "To develop character, discipline, and leadership qualities in young citizens.",
+          "C": "To exclusively focus on promoting physical fitness.",
+          "D": "To prepare students for careers in the civil service."
+        },
+        "answer": "B",
+        "explanation": "While NCC provides some military-style training, its primary goal is character development and leadership training for young citizens, contributing to nation-building.",
+        "timestamp": "2025-06-19T11:54:31.502088"
+      },
+      {
+        "question": "What is the age limit for joining the NCC?",
+        "options": {
+          "A": "10-15 years",
+          "B": "15-18 years",
+          "C": "17-21 years",
+          "D": "12-17 years"
+        },
+        "answer": "B",
+        "explanation": "The general age limit for joining the NCC is between 15 and 18 years, although specific age ranges may vary slightly depending on the specific wing and state regulations.",
+        "timestamp": "2025-06-19T11:54:31.502124"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-19T12:16:43.205957",
+    "topic": "NCC General",
+    "questions_generated_count": 5,
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps of India",
+          "B": "National Civil Corps",
+          "C": "National Cadet Congress",
+          "D": "National Community Corps"
+        },
+        "answer": "A",
+        "explanation": "NCC stands for National Cadet Corps.  The other options are not accurate representations of the organization's name.",
+        "timestamp": "2025-06-19T12:16:43.204920"
+      },
+      {
+        "question": "Which of the following is NOT a wing of the NCC?",
+        "options": {
+          "A": "Army Wing",
+          "B": "Navy Wing",
+          "C": "Air Wing",
+          "D": "Police Wing"
+        },
+        "answer": "D",
+        "explanation": "The NCC has three wings: Army, Navy, and Air.  A Police Wing is not part of the NCC structure.",
+        "timestamp": "2025-06-19T12:16:43.204975"
+      },
+      {
+        "question": "What is the primary aim of the NCC?",
+        "options": {
+          "A": "To train cadets for a specific military career.",
+          "B": "To provide military training only to selected individuals.",
+          "C": "To develop character, discipline, and leadership qualities in youth.",
+          "D": "To solely focus on physical fitness training."
+        },
+        "answer": "C",
+        "explanation": "The NCC's main goal is to cultivate character, discipline, and leadership skills among young people, not solely to prepare them for a military career. While it involves physical training, that is not its sole focus.",
+        "timestamp": "2025-06-19T12:16:43.205041"
+      },
+      {
+        "question": "The NCC is a voluntary organization. What does \"voluntary\" mean in this context?",
+        "options": {
+          "A": "Cadets are forced to join.",
+          "B": "Participation is optional.",
+          "C": "It's only for students from specific schools.",
+          "D": "It's funded entirely by the cadets themselves."
+        },
+        "answer": "B",
+        "explanation": "\"Voluntary\" means that participation in the NCC is a choice; cadets are not compelled to join.  It's open to eligible students from various schools and is not solely self-funded.",
+        "timestamp": "2025-06-19T12:16:43.205101"
+      },
+      {
+        "question": "What is the highest rank a cadet can achieve in the NCC?",
+        "options": {
+          "A": "Captain",
+          "B": "Lieutenant",
+          "C": "Senior Under Officer (SUO)",
+          "D": "Second Lieutenant"
+        },
+        "answer": "C",
+        "explanation": "Senior Under Officer (SUO) is the highest rank attainable by a cadet within the NCC.  The other ranks are officer ranks in the regular armed forces, not cadet ranks.",
+        "timestamp": "2025-06-19T12:16:43.205150"
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-06-19T12:18:09.012211",
+    "topic": "NCC General",
+    "questions_generated_count": 9,
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps of India",
+          "B": "National Civil Corps",
+          "C": "National Cadet Corps",
+          "D": "Naval Cadet Corps"
+        },
+        "answer": "C",
+        "explanation": "NCC stands for National Cadet Corps.  Options A and D are incorrect as they add unnecessary details or are partially correct. Option B is entirely different.",
+        "timestamp": "2025-06-19T12:18:09.011272"
+      },
+      {
+        "question": "Which of these is NOT a wing of the NCC?",
+        "options": {
+          "A": "Army Wing",
+          "B": "Air Wing",
+          "C": "Navy Wing",
+          "D": "Space Wing"
+        },
+        "answer": "D",
+        "explanation": "The NCC has three wings: Army, Navy, and Air.  There is no Space Wing within the NCC structure.",
+        "timestamp": "2025-06-19T12:18:09.011304"
+      },
+      {
+        "question": "What is the primary aim of the NCC?",
+        "options": {
+          "A": "To provide military training for future soldiers.",
+          "B": "To develop character, discipline, and leadership qualities in young citizens.",
+          "C": "To promote national integration and social service.",
+          "D": "Both B and C"
+        },
+        "answer": "D",
+        "explanation": "The NCC aims to develop character, discipline, and leadership qualities while also promoting national integration and social service.  Option A is too narrow; the NCC's scope is broader than just military training.",
+        "timestamp": "2025-06-19T12:18:09.011330"
+      },
+      {
+        "question": "Who is the Supreme Commander of the NCC?",
+        "options": {
+          "A": "The Chief of Army Staff",
+          "B": "The President of India",
+          "C": "The Prime Minister of India",
+          "D": "The Defence Minister"
+        },
+        "answer": "B",
+        "explanation": "The President of India is the Supreme Commander of the NCC.",
+        "timestamp": "2025-06-19T12:18:09.011348"
+      },
+      {
+        "question": "What is the age limit for joining the NCC?",
+        "options": {
+          "A": "12-18 years",
+          "B": "15-20 years",
+          "C": "10-17 years",
+          "D": "17-22 years"
+        },
+        "answer": "A",
+        "explanation": "The general age limit for joining the NCC is between 12 and 18 years, although specific criteria may vary slightly depending on the state and the wing.",
+        "timestamp": "2025-06-19T12:18:09.011364"
+      },
+      {
+        "question": "Which of these activities is commonly undertaken by NCC cadets?",
+        "options": {
+          "A": "Playing video games",
+          "B": "Participating in Republic Day parades",
+          "C": "Going on shopping sprees",
+          "D": "Watching movies"
+        },
+        "answer": "B",
+        "explanation": "Participating in Republic Day parades is a common and prestigious activity for NCC cadets.  The other options are not related to NCC activities.",
+        "timestamp": "2025-06-19T12:18:09.011383"
+      },
+      {
+        "question": "What is the motto of the NCC?",
+        "options": {
+          "A": "Unity and Discipline",
+          "B": "Service Before Self",
+          "C": "Duty Before Self",
+          "D": "Unity and Strength"
+        },
+        "answer": "A",
+        "explanation": "The motto of the NCC is \"Unity and Discipline\".",
+        "timestamp": "2025-06-19T12:18:09.011398"
+      },
+      {
+        "question": "NCC cadets wear uniforms that are similar to:",
+        "options": {
+          "A": "Police uniforms",
+          "B": "Firefighter uniforms",
+          "C": "The Indian Armed Forces uniforms",
+          "D": "Postal service uniforms"
+        },
+        "answer": "C",
+        "explanation": "NCC uniforms are designed to resemble those of the Indian Armed Forces, reflecting the organization's military-style training and discipline.",
+        "timestamp": "2025-06-19T12:18:09.011416"
+      },
+      {
+        "question": "What is a significant social service activity often undertaken by NCC cadets?",
+        "options": {
+          "A": "Organizing political rallies",
+          "B": "Participating in disaster relief operations",
+          "C": "Engaging in commercial activities",
+          "D": "Running personal businesses"
+        },
+        "answer": "B",
+        "explanation": "Disaster relief operations are a key aspect of NCC social service activities, demonstrating their commitment to community welfare.  The other options are not typical NCC activities.",
+        "timestamp": "2025-06-19T12:18:09.011438"
+      }
+    ]
   }
 ]

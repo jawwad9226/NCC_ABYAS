@@ -1,10 +1,12 @@
 import json
 import os
 import logging
+import streamlit as st # Import streamlit for st.error etc.
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
 # --- Configure logging ---
+from streamlit_pdf_viewer import pdf_viewer # For the actual viewer component
 # Basic configuration for logging. You might want to adjust this based on your application's needs.
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -31,6 +33,65 @@ class SyllabusData:
 # --- End of Dataclass Definitions ---
 
 # --- Constants ---
+# Try to determine project root more reliably if possible, or assume script is in project root
+# For now, BASE_DIR is the directory of syllabus_manager.py
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__)) # Assuming this script is in the project root
+
+# --- PDF Handling Functions ---
+
+def extract_pdf_metadata(pdf_path: str) -> Optional[Dict]:
+    """
+    Extracts metadata (total pages, outline) from a PDF file.
+    """
+    try:
+        import PyPDF2
+        with open(pdf_path, 'rb') as pdf_file_obj:
+            pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
+            processed_outline = []
+            if hasattr(pdf_reader, 'outline') and pdf_reader.outline:
+                def extract_outline_items_recursive(outline_items, reader):
+                    extracted = []
+                    for item in outline_items:
+                        if isinstance(item, list): # It's a list of sub-items
+                            extracted.extend(extract_outline_items_recursive(item, reader))
+                        elif hasattr(item, 'title') and item.title is not None and hasattr(item, 'page') and item.page is not None:
+                            # Direct page object reference
+                             try:
+                                page_number_0_indexed = reader.get_page_number(item.page)
+                                extracted.append({"title": str(item.title), "page": page_number_0_indexed + 1})
+                             except Exception: # If get_page_number fails for some reason
+                                pass # Skip this item
+                        elif hasattr(item, 'title') and item.title is not None:
+                            # Destination reference (more common for outlines)
+                            try:
+                                # get_destination_page_number is the correct method for outline items
+                                page_number_0_indexed = reader.get_destination_page_number(item)
+                                if page_number_0_indexed is not None:
+                                    extracted.append({"title": str(item.title), "page": page_number_0_indexed + 1})
+                            except Exception: # Skip item if page number can't be resolved
+                                pass
+                    return extracted
+                processed_outline = extract_outline_items_recursive(pdf_reader.outline, pdf_reader)
+
+            return {
+                "total_pages": len(pdf_reader.pages),
+                "outline": processed_outline
+            }
+    except ImportError:
+        st.error("PyPDF2 library not installed. PDF metadata cannot be extracted. Install with: `pip install PyPDF2`")
+        logging.error("PyPDF2 library not installed.")
+    except FileNotFoundError:
+        st.error(f"PDF file not found for metadata extraction: {pdf_path}")
+        logging.error(f"PDF file not found for metadata extraction: {pdf_path}")
+    except Exception as e:
+        st.error(f"Error reading PDF for metadata: {str(e)}")
+        logging.exception(f"Error reading PDF for metadata from {pdf_path}: {e}")
+    return None
+
+
+
+# --- Syllabus Data Loading and Searching ---
+
 # Assuming the JSON file is in the same directory as this script or a specific path
 # If your original script had a more complex way to determine BASE_DIR, replicate that here.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -52,10 +113,7 @@ def load_syllabus_data(file_name: str = DEFAULT_SYLLABUS_FILENAME) -> Optional[S
     # Construct the full path to the syllabus file
     if not os.path.isabs(file_name):
         # If relative path, assume it's relative to the script directory
-        # file_name is expected to be like "data/syllabus.json"
-        # BASE_DIR is the directory of syllabus_manager.py
-        # This correctly forms project_root/data/syllabus.json if syllabus_manager.py is in project_root
-        # or project_root/some_module/data/syllabus.json if syllabus_manager.py is in project_root/some_module
+        # BASE_DIR is the directory of syllabus_manager.py.
         file_path = os.path.join(BASE_DIR, file_name)
     else:
         file_path = file_name
@@ -311,3 +369,36 @@ if __name__ == "__main__":
     #         logging.info(f"Cleaned up dummy syllabus file: '{dummy_file_path}'.")
     # except OSError as e:
     #     logging.error(f"Error removing dummy syllabus file: {e}")
+
+
+def display_pdf_viewer_component(file_path: str, height: int = 750, page_number: int = 1) -> bool:
+    """
+    Embeds a PDF file in the Streamlit app using streamlit_pdf_viewer.
+    This function focuses *only* on rendering the viewer component.
+    Controls and download buttons should be handled outside this function.
+
+    Args:
+        file_path (str): Absolute path to the PDF file.
+        height (int): Height of the PDF viewer.
+        page_number (int): Initial page number to display.
+
+    Returns:
+        bool: True if PDF displayed successfully, False otherwise.
+    """
+    try:
+        if not os.path.exists(file_path):
+            st.error(f"🚨 PDF Error: File not found at '{file_path}'.")
+            return False
+        if not file_path.endswith('.pdf'):
+            st.error("🚨 Invalid file type. Only PDF files are supported.")
+            return False
+
+        # The PDF viewer component
+        # Using a dynamic key based on page_number to help force re-render if page changes.
+        viewer_key = f"pdf_viewer_main_{page_number}_{os.path.basename(file_path)}"
+        pdf_viewer(file_path, height=height, width="100%", pages_to_render=[page_number], key=viewer_key)
+        return True
+    except Exception as e: # Catch any exception from pdf_viewer or os.path
+        st.error(f"🚨 Error displaying PDF: {str(e)}")
+        logging.error(f"Error in display_pdf_viewer_component for {file_path}: {e}")
+        return False

@@ -1,5 +1,5 @@
 """
-Theme and styling configurations for the NCC AI Assistant.
+Theme and styling configurations for the NCC ABHYAS application.
 Provides functions to get theme configuration and apply theme styles.
 """
 from typing import Dict, Any
@@ -7,252 +7,365 @@ import streamlit as st
 
 THEME_CONFIG: Dict[str, Dict[str, Any]] = {
     "dark": {
-        "background": "#1e1e1e",  # Overall app background
-        "text": "#ffffff",        # Default text color
-        "body": { # This section might be for more specific body styling if needed
-            "background": "#121212", # More specific body background if different from app
-            "fontFamily": "sans-serif",
-            "padding": "0.5rem",
-            "margin": "0"
-        },
-        "base": { # Corresponds to st.set_option values
-            "backgroundColor": "#1e1e1e",
-            "secondaryBackgroundColor": "#2c2c2c", # Sidebar, expander header backgrounds
-            "primaryColor": "#bb86fc", # Accent color for widgets
-            "textColor": "#ffffff"
-        },
-        "components": {
-            "button": {
-                "bg": "#bb86fc",
-                "text": "#000000", # Text on purple button
-                "border": "#bb86fc",
-                "hover": {
-                    "border": "#3700b3", # Darker purple on hover
-                    "text": "#ffffff",
-                    "bg": "#3700b3" # Optional: hover background
-                }
-            },
-            "input": {
-                "bg": "#2c2c2c",
-                "text": "#ffffff",
-                "border": "#3c3c3c"
-            },
-            "select": {
-                "bg": "#2c2c2c",
-                "text": "#ffffff",
-                "border": "#3c3c3c"
-            },
-            "expander": { # For the expander content area and header
-                "bg": "#2c2c2c", # Header background
-                "content_bg": "#1e1e1e", # Content area background
-                "border": "#3c3c3c",
-                "text": "#ffffff" # Header text color
-            },
-            "metric": {
-                "bg": "#2c2c2c",
-                "text": "#ffffff",
-                "delta_up": "#03dac6", # Teal for positive delta
-                "delta_down": "#cf6679" # Pink/Red for negative delta
-            },
-            "chart": {
-                "bg": "#1e1e1e",
-                "grid": "#3c3c3c",
-                "text": "#ffffff",
-                "line": "#bb86fc"
-            }
-        }
-    },
-    "light": {
-        "background": "#ffffff",
-        "text": "#000000",
+        "background": "#1A1B1E",  # Slightly warmer dark background
+        "text": "#E4E5E7",      # Soft white text for better readability
         "body": {
-            "background": "#f0f2f6", # Light grey body background
-            "fontFamily": "sans-serif",
+            "background": "#1A1B1E",
+            "fontFamily": '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
             "padding": "0.5rem",
             "margin": "0"
         },
         "base": {
-            "backgroundColor": "#ffffff",
-            "secondaryBackgroundColor": "#f0f2f6",
-            "primaryColor": "#007bff", # Standard blue
-            "textColor": "#212529" # Dark grey text
+            "backgroundColor": "#1A1B1E",
+            "secondaryBackgroundColor": "#2A2B2F",  # Slightly lighter sidebar
+            "primaryColor": "#7F3FBF",  # Rich purple
+            "textColor": "#E4E5E7"
         },
         "components": {
             "button": {
-                "bg": "#007bff",
-                "text": "#ffffff",
-                "border": "#007bff",
+                "bg": "#7F3FBF",
+                "text": "#FFFFFF",
+                "border": "#7F3FBF",
                 "hover": {
-                    "border": "#0056b3",
-                    "text": "#ffffff",
-                    "bg": "#0056b3"
+                    "border": "#9B5ACF",
+                    "text": "#FFFFFF",
+                    "bg": "#9B5ACF"
                 }
             },
             "input": {
-                "bg": "#ffffff",
-                "text": "#495057",
-                "border": "#ced4da"
+                "bg": "#2A2B2F",
+                "text": "#E4E5E7",
+                "border": "#3A3B3F"
             },
             "select": {
-                "bg": "#ffffff",
-                "text": "#495057",
-                "border": "#ced4da"
+                "bg": "#2A2B2F",
+                "text": "#E4E5E7",
+                "border": "#3A3B3F"
             },
             "expander": {
-                "bg": "#f0f2f6", # Header background
-                "content_bg": "#ffffff", # Content area background
-                "border": "#dee2e6",
-                "text": "#212529"
+                "bg": "#2A2B2F",
+                "content_bg": "#1A1B1E",
+                "border": "#3A3B3F",
+                "text": "#E4E5E7"
             },
             "metric": {
-                "bg": "#ffffff",
-                "text": "#212529",
-                "delta_up": "#28a745", # Green for positive
-                "delta_down": "#dc3545"  # Red for negative
+                "bg": "#2A2B2F",
+                "text": "#E4E5E7",
+                "delta_up": "#4CAF50",
+                "delta_down": "#F44336"
             },
             "chart": {
-                "bg": "#ffffff",
-                "grid": "#e9ecef",
-                "text": "#212529",
-                "line": "#007bff"
+                "bg": "#2A2B2F",
+                "grid": "#3A3B3F",
+                "text": "#E4E5E7",
+                "line": "#7F3FBF"
+            }
+        }
+    },
+    "light": {
+        "background": "#EEF2FF",  # Light indigo background
+        "text": "#0F172A",      # Darker Slate-900 for text
+        "body": {
+            "background": "#EEF2FF",
+            "fontFamily": '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+            "padding": "0.5rem",
+            "margin": "0"
+        },
+        "base": {
+            "backgroundColor": "#FFFFFF",  # Pure white for main content
+            "secondaryBackgroundColor": "#F1F5F9",  # Slate-50 for sidebar
+            "primaryColor": "#6366F1",  # Indigo-500 for primary accents
+            "textColor": "#0F172A"  # Darker Slate-900
+        },
+        "components": {
+            "button": {
+                "bg": "#6366F1",  # Indigo-500
+                "text": "#FFFFFF",
+                "border": "#6366F1",
+                "hover": {
+                    "border": "#4F46E5",  # Indigo-600
+                    "text": "#FFFFFF",
+                    "bg": "#4F46E5"
+                }
+            },
+            "input": {
+                "bg": "#FFFFFF",
+                "text": "#1E293B",  # Slate-900
+                "border": "#CBD5E1"  # Slate-300
+            },
+            "select": {
+                "bg": "#FFFFFF",
+                "text": "#1E293B",
+                "border": "#CBD5E1"
+            },
+            "expander": {
+                "bg": "#F8FAFC",  # Slate-50
+                "content_bg": "#FFFFFF",
+                "border": "#CBD5E1",  # Slate-300
+                "text": "#1E293B"
+            },
+            "metric": {
+                "bg": "#FFFFFF",
+                "text": "#1E293B",
+                "delta_up": "#10B981",  # Emerald-500
+                "delta_down": "#EF4444"  # Red-500
+            },
+            "chart": {
+                "bg": "#FFFFFF",
+                "grid": "#E2E8F0",  # Slate-200
+                "text": "#1E293B",
+                "line": "#6366F1"  # Indigo-500
             }
         }
     }
 }
 
 def get_theme_config(mode: str) -> Dict[str, Any]:
-    """
-    Get the theme configuration dictionary for the specified mode.
-    Converts mode to lowercase and defaults to "light" if the mode is not found.
-    """
-    return THEME_CONFIG.get(mode.lower(), THEME_CONFIG["light"])
+    """Get the theme configuration for the specified mode."""
+    return THEME_CONFIG.get(mode.lower(), THEME_CONFIG["dark"])
 
 def apply_theme(mode: str) -> None:
-    """Apply the current theme configuration to the Streamlit app."""
+    """Apply the theme configuration to the Streamlit app."""
     theme_data = get_theme_config(mode)
-    
-    # Extract parts of the theme for easier access
     base_theme = theme_data["base"]
     components_theme = theme_data["components"]
     
-    # Apply custom CSS
-    # Note: Selectors might need adjustment based on Streamlit's evolving HTML structure.
-    # Using data-testid attributes is generally more robust.
     css = f"""
         <style>
-        /* --- Global & App Background --- */
+        /* --- Global Styles --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
         .stApp {{
             background-color: {theme_data["background"]};
             color: {theme_data["text"]};
-        }}
-        /* Fallback for body if .stApp doesn't cover everything, or for general page style */
-        body {{
             font-family: {theme_data["body"]["fontFamily"]};
         }}
 
-        /* --- Sidebar --- */
-        [data-testid="stSidebar"] {{
-            background-color: {base_theme["secondaryBackgroundColor"]};
-        }}
-        [data-testid="stSidebar"] .stButton button {{
-            background-color: {components_theme["button"]["bg"]};
-            color: {components_theme["button"]["text"]};
-            border: 1px solid {components_theme["button"]["border"]};
-        }}
-        [data-testid="stSidebar"] .stButton button:hover {{
-            background-color: {components_theme["button"]["hover"].get("bg", components_theme["button"]["bg"])};
-            color: {components_theme["button"]["hover"]["text"]};
-            border-color: {components_theme["button"]["hover"]["border"]};
+        /* --- Main Content Area --- */
+        .main .block-container {{
+            background-color: {base_theme["backgroundColor"]};
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(148, 163, 184, 0.1);  # Soft shadow
+            margin: 1rem;
         }}
 
-        /* --- Main Content Buttons --- */
+        /* --- Sidebar with Fresh Color --- */
+        [data-testid="stSidebar"] {{
+            background-color: {base_theme["secondaryBackgroundColor"]};
+            border-right: 1px solid {components_theme["input"]["border"]};
+            padding: 2rem 1rem;
+            box-shadow: 2px 0 10px rgba(148, 163, 184, 0.05);
+        }}
+
+        /* --- Navigation Elements --- */
+        [data-testid="stSidebar"] {{
+            color: {theme_data["text"]};  /* Use theme's text color */
+        }}
+
+        [data-testid="stSidebar"] [role="radiogroup"] {{
+            background: {base_theme["backgroundColor"]};
+            padding: 1rem;
+            border-radius: 0.8rem;
+            box-shadow: 0 2px 8px rgba(148, 163, 184, 0.05);
+            color: {theme_data["text"]};  /* Use theme's text color */
+        }}
+
+        [data-testid="stSidebar"] [role="radio"] {{
+            margin: 0.3rem 0;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            color: {theme_data["text"]};  /* Use theme's text color */
+            font-weight: 500;
+        }}
+
+        /* Ensure all text elements in sidebar match theme */
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] h4,
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] span,
+        [data-testid="stSidebar"] div {{
+            color: {theme_data["text"]};  /* Use theme's text color */
+        }}
+
+        /* Make info messages in sidebar match theme */
+        [data-testid="stSidebar"] [data-testid="stAlert"] {{
+            color: {theme_data["text"]};
+        }}
+
+        /* --- Cards and Content Containers --- */
+        div[data-testid="stExpander"] {{
+            background: {components_theme["expander"]["bg"]};
+            border: 1px solid {components_theme["expander"]["border"]};
+            border-radius: 0.8rem;
+            overflow: hidden;
+            margin: 1rem 0;
+            box-shadow: 0 2px 12px rgba(148, 163, 184, 0.05);
+        }}
+
+        /* --- Input Fields --- */
+        .stTextInput input, .stTextArea textarea {{
+            background-color: {components_theme["input"]["bg"]};
+            border: 1px solid {components_theme["input"]["border"]};
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            box-shadow: 0 2px 4px rgba(148, 163, 184, 0.05);
+            transition: all 0.2s ease;
+        }}
+
+        .stTextInput input:focus, .stTextArea textarea:focus {{
+            border-color: {base_theme["primaryColor"]};
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }}
+
+        /* --- Buttons with Fresh Style --- */
         .stButton button {{
             background-color: {components_theme["button"]["bg"]};
             color: {components_theme["button"]["text"]};
-            border: 1px solid {components_theme["button"]["border"]};
-            padding: 0.5rem 1rem;
-            border-radius: 0.3rem;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.15);
+            transition: all 0.2s ease;
         }}
+
         .stButton button:hover {{
-            background-color: {components_theme["button"]["hover"].get("bg", components_theme["button"]["bg"])};
-            color: {components_theme["button"]["hover"]["text"]};
-            border-color: {components_theme["button"]["hover"]["border"]};
+            background-color: {components_theme["button"]["hover"]["bg"]};
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
+            transform: translateY(-1px);
         }}
 
-        /* --- Input Elements --- */
-        .stTextInput input, .stTextArea textarea {{
-            background-color: {components_theme["input"]["bg"]};
-            color: {components_theme["input"]["text"]};
-            border: 1px solid {components_theme["input"]["border"]};
-        }}
-        .stSelectbox div[data-baseweb="select"] > div {{ /* Targets the visible part of the selectbox */
-            background-color: {components_theme["select"]["bg"]};
-            color: {components_theme["select"]["text"]};
-            border: 1px solid {components_theme["select"]["border"]};
-        }}
-        /* For dropdown list items of selectbox */
-        div[data-baseweb="popover"] ul[role="listbox"] li {{
-            background-color: {components_theme["select"]["bg"]};
-            color: {components_theme["select"]["text"]};
-        }}
-        div[data-baseweb="popover"] ul[role="listbox"] li:hover {{
-            background-color: {base_theme["primaryColor"]}; /* Or a specific hover color */
-            color: {components_theme["button"]["text"]}; /* Text color on hover */
-        }}
-
-
-        /* --- Expander --- */
-        .streamlit-expanderHeader {{
-            background-color: {components_theme["expander"]["bg"]};
-            color: {components_theme["expander"]["text"]};
-            border: 1px solid {components_theme["expander"]["border"]};
-            border-radius: 0.25rem; /* For the header itself */
-        }}
-        .streamlit-expander {{ /* Targets the whole expander container for border */
-            border-radius: 0.25rem;
-            background-color: {components_theme["expander"].get("content_bg", theme_data["background"])}; /* Background for content area */
-        }}
-        .streamlit-expander p, .streamlit-expander div {{ /* Text inside expander body */
-            color: {theme_data["text"]} !important; 
-        }}
-
-        /* --- Metric --- */
-        .stMetric {{
+        /* --- Metrics and Stats --- */
+        [data-testid="stMetricValue"] {{
             background-color: {components_theme["metric"]["bg"]};
-            color: {components_theme["metric"]["text"]};
-            padding: 1rem;
-            border-radius: 0.3rem;
-        }}
-        .stMetric [data-testid="stMetricDelta"].positive {{ /* Streamlit uses 'positive' class for up */
-            color: {components_theme["metric"]["delta_up"]};
-        }}
-        .stMetric [data-testid="stMetricDelta"].negative {{
-            color: {components_theme["metric"]["delta_down"]};
+            padding: 1.5rem;
+            border-radius: 0.8rem;
+            border: 1px solid {components_theme["input"]["border"]};
+            box-shadow: 0 2px 12px rgba(148, 163, 184, 0.05);
         }}
 
-        /* --- Chart Styles (General) --- */
-        .stPlotlyChart, .stVegaLiteChart, .stAltairChart {{ /* Common chart containers */
-            background-color: {components_theme["chart"]["bg"]};
-            padding: 0.5rem;
-            border-radius: 0.3rem;
+        /* --- Headers --- */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {theme_data["text"]};
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
         }}
-        /* More specific styling if needed, e.g., for ECharts if you use it directly */
-        .stChart .echarts-for-react {{
-            background: {components_theme["chart"]["bg"]};
-            color: {components_theme["chart"]["text"]};
+
+        /* --- Streamlit Default Header Integration --- */
+        header [data-testid="stToolbar"] {{
+            z-index: 1000;
         }}
-        .stChart .echarts-for-react line {{ /* Grid lines */
-            stroke: {components_theme["chart"]["grid"]};
+
+        /* Custom header container to align with Streamlit's header */
+        .stApp > header + div [data-testid="stHeader"] {{
+            background-color: transparent !important;
+            gap: 0;
+            padding-left: 1rem;
+            margin-top: -1rem;
+            height: 50px;
+            position: fixed;
+            top: 3.5rem;  /* Position below Streamlit's header */
+            left: 0;
+            right: 0;
+            z-index: 100;
+            backdrop-filter: blur(8px);
         }}
-        .stChart .echarts-for-react path {{ /* Data lines */
-            stroke: {components_theme["chart"]["line"]};
+
+        /* App title in header */
+        [data-testid="stHeader"] h1 {{
+            font-size: 1.25rem !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1.5 !important;
+            color: {theme_data["text"]} !important;
+        }}
+
+        /* Theme toggle button in header */
+        [data-testid="stHeader"] [data-testid="baseButton-secondary"] {{
+            position: absolute !important;
+            right: 1rem !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+            padding: 0.35rem !important;
+            height: 32px !important;
+            width: 32px !important;
+        }}
+
+        /* Adjust main content padding */
+        .main .block-container {{
+            padding-top: 5rem !important;  /* Add space for our header */
+        }}
+
+        /* Make sidebar start below headers */
+        [data-testid="stSidebar"] {{
+            padding-top: 0 !important;
+            margin-top: 5rem !important;
+        }}
+
+        /* Style sidebar content */
+        [data-testid="stSidebar"] .block-container {{
+            padding-top: 1rem !important;
+        }}
+
+        /* Ensure text color matches theme */
+        [data-testid="stSidebar"] {{
+            color: {theme_data["text"]} !important;
+        }}
+
+        /* Style navigation menu */
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div:first-child {{
+            padding: 1rem;
+            border-bottom: 1px solid {components_theme["input"]["border"]};
+            margin-bottom: 1rem;
+        }}
+
+        /* Make header text visible */
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3 {{
+            color: {theme_data["text"]} !important;
+        }}
+
+        /* --- Tabs with Fresh Style --- */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 1rem;
+            border-bottom: 2px solid {components_theme["input"]["border"]};
+            padding: 0 1rem;
+            background: {base_theme["backgroundColor"]};
+        }}
+
+        .stTabs [data-baseweb="tab"] {{
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            color: {theme_data["text"]};
+            opacity: 0.7;
+            border-radius: 0.5rem 0.5rem 0 0;
+            transition: all 0.2s ease;
+        }}
+
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {{
+            background: {components_theme["button"]["bg"]};
+            color: white;
+            opacity: 1;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.15);
+        }}
+
+        /* --- Links --- */
+        a {{
+            color: {base_theme["primaryColor"]};
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }}
+
+        a:hover {{
+            color: {components_theme["button"]["hover"]["bg"]};
         }}
         </style>
     """
     st.markdown(css, unsafe_allow_html=True)
-    
-    # Note: Base theme properties like 'theme.base', 'theme.primaryColor', 
-    # 'theme.backgroundColor', 'theme.secondaryBackgroundColor', 'theme.textColor', 
-    # and 'theme.font' should be set in the .streamlit/config.toml file.
-    # They cannot be set dynamically using st.set_option() after the app has started.
-    # The CSS above is for more granular control over component styling within the chosen base theme.

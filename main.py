@@ -2,6 +2,7 @@ import os
 import json
 from functools import partial
 from typing import Optional
+import base64
 
 # Core streamlit imports
 import streamlit as st
@@ -11,7 +12,6 @@ from streamlit_pdf_viewer import pdf_viewer
 from utils import (
     setup_gemini,
     get_ncc_response,
-    generate_quiz_questions,
     API_CALL_COOLDOWN_MINUTES,
     clear_history,
     read_history
@@ -29,66 +29,85 @@ if "version_info_printed" not in st.session_state:
     print(f"Streamlit file: {st.__file__}")
     st.session_state.version_info_printed = True
 
+def get_image_as_base64(image_path):
+    """Convert an image to base64 string."""
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode('utf-8')
+
 def main():
     """
-    Main entry point for the NCC AI Assistant Streamlit application.
+    Main entry point for the NCC ABYAS application.
     Handles overall structure, navigation, theme, and routing to different features.
     """
     st.set_page_config(
-        page_title="NCC AI Assistant",
+        page_title="NCC ABYAS",
         page_icon="🎓",
         layout="wide"
     )
     
-    # --- App Header ---
-    st.sidebar.title("NCC AI Assistant")
-
-
-    # --- Gemini Model Initialization & Error Handling ---
-    # This should be the very first thing to ensure the model is ready or an error is displayed early.
+    # Initialize Gemini model first
     model, model_error = setup_gemini()
-
-
-    if model_error:
-        st.error(f"🚨 Critical Error: {model_error}")
-        st.stop() # Halts execution, preventing any further UI elements from rendering
-
-    # Initialize session state for theme if not already set
-    if "theme_mode" not in st.session_state:
-        st.session_state.theme_mode = "Dark"
-
-    # --- Sidebar - Settings & Theme ---
-    st.sidebar.header("Settings")
     
-    # Theme Selection
-    theme_options = ["Dark", "Light"]  # Dark first to match default
-    current_theme_idx = theme_options.index(st.session_state.theme_mode)
-    new_theme = st.sidebar.radio(
-        "Choose Theme",
-        theme_options,
-        index=current_theme_idx,
-        key="theme_radio"
-    )
+    # Apply custom header spacing
+    st.markdown("""
+        <style>
+        .app-header {
+            padding: 1rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+            margin-bottom: 2rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- Custom Header ---
+    header_col1, header_col2, header_col3 = st.columns([4, 1, 1])
     
-    # Update theme if changed
-    if new_theme != st.session_state.theme_mode:
-        st.session_state.theme_mode = new_theme
-        st.rerun()
+    with header_col1:
+        # Get logo as base64
+        logo_base64 = get_image_as_base64("logo.png")
+        
+        # Create header with logo
+        header_html = f'''
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <img src="data:image/png;base64,{logo_base64}" style="height: 2rem; width: auto;">
+                <h1 style="margin:0;font-size:1.25rem">NCC ABYAS</h1>
+            </div>
+        '''
+        st.markdown(header_html, unsafe_allow_html=True)
+
+    with header_col3:
+        # Theme toggle button
+        if "theme_mode" not in st.session_state:
+            st.session_state.theme_mode = "Dark"
+        
+        current_theme = st.session_state.get("theme_mode", "Dark")
+        theme_icon = "☀️" if current_theme == "Dark" else "🌙"
+        theme_tooltip = "Switch to Light Theme" if current_theme == "Dark" else "Switch to Dark Theme"
+        
+        if st.button(theme_icon, help=theme_tooltip, key="theme_toggle", type="secondary"):
+            st.session_state.theme_mode = "Light" if current_theme == "Dark" else "Dark"
+            st.rerun()
 
     # Apply theme
     apply_theme(st.session_state.theme_mode)
 
-    st.sidebar.markdown("---") # Separator
+    # --- Sidebar Navigation ---
+    st.sidebar.header("Navigation")
 
     # Sidebar Navigation
-    app_mode = st.sidebar.radio( # This will be the primary navigation
-        "Navigation",
-        ["💬 Chat Assistant", "🎯 Knowledge Quiz", "📚 Syllabus Viewer", "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"],
-        key="app_mode_radio_primary" # Changed key for clarity
+    app_mode = st.sidebar.radio(
+        label="Navigation Menu",  # Add proper label for accessibility
+        options=["💬 Chat Assistant", "🎯 Knowledge Quiz", "📚 Syllabus Viewer", "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"],
+        key="app_mode_radio_primary",
+        label_visibility="hidden"  # Hide the label since we have the header
     )
 
-    st.sidebar.markdown("---") # Separator
+    st.sidebar.markdown("---")
 
+    # API cooldown info moved up in sidebar
     st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} minutes between questions if you hit rate limits.")
 
     st.sidebar.markdown("---") # Separator
@@ -115,54 +134,55 @@ def main():
         
     # Handle dev tools route
     if st.query_params.get("page") == ["dev_tools"]:
-        from dev_tools import dev_tools
-        dev_tools()
+        # Lazy import dev_tools only when the route is accessed
+        from dev_tools import dev_tools as display_dev_tools
+        display_dev_tools()
+        return # Stop further rendering of main page if dev_tools is active
 
     # --- Helper function for PDF viewer component ---
-    def display_pdf_viewer(file_path: str, height: int = 750, page_number: int = 1):
-        """
-        Embeds a PDF file in the Streamlit app using streamlit_pdf_viewer.
-        Note: Page navigation is handled by the viewer's built-in controls.
-        """
-        try:
-            if not os.path.exists(file_path):
-                st.error(f"🚨 PDF Error: File not found at '{file_path}'.")
-                return False
-            if not file_path.endswith('.pdf'):
-                st.error("🚨 Invalid file type. Only PDF files are supported.")
-                return False
-
-            # Display a note about browser compatibility
-            st.info("💡 PDF navigation is available through the built-in controls. If you experience any issues, you can download the PDF to view it locally.", icon="ℹ️")
-            
-            # Add a download button for the PDF
-            with open(file_path, "rb") as f:
-                st.download_button(
-                    label="📥 Download PDF",
-                    data=f.read(),
-                    file_name=os.path.basename(file_path),
-                    mime="application/pdf"
-                )
-            
-            # The PDF viewer component
-            pdf_viewer(
-                file_path,
-                height=height,
-                width="100%"  # The page navigation is handled by the viewer's built-in controls
-            )
-            return True
-            
-        except ImportError:
-            st.error("🚨 PDF viewer component (streamlit-pdf-viewer) not installed properly.")
-            return False
-        except Exception as e:
-            st.error(f"🚨 Error displaying PDF: {str(e)}")
-            return False
-
+    # This function will be moved to syllabus_manager.py
+    # def display_pdf_viewer(file_path: str, height: int = 750, page_number: int = 1):
+    # #     """
+    #     Embeds a PDF file in the Streamlit app using streamlit_pdf_viewer.
+    #     Note: Page navigation is handled by the viewer's built-in controls.
+    #     """
+    #     try:
+    #         if not os.path.exists(file_path):
+    #             st.error(f"🚨 PDF Error: File not found at '{file_path}'.")
+    #             return False
+    #         if not file_path.endswith('.pdf'):
+    #             st.error("🚨 Invalid file type. Only PDF files are supported.")
+    #             return False
+    #
+    #         # Display a note about browser compatibility - This can be shown once above the viewer
+    #         # st.info("💡 PDF navigation is available through the built-in controls. If you experience any issues, you can download the PDF to view it locally.", icon="ℹ️")
+    #        
+    #         # Add a download button for the PDF
+    #         # with open(file_path, "rb") as f:
+    #         #     st.download_button(
+    #         #         label="📥 Download PDF",
+    #         #         data=f.read(),
+    #         #         file_name=os.path.basename(file_path),
+    #         #         mime="application/pdf"
+    #         #     )
+    #        
+    #         # The PDF viewer component
+    #         pdf_viewer(
+    #             file_path,
+    #             height=height,
+    #             width="100%"  # The page navigation is handled by the viewer's built-in controls
+    #         )
+    #         return True
+    #        
+    #     except ImportError:
+    #         st.error("🚨 PDF viewer component (streamlit-pdf-viewer) not installed properly.")
+    #         return False
+    #     except Exception as e:
+    #         st.error(f"🚨 Error displaying PDF: {str(e)}")
+    #         return False
+    # End of display_pdf_viewer function placeholder
 
     # --- Module Routing ---
-    st.markdown("<h1 style='text-align: center;'>NCC AI Assistant</h1>", unsafe_allow_html=True)
-
     if app_mode == "💬 Chat Assistant":
         from chat_interface import chat_interface # Lazy import
         chat_func = partial(get_ncc_response, model, model_error)
@@ -177,15 +197,12 @@ def main():
             st.error("Model failed to load, Quiz feature is unavailable.")
 
     elif app_mode == "📚 Syllabus Viewer":
-        st.header("📚 NCC Syllabus")
         ncc_handbook_pdf_path = "Ncc-CadetHandbook.pdf" # Define path once
 
-        from syllabus_manager import load_syllabus_data, search_syllabus
+        # Import necessary functions from syllabus_manager, including the new ones we'll add
+        from syllabus_manager import load_syllabus_data, search_syllabus, extract_pdf_metadata, display_pdf_viewer_component
         syllabus_data = load_syllabus_data()
 
-        # Initialize session state for PDF page navigation
-        if 'pdf_current_page' not in st.session_state:
-            st.session_state.pdf_current_page = 1 # Default to page 1
         
         # Tabs for Syllabus Structure and PDF Viewer
         tab1, tab2 = st.tabs(["Syllabus Structure", "View NCC Handbook (PDF)"])
@@ -214,7 +231,8 @@ def main():
                                     button_key = f"goto_pdf_search_{result.get('chapter_title', 'chap')}_{result.get('section_name', 'sec')}_{page_num}"
                                     if st.button(f"📖 View Page {page_num} in PDF", key=button_key):
                                         st.session_state.pdf_current_page = page_num
-                                        st.rerun()  # This will switch to the PDF tab and update the viewer
+                                        st.toast(f"PDF target set to page {page_num}. Switch to the 'View NCC Handbook (PDF)' tab.", icon="📄")
+                                        st.rerun()
                     else:
                         st.info(f"No results found for '{query}' in the syllabus structure.")
                 else:
@@ -232,7 +250,7 @@ def main():
                                                 button_key = f"goto_pdf_browse_{chapter.title.replace(' ','_')}_{section.name.replace(' ','_')}_{section.page_number}"
                                                 if st.button(f"📖 View Page {section.page_number} in PDF", key=button_key):
                                                     st.session_state.pdf_current_page = section.page_number
-                                                    st.session_state.active_tab = "pdf_viewer"  # Mark PDF viewer tab as active
+                                                    st.toast(f"PDF target set to page {section.page_number}. Switch to the 'View NCC Handbook (PDF)' tab.", icon="📄")
                                                     st.rerun()
                                             with col2:
                                                 bookmark_key = f"bookmark_{chapter.title}_{section.name}"
@@ -256,175 +274,119 @@ def main():
                 st.error("Failed to load syllabus data. Please check the 'data/syllabus.json' file and ensure it's correctly formatted.")
 
         with tab2:
-            # Set this tab as active if requested
-            if st.session_state.get("active_tab") == "pdf_viewer":
-                st.session_state.active_tab = None  # Reset after switching
-                
             st.subheader("NCC Cadet Handbook Viewer")
+            
+            # Initialize session state for PDF page navigation if not already done
+            if 'pdf_current_page' not in st.session_state:
+                st.session_state.pdf_current_page = 1
+
             if os.path.exists(ncc_handbook_pdf_path):
                 # --- PDF Metadata Initialization (once per PDF load) ---
                 if "pdf_metadata" not in st.session_state or \
                    st.session_state.get("pdf_metadata_path") != ncc_handbook_pdf_path:
-                    try:
-                        import PyPDF2
-                        with open(ncc_handbook_pdf_path, 'rb') as pdf_file_obj:
-                            pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
-                            processed_outline = []
-                            if hasattr(pdf_reader, 'outline') and pdf_reader.outline:
-                                def extract_outline_items(outline_items, reader):
-                                    extracted = []
-                                    for item in outline_items:
-                                        if isinstance(item, list):
-                                            extracted.extend(extract_outline_items(item, reader)) # Recurse
-                                        elif hasattr(item, 'title') and item.title is not None:
-                                            try:
-                                                page_number_0_indexed = reader.get_destination_page_number(item)
-                                                if page_number_0_indexed is not None:
-                                                    extracted.append({"title": str(item.title), "page": page_number_0_indexed + 1})
-                                            except Exception: # Skip item if page number can't be resolved
-                                                pass 
-                                    return extracted
-                                processed_outline = extract_outline_items(pdf_reader.outline, pdf_reader)
-
-                            st.session_state.pdf_metadata = {
-                                "total_pages": len(pdf_reader.pages),
-                                "outline": processed_outline
-                            }
-                            st.session_state.pdf_metadata_path = ncc_handbook_pdf_path
-                    except ImportError:
-                        st.error("PyPDF2 library not installed. PDF metadata cannot be extracted. Install with: `pip install PyPDF2`")
-                        st.session_state.pdf_metadata = {"total_pages": 1, "outline": []} # Fallback
+                    metadata = extract_pdf_metadata(ncc_handbook_pdf_path)
+                    if metadata:
+                        st.session_state.pdf_metadata = metadata
                         st.session_state.pdf_metadata_path = ncc_handbook_pdf_path
-                    except Exception as e:
-                        st.error(f"Error reading PDF for metadata: {str(e)}. Using default values.")
-                        st.session_state.pdf_metadata = {"total_pages": 1, "outline": []} # Fallback
+                    else:
+                        # Fallback if metadata extraction fails
+                        st.session_state.pdf_metadata = {"total_pages": 1, "outline": [], "error": "Failed to extract metadata."}
                         st.session_state.pdf_metadata_path = ncc_handbook_pdf_path
 
                 total_pages = st.session_state.get("pdf_metadata", {}).get("total_pages", 1)
                 pdf_outline = st.session_state.get("pdf_metadata", {}).get("outline", [])
 
-                # PDF Sidebar Navigation (conditionally shown in global sidebar)
-                with st.sidebar:
-                    if app_mode == "📚 Syllabus Viewer": # Only show for this app_mode
-                        st.markdown("### 📑 PDF Quick Navigation")
-                        navigation_mode = st.radio(
-                            "Navigate Handbook",
-                            ["📖 Table of Contents", "🔖 Bookmarks", "🔍 Search PDF"],
-                            key="pdf_nav_mode_syllabus"
-                        )
-                        
-                        if navigation_mode == "📖 Table of Contents":
-                            if pdf_outline:
-                                for item_dict in pdf_outline:
-                                    button_label = f"📄 {item_dict['title']} (p. {item_dict['page']})"
-                                    button_key = f"toc_btn_{item_dict['title'].replace(' ','_').replace('/','_')}_{item_dict['page']}"
-                                    if st.button(button_label, use_container_width=True, key=button_key):
+                # PDF Sidebar Navigation is MOVED to the main content area of this tab.
+                # The 'with st.sidebar:' block that previously contained these controls is now empty for this app_mode.
+                
+                # --- PDF Navigation Controls MOVED HERE (Inside Tab2, above viewer) ---
+                with st.container(): # Group controls
+                    # Removed markdown heading for "PDF Quick Navigation"
+                    navigation_mode_main = st.radio(
+                        "Navigate Handbook By:",
+                        ["📖 Table of Contents", "🔖 Bookmarks", "🔍 Search PDF (soon)"],
+                        key="pdf_nav_mode_main_area", 
+                        horizontal=True,
+                        help="Select a method to navigate the PDF document."
+                    )
+                    
+                    if navigation_mode_main == "📖 Table of Contents":
+                        if pdf_outline:
+                            for i, item_dict in enumerate(pdf_outline):
+                                # Use a single column for linearity
+                                button_label = f"📄 {item_dict['title']} (p. {item_dict['page']})" # Use full title + page number
+                                button_key = f"toc_btn_main_{item_dict['title'].replace(' ','_').replace('/','_')}_{item_dict['page']}"
+                                if st.button(button_label, use_container_width=True, key=button_key, help=f"{item_dict['title']} (p. {item_dict['page']})"):
                                         st.session_state.pdf_current_page = item_dict['page']
                                         st.rerun()
-                            else:
-                                st.info("No table of contents extracted or available.")
-                                
-                        elif navigation_mode == "🔖 Bookmarks":
-                            if "bookmarks" in st.session_state and st.session_state.bookmarks:
-                                for bookmark in st.session_state.bookmarks:
-                                    if st.button(f"🔖 {bookmark['title']} (p. {bookmark['page']})", use_container_width=True, key=f"pdf_bookmark_{bookmark['title']}"):
+                        else:
+                            st.info("No table of contents extracted or available.")
+                            
+                    elif navigation_mode_main == "🔖 Bookmarks":
+                        if "bookmarks" in st.session_state and st.session_state.bookmarks:
+                            for i, bookmark in enumerate(st.session_state.bookmarks):
+                                # Use a single column for linearity
+                                if st.button(f"🔖 {bookmark['title']} (p. {bookmark['page']})", use_container_width=True, key=f"pdf_bookmark_main_{bookmark['title'].replace(' ','_')}_{bookmark['page']}", help=f"{bookmark['title']} (p. {bookmark['page']})"):
                                         st.session_state.pdf_current_page = bookmark['page']
                                         st.rerun()
-                            else:
-                                st.info("No bookmarks added yet. Add bookmarks from the syllabus structure view.")
-                                
-                        elif navigation_mode == "🔍 Search PDF":
-                            search_query_pdf = st.text_input("Search text in PDF", key="pdf_text_search")
-                            if search_query_pdf:
-                                st.info("PDF text search functionality is coming soon!")
                         else:
-                            st.info("Enter text to search within the PDF content (feature coming soon).")
-                
-                # Main PDF viewer controls
-                controls_container = st.container()
-                with controls_container:
-                    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                            st.info("No bookmarks added yet. Add bookmarks from the syllabus structure view.")
                     
-                    with col1:
-                        # Page navigation with total pages display
-                        page = st.number_input(
-                            f"Go to page (1-{total_pages})",
-                            min_value=1,
-                            max_value=total_pages,
-                            value=st.session_state.get('pdf_current_page', 1),
-                            step=1,
-                            key="page_input",
-                            help="Enter a page number to jump directly to that page"
+                    elif navigation_mode_main == "🔍 Search PDF (soon)":
+                        search_query_pdf_main = st.text_input("Search text in PDF (coming soon)", key="pdf_text_search_main", disabled=True)
+                        if search_query_pdf_main: # This block won't run due to disabled=True
+                            st.info("PDF text search functionality is under development!")
+
+                    # Removed markdown separator and heading for "Page Controls"
+                    # The page controls will now appear directly after the TOC/Bookmarks/Search section
+                    
+                    page_controls_cols = st.columns([2,1,1,1,1]) 
+                    with page_controls_cols[0]:
+                        current_page_for_input_main = st.session_state.get('pdf_current_page', 1)
+                        target_page_main = st.number_input(
+                            f"Go to Page (1-{total_pages})", 
+                            min_value=1, 
+                            max_value=total_pages, 
+                            value=current_page_for_input_main, 
+                            step=1, 
+                            key="pdf_page_selector_main_area", 
+                            help="Enter page number and press Enter"
                         )
+                        if target_page_main != current_page_for_input_main:
+                            st.session_state.pdf_current_page = target_page_main
+                            st.rerun()
+                    
+                    with page_controls_cols[1]:
+                        if st.button("⏮️", use_container_width=True, help="First Page", key="pdf_first_main"):
+                            st.session_state.pdf_current_page = 1
+                            st.rerun()
+                    with page_controls_cols[2]:
+                        if st.button("◀️", use_container_width=True, help="Previous Page", key="pdf_prev_main"):
+                            st.session_state.pdf_current_page = max(1, st.session_state.get('pdf_current_page', 1) - 1)
+                            st.rerun()
+                    with page_controls_cols[3]:
+                        if st.button("▶️", use_container_width=True, help="Next Page", key="pdf_next_main"):
+                            st.session_state.pdf_current_page = min(total_pages, st.session_state.get('pdf_current_page', 1) + 1)
+                            st.rerun()
+                    with page_controls_cols[4]:
+                        if st.button("⏭️", use_container_width=True, help="Last Page", key="pdf_last_main"):
+                            st.session_state.pdf_current_page = total_pages
+                            st.rerun()
+                    st.markdown("---") 
+                # End of MOVED PDF Navigation Controls
 
-                    with col2:
-                        # First/Previous page
-                        col2a, col2b = st.columns(2)
-                        with col2a:
-                            if st.button("⏮️ First", use_container_width=True):
-                                st.session_state.pdf_current_page = 1
-                                st.rerun()
-                        with col2b:
-                            if st.button("◀️ Prev", use_container_width=True):
-                                page = max(1, (st.session_state.get('pdf_current_page', 1)) - 1)
-                                st.session_state.pdf_current_page = page
-                                st.rerun()
-
-                    with col3:
-                        # Next/Last page
-                        col3a, col3b = st.columns(2)
-                        with col3a:
-                            if st.button("Next ▶️", use_container_width=True):
-                                page = min(total_pages, (st.session_state.get('pdf_current_page', 1)) + 1)
-                                st.session_state.pdf_current_page = page
-                                st.rerun()
-                        with col3b:
-                            if st.button("Last ⏭️", use_container_width=True):
-                                st.session_state.pdf_current_page = total_pages
-                                st.rerun()
-
-                    with col4:
-                        # Zoom control (future enhancement placeholder)
-                        zoom_level = st.selectbox(
-                            "Zoom",
-                            ["100%", "125%", "150%", "175%", "200%"],
-                            index=0,
-                            key="pdf_zoom",
-                            help="Select zoom level (Note: May not work in all browsers)"
-                        )
-
-                    # Quick Bookmarks
-                    st.markdown("---")
-                    bookmark_cols = st.columns(4)
-                    important_pages = {
-                        "Contents": 1,
-                        "Common Subjects": 50,
-                        "Specialized Subjects": 150,
-                        "Reference": 300
-                    }
-                    for i, (label, page_num) in enumerate(important_pages.items()):
-                        with bookmark_cols[i]:
-                            if st.button(f"📑 {label}", use_container_width=True):
-                                st.session_state.pdf_current_page = page_num
-                                st.rerun()
-
-                # Update page state if changed
-                if page != st.session_state.get('pdf_current_page', 1):
-                    st.session_state.pdf_current_page = page
-                    st.rerun()
-
-                # Help text
-                st.info("💡 Due to browser limitations, PDF navigation might not work in all browsers. If you can't navigate pages, please use the download option to view the PDF locally.")
+                st.info("💡 PDF navigation is available through the controls above and the viewer's built-in controls. If you experience any issues, you can download the PDF to view it locally.", icon="ℹ️")
 
                 # Display the PDF
-                if not display_pdf_viewer(
+                # Use the new display_pdf_viewer_component from syllabus_manager
+                if not display_pdf_viewer_component(
                     ncc_handbook_pdf_path, 
                     height=800, 
                     page_number=st.session_state.get('pdf_current_page', 1)
                 ):
                     st.warning("Could not display PDF in the browser. You can download it instead:")
                     
-                # Always offer download option
+                # Offer download option in the main area as well
                 with open(ncc_handbook_pdf_path, "rb") as f:
                     st.download_button(
                         "⬇️ Download NCC Cadet Handbook (PDF)",
@@ -443,8 +405,6 @@ def main():
         display_video_guides()
 
     elif app_mode == "📁 History Viewer":
-        st.header("📁 View Your Interaction History")
-        
         # Styling for history entries
         st.markdown("""
         <style>
@@ -472,74 +432,43 @@ def main():
             
             col1, col2 = st.columns([3, 1])
             with col1:
-                if st.button("🧹 Clear Chat History", key="clear_chat_button"):
+                if st.button(
+                    "🧹 Clear Chat History",
+                    key="clear_chat_button",
+                    help="Delete all saved chat messages",
+                    use_container_width=True
+                ):
                     st.session_state.confirm_clear_chat = True
             with col2:
-                if st.download_button(
-                    "⬇️ Download Full Transcript",
+                st.download_button(
+                    "⬇️ Download History",
                     chat_history_content,
-                    file_name="chat_transcript.txt",
-                    mime="text/plain",
-                    key="download_full_chat"
-                ):
-                    st.success("Chat transcript downloaded!")
-            
-            if st.session_state.get("confirm_clear_chat", False):
-                with st.form(key="confirm_clear_chat_form"):
-                    st.warning("⚠️ Are you sure you want to clear the chat history?")
-                    st.error("This action cannot be undone!")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        confirm = st.form_submit_button("Yes, Clear History", type="primary")
-                        if confirm:
-                            clear_history("chat")
-                            st.session_state.confirm_clear_chat = False
-                            st.success("Chat history cleared!")
-                            st.rerun()
-                    with col2:
-                        cancel = st.form_submit_button("No, Keep History")
-                        if cancel:
-                            st.session_state.confirm_clear_chat = False
-                            st.info("Operation cancelled. Chat history preserved.")
+                    "chat_history.txt",
+                    key="download_chat_hist_main",
+                    help="Save a copy of your chat history to your computer"
+                )
 
-            if chat_history_content:
-                lines = chat_history_content.strip().splitlines()
-                display_limit = 25 
-                
-                st.markdown(f"Showing last {min(len(lines), display_limit)} chat entries (newest first):")
-
-                for line in reversed(lines[-display_limit:]):
-                    if line.strip():
-                        if ": " in line:
-                            try:
-                                speaker, message = line.split(": ", 1)
-                                if speaker.lower() == "user":
-                                    with st.chat_message("user"):
-                                        st.markdown(message)
-                                elif speaker.lower() in ["ai", "assistant", "bot", "gemini", "ncc_ai_assistant"]:
-                                    with st.chat_message("assistant"):
-                                        st.markdown(message)
-                                else:
-                                    st.markdown(f"<div class='{entry_class}'>{line}</div>", unsafe_allow_html=True)
-                            except ValueError:
-                                st.markdown(f"<div class='{entry_class}'>{line}</div>", unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"<div class='{entry_class}'>{line}</div>", unsafe_allow_html=True)
-                
-                if len(lines) > display_limit:
-                    st.caption(f"Older entries hidden. Download full history to view all {len(lines)} entries.")
-                
-                if st.download_button("⬇️ Download Full Chat History", chat_history_content, "chat_history.txt", key="download_chat_hist_main"):
-                    st.success("Chat history downloaded!")
-            else:
-                st.info("No chat history found yet.")
         with history_tabs[1]:
             st.subheader("Recent Quiz Attempts")
             quiz_history_content = read_history("quiz")
             
-            if st.button("🧹 Clear Quiz History", key="clear_quiz_button"):
+            if st.button(
+                "🧹 Clear Quiz History",
+                key="clear_quiz_button",
+                help="Delete all saved quiz attempts",
+                use_container_width=True
+            ):
                 st.session_state.confirm_clear_quiz = True
 
+            if st.download_button(
+                "⬇️ Download Quiz History",
+                quiz_history_content,
+                "quiz_history.txt",
+                key="download_quiz_hist_main",
+                help="Save a copy of your quiz history to your computer"
+            ):
+                st.success("Quiz history downloaded!")
+            
             if st.session_state.get("confirm_clear_quiz", False):
                 st.warning("Are you sure you want to clear the quiz history? This cannot be undone.")
                 col1, col2 = st.columns(2)
@@ -579,13 +508,12 @@ def main():
                 if len(entries) > display_limit:
                     st.caption(f"Older records hidden. Download full history to view all {len(entries)} records.")
 
-                if st.download_button("⬇️ Download Full Quiz History", quiz_history_content, "quiz_history.txt", key="download_quiz_hist_main"):
+                if st.download_button("⬇️ Download Full Quiz History", quiz_history_content, "quiz_history.txt", key="download_full_quiz_hist_main"):
                     st.success("Quiz history downloaded!")
             else:
                 st.info("No quiz history found yet. Take a quiz to start.")
 
     elif app_mode == "📊 Progress Dashboard":
-        st.header("📊 Your Learning Progress")
         try:
             from progress_dashboard import display_progress_dashboard
             # Pass quiz score history to the dashboard, not the quiz log

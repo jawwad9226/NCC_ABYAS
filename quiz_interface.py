@@ -2,15 +2,20 @@ import streamlit as st
 import random
 import time
 import os
-import json # Import json for reading quiz data
-from typing import List, Dict, Any, Optional
+import json
+import re
+import logging
+from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime # Ensure datetime is imported
+import google.generativeai as genai
 
 from utils import (
     load_quiz_score_history,  # Changed from read_history
     append_quiz_score_entry,  # Changed from append_message
     clear_quiz_score_history, # Changed from clear_history
-    generate_quiz_questions as ai_generate_quiz_questions # Import AI quiz generator
+    Config, # For accessing paths and API settings
+    _is_in_cooldown,
+    _cooldown_message
 )
 
 # QUIZ_DATA is removed as we will use AI to generate questions.
@@ -18,6 +23,11 @@ from utils import (
 
 # --- Quiz State Management ---
 SS_PREFIX = "quiz_ss_" # Prefix to avoid conflicts with other modules' session state
+
+# --- Quiz Generation Constants (can be moved to a local config if needed) ---
+TEMP_QUIZ = 0.5 # Slightly higher for more creative questions
+MAX_TOKENS_QUIZ = 2500 # Increased for potentially more questions or detailed explanations
+
 
 def _initialize_quiz_state(ss):
     """Initializes all quiz-related session state variables if they don't exist."""
@@ -90,7 +100,103 @@ def get_difficulty_level(score_history: List[Dict[str, Any]]) -> str:
         return "Medium"
     else:
         return "Easy"
-# This local _generate_quiz_questions is no longer needed as we use AI.
+
+def _build_quiz_prompt(topic: str, num_q: int, difficulty: str) -> str:
+    """
+    Builds an enhanced Gemini prompt for quiz generation.
+    """
+    difficulty_instructions = {
+        "Easy": "focus on basic concepts, definitions, and straightforward facts. Questions should be simple to understand.",
+        "Medium": "require understanding of intermediate concepts, some application of knowledge, and ability to differentiate between related ideas. Distractors should be plausible.",
+        "Hard": "demand advanced understanding, critical thinking, analysis, or synthesis of information. Questions can be multi-step or scenario-based. Distractors should be very subtle."
+    }
+    
+    prompt = f"""
+    You are an expert NCC (National Cadet Corps) instructor. Your task is to generate {num_q} high-quality multiple-choice questions (MCQs) about the NCC topic: "{topic}".
+    The target audience is NCC cadets.
+    The desired difficulty level is: {difficulty.upper()}. For this difficulty, {difficulty_instructions.get(difficulty, difficulty_instructions['Medium'])}
+
+    For each question, strictly adhere to the following format:
+
+    Q: [Your question text here. Ensure it is clear, unambiguous, and relevant to NCC.]
+    A) [Option A - Plausible, but incorrect if not the answer]
+    B) [Option B - Plausible, but incorrect if not the answer]
+    C) [Option C - Plausible, but incorrect if not the answer]
+    D) [Option D - Plausible, but incorrect if not the answer]
+    ANSWER: [A single uppercase letter: A, B, C, or D corresponding to the correct option]
+    EXPLANATION: [A concise but comprehensive explanation. Clarify why the correct answer is right and, if applicable, why common misconceptions (represented by distractors) are wrong. This should aid learning.]
+
+    ---
+    [This '---' separator MUST be on its own line between each complete question block (Q, Options, Answer, Explanation)]
+
+    Important Guidelines:
+    1.  Number of Questions: Generate exactly {num_q} questions.
+    2.  Format Adherence: The specified format (Q:, A), B), C), D), ANSWER:, EXPLANATION:, ---) is CRITICAL for parsing. Do not deviate.
+    3.  Options: Provide exactly four unique options (A, B, C, D). Avoid "All of the above" or "None of the above". Distractors should be relevant to the topic.
+    4.  Answer: Clearly indicate the single correct answer using the format "ANSWER: [Letter]".
+    5.  Explanation: The explanation is crucial for learning. Make it informative.
+    6.  Relevance: All questions, options, and explanations must be directly related to NCC.
+    7.  Clarity: Ensure questions are well-phrased and easy to understand for NCC cadets.
+    8.  Originality: Generate fresh questions, not just copied from standard texts if possible, while staying true to NCC doctrine.
+    """
+    return prompt
+
+def _parse_ai_quiz_response(response_text: str) -> List[Dict[str, Any]]:
+    """Parse raw quiz response from AI into structured format."""
+    parsed_questions = []
+    # Split by "---" which should be the primary separator between full question blocks
+    question_blocks = response_text.strip().split("\n---\n")
+
+    q_re = re.compile(r'Q:\s*(.*)', re.IGNORECASE) # Removed re.DOTALL
+    opt_re = re.compile(r'([A-D])\)\s*(.*)')
+    ans_re = re.compile(r'ANSWER:\s*([A-D])', re.IGNORECASE)
+    exp_re = re.compile(r'EXPLANATION:\s*(.*)', re.IGNORECASE | re.DOTALL)
+
+    for block in question_blocks:
+        block = block.strip()
+        if not block:
+            continue
+
+        question_data = {"question": "", "options": {}, "answer": "", "explanation": ""}
+        
+        # Extract question
+        q_match = q_re.search(block)
+        if q_match:
+            question_data["question"] = q_match.group(1).strip()
+
+        # Extract options
+        current_options_text = block
+        if q_match: # Remove question part to avoid re-matching options in question
+            current_options_text = block[q_match.end():]
+        
+        for opt_match in opt_re.finditer(current_options_text):
+            question_data["options"][opt_match.group(1)] = opt_match.group(2).strip()
+
+        # Extract answer
+        ans_match = ans_re.search(block)
+        if ans_match:
+            question_data["answer"] = ans_match.group(1).upper()
+
+        # Extract explanation
+        exp_match = exp_re.search(block)
+        if exp_match:
+            question_data["explanation"] = exp_match.group(1).strip()
+
+        # Validate extracted data for this block
+        if (question_data["question"] and
+            len(question_data["options"]) == 4 and
+            question_data["answer"] in question_data["options"] and # Check if answer key exists in options
+            question_data["explanation"]):
+            question_data["timestamp"] = datetime.now().isoformat()
+            parsed_questions.append(question_data)
+        elif question_data["question"]: # Log if we have a question but other parts are missing
+            logging.warning(f"Skipped partially parsed question block due to missing fields: Q: {question_data['question'][:50]}... Options: {len(question_data['options'])}, Answer: '{question_data['answer']}', Explanation: {not not question_data['explanation']}")
+            logging.debug(f"Problematic block content:\n{block}")
+
+    if not parsed_questions and response_text:
+        logging.error(f"Failed to parse any questions from AI response. Raw response:\n{response_text}")
+    return parsed_questions
+
 
 def _display_quiz_creation_form(ss, model, model_error):
     """Displays the form to create a new quiz."""
@@ -99,15 +205,17 @@ def _display_quiz_creation_form(ss, model, model_error):
     # Display current suggested difficulty
     st.info(f"Suggested Difficulty based on history: **{ss[f'{SS_PREFIX}current_quiz_difficulty']}**")
 
-    # Difficulty selection
+    # Difficulty selection with clear label
     selected_difficulty = st.selectbox(
-        "Select Difficulty",
-        ["Easy", "Medium", "Hard"],
+        "Difficulty Level",  # More descriptive label
+        options=["Easy", "Medium", "Hard"],
         index=["Easy", "Medium", "Hard"].index(ss[f"{SS_PREFIX}current_quiz_difficulty"]) if ss[f"{SS_PREFIX}current_quiz_difficulty"] in ["Easy", "Medium", "Hard"] else 1,
-        key=f"{SS_PREFIX}difficulty_select"
+        key=f"{SS_PREFIX}difficulty_select",
+        help="Choose the difficulty level for your quiz",
+        label_visibility="visible"
     )
 
-    # Topic selection
+    # Topic selection with clear label
     # TODO: Consider dynamically populating topics from syllabus_manager or a predefined list for AI.
     ai_topics = [
         "NCC General", "National Integration", "Drill", "Weapon Training", 
@@ -115,12 +223,14 @@ def _display_quiz_creation_form(ss, model, model_error):
         "First Aid", "Leadership", "Social Service"
     ]
     selected_topic = st.selectbox(
-        "Select Topic",
-        ai_topics,
-        key=f"{SS_PREFIX}topic_select"
+        "Study Topic",  # More descriptive label
+        options=ai_topics,
+        key=f"{SS_PREFIX}topic_select",
+        help="Select the topic you want to be quizzed on",
+        label_visibility="visible"
     )
 
-    # Number of questions selection for AI generation
+    # Number of questions with descriptive label
     # The AI will attempt to generate this many, capped by difficulty settings in utils.py
     num_questions_to_request = st.slider(
         "Number of Questions to Generate",
@@ -129,18 +239,23 @@ def _display_quiz_creation_form(ss, model, model_error):
         value=5,      # Default value
         step=1,
         key=f"{SS_PREFIX}num_questions_slider_ai",
-        disabled=(model_error is not None) # Disable if AI model has an error
+        help="Choose how many questions you want in your quiz",
+        disabled=(model_error is not None or _is_in_cooldown(f"{SS_PREFIX}last_quiz_api_call_time")),
+        label_visibility="visible"
     )
 
     if model_error:
         st.error(f"AI Model Error: {model_error}. Quiz generation is unavailable.")
 
     if st.button("Start AI Generated Quiz", key=f"{SS_PREFIX}start_quiz_button_ai", disabled=(model_error is not None)):
+        if _is_in_cooldown(f"{SS_PREFIX}last_quiz_api_call_time"):
+            st.warning(_cooldown_message("quiz generation"))
+            return
+
         with st.spinner(f"Generating {num_questions_to_request} questions on '{selected_topic}' (Difficulty: {selected_difficulty})..."):
-            questions_to_start, gen_error = ai_generate_quiz_questions(
+            questions_to_start, gen_error = _ai_generate_quiz_questions(
                 model, model_error, selected_topic, num_questions_to_request, selected_difficulty
             )
-
         if not questions_to_start:
             st.error(f"Failed to generate quiz: {gen_error or 'No questions returned by AI.'}")
             return
@@ -157,6 +272,56 @@ def _display_quiz_creation_form(ss, model, model_error):
             ss[f"{SS_PREFIX}quiz_result"] = None
             ss[f"{SS_PREFIX}quiz_bookmarks"] = [] # Ensure bookmarks are clear for new quiz
             st.rerun() # Trigger rerun to display the quiz
+
+def _save_generated_quiz_to_log(topic: str, questions: List[Dict[str, Any]]) -> None:
+    """Saves the generated quiz questions to a log file."""
+    try:
+        quiz_log_path = Config.LOG_PATHS['quiz']['log'] # Uses Config from utils
+        history = []
+        if os.path.exists(quiz_log_path):
+            with open(quiz_log_path, 'r', encoding='utf-8') as f:
+                try:
+                    history = json.load(f)
+                except json.JSONDecodeError:
+                    history = [] # Start fresh if file is corrupt
+        
+        history.append({
+            "timestamp": datetime.now().isoformat(),
+            "topic": topic,
+            "questions_generated_count": len(questions),
+            "questions": questions # Save the actual questions
+        })
+        with open(quiz_log_path, 'w', encoding='utf-8') as f:
+            json.dump(history, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logging.error(f"Failed to save generated quiz to log: {str(e)}")
+
+def _ai_generate_quiz_questions(model: Optional[genai.GenerativeModel], model_error: Optional[str],
+                                topic: str, num_questions_requested: int, difficulty: str
+                               ) -> Tuple[Optional[List[Dict]], Optional[str]]:
+    """Internal function to generate quiz questions using the AI model."""
+    if model_error or not model:
+        return None, f"Model error: {model_error or 'Model not initialized'}"
+
+    # num_questions_requested is already validated by the slider (1-10)
+    prompt = _build_quiz_prompt(topic, num_questions_requested, difficulty)
+
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(temperature=TEMP_QUIZ, max_output_tokens=MAX_TOKENS_QUIZ)
+        )
+        raw_response_text = response.text
+        parsed_questions = _parse_ai_quiz_response(raw_response_text)
+
+        if parsed_questions:
+            st.session_state[f"{SS_PREFIX}last_quiz_api_call_time"] = datetime.now()
+            _save_generated_quiz_to_log(topic, parsed_questions) # Log the generated questions
+            return parsed_questions, None
+        return None, "Failed to parse valid quiz questions from AI response. Check logs for raw response. Please try again or rephrase."
+    except Exception as e:
+        logging.exception(f"Error in _ai_generate_quiz_questions: {str(e)}")
+        return None, "Apologies, an error occurred while generating the quiz. Please try again."
 
 def _display_active_quiz(ss):
     """Displays the active quiz questions."""
@@ -231,19 +396,31 @@ def _display_active_quiz(ss):
     
     # Use a form to capture user's answer
     with st.form(key=f"question_form_{current_q_index}"):
-        user_selected_text = st.radio( # This will now store the selected option's text
-            "Select your answer:",
-            options=options_display_list, # Display the actual option text
+        # User answer selection with proper label
+        user_selected_text = st.radio(
+            "Answer Options",  # More descriptive than "Select your answer:"
+            options=options_display_list,
             key=f"q_{current_q_index}_option",
-            index=selected_option_index # Pre-select if already answered
+            index=selected_option_index,
+            help="Select the correct answer from the options below",
+            label_visibility="visible" 
         )
         
-        # Form buttons for Next and Abandon
+        # Navigation buttons with clear labels
         col_next_btn, col_abandon_btn = st.columns(2)
         with col_next_btn:
-            submit_button = st.form_submit_button("Next Question ▶️", use_container_width=True)
+            submit_button = st.form_submit_button(
+                "Next Question ▶️",
+                use_container_width=True,
+                help="Save your answer and move to the next question"
+            )
         with col_abandon_btn:
-            if st.form_submit_button("🗑️ Abandon Quiz", use_container_width=True, type="secondary"):
+            if st.form_submit_button(
+                "🗑️ End Quiz",  # Changed from "Abandon Quiz" for clarity
+                use_container_width=True,
+                type="secondary",
+                help="Stop the current quiz without completing it"
+            ):
                 _reset_quiz_state(ss) # Reset current quiz, do not clear all history
                 st.info("Quiz abandoned. Your overall score history is preserved.")
                 st.rerun()
@@ -446,7 +623,6 @@ def _display_quiz_results(ss):
 
 # Main function for the quiz interface
 def quiz_interface(model, model_error): # Accept model and model_error
-    st.title("🧠 NCC AI Quiz Challenge")
     st.write("Test your knowledge about NCC topics!")
 
     # Use a common session state object for brevity and clarity

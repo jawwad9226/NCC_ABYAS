@@ -29,3 +29,108 @@
 2025-06-16 12:13:48,711 - INFO - NumExpr defaulting to 4 threads.
 2025-06-16 16:23:23,467 - INFO - NumExpr defaulting to 4 threads.
 2025-06-16 16:55:23,979 - INFO - NumExpr defaulting to 4 threads.
+2025-06-17 22:06:13,616 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:06:14,165 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:06:14,492 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:06:14,848 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:06:15,256 - INFO - NumExpr defaulting to 4 threads.
+2025-06-17 22:06:20,748 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:06:21,148 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:06:21,480 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:06:22,086 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:19:48,972 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:19:49,387 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:19:49,704 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:19:50,009 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:28:18,892 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:28:19,334 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:28:19,668 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:28:20,042 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-17 22:28:33,087 - INFO - NumExpr defaulting to 4 threads.
+2025-06-18 19:43:34,812 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 19:43:35,380 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 19:43:35,829 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 19:43:36,516 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 19:43:46,689 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 19:43:47,134 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 19:43:47,544 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 19:43:48,075 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 20:10:17,958 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 20:10:18,645 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 20:10:19,157 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-18 20:10:19,612 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-19 12:10:16,954 - WARNING - Skipped partially parsed question block due to missing fields: Q: What does NCC stand for?
+A) National Cadet Corps
+B... Options: 0, Answer: 'A', Explanation: True
+2025-06-19 12:10:16,955 - WARNING - Skipped partially parsed question block due to missing fields: Q: Which of the following is a primary aim of the NCC... Options: 0, Answer: 'B', Explanation: True
+2025-06-19 12:10:16,955 - WARNING - Skipped partially parsed question block due to missing fields: Q: What is the highest rank attainable by a cadet in ... Options: 0, Answer: 'D', Explanation: True
+2025-06-19 12:10:16,956 - WARNING - Skipped partially parsed question block due to missing fields: Q: In which year was the NCC established in India?
+A)... Options: 0, Answer: 'A', Explanation: True
+2025-06-19 12:10:16,956 - WARNING - Skipped partially parsed question block due to missing fields: Q: Which of these is NOT a wing of the NCC?
+A) Army W... Options: 0, Answer: 'D', Explanation: True
+2025-06-19 12:10:16,957 - WARNING - Skipped partially parsed question block due to missing fields: Q: What is the primary uniform colour of the NCC Army... Options: 0, Answer: 'C', Explanation: True
+2025-06-19 12:10:16,957 - ERROR - Failed to parse any questions from AI response. Raw response:
+Q: What does NCC stand for?
+A) National Cadet Corps
+B) National Civil Corps
+C) National Community Corps
+D) National Cultural Corps
+ANSWER: A
+EXPLANATION: NCC is the abbreviation for National Cadet Corps, a youth organization in India.  The other options are not related to the organization.
+
+---
+
+Q:  Which of the following is a primary aim of the NCC?
+A) To promote tourism
+B) To develop leadership qualities in young citizens
+C) To train cadets for specific corporate jobs
+D) To encourage participation in political campaigns
+ANSWER: B
+EXPLANATION: The NCC focuses on developing leadership, character, and discipline among young citizens.  The other options are not core objectives of the NCC.
+
+---
+
+Q:  What is the highest rank attainable by a cadet in the NCC?
+A) Sergeant
+B) Captain
+C) Lieutenant
+D) Senior Under Officer
+ANSWER: D
+EXPLANATION: Senior Under Officer (SUO) is the highest rank a cadet can achieve within the NCC.  The other ranks are lower ranks within the cadet structure.
+
+---
+
+Q:  In which year was the NCC established in India?
+A) 1948
+B) 1950
+C) 1962
+D) 1971
+ANSWER: A
+EXPLANATION: The NCC was established in India in 1948. The other years are not relevant to the NCC's founding.
+
+---
+
+Q:  Which of these is NOT a wing of the NCC?
+A) Army Wing
+B) Air Wing
+C) Naval Wing
+D) Space Wing
+ANSWER: D
+EXPLANATION: The NCC has Army, Naval, and Air Wings. A Space Wing is not part of the NCC's structure.
+
+---
+
+Q:  What is the primary uniform colour of the NCC Army Wing?
+A) Navy Blue
+B) Dark Grey
+C) Khaki
+D) Light Blue
+ANSWER: C
+EXPLANATION: The NCC Army Wing cadets primarily wear khaki uniforms. The other colours are associated with other wings or other uniforms.
+
+2025-06-19 12:36:43,424 - INFO - NumExpr defaulting to 4 threads.
+2025-06-19 12:52:17,105 - INFO - NumExpr defaulting to 4 threads.
+2025-06-19 12:53:35,262 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-19 12:53:35,930 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-19 12:53:36,316 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-06-19 12:53:36,727 - INFO - file_cache is only supported with oauth2client<4.0.0
