@@ -4,10 +4,12 @@ from functools import partial
 from typing import Optional
 import base64
 
+import re # For SVG content manipulation
 # Core streamlit imports
 import streamlit as st
 from streamlit_pdf_viewer import pdf_viewer
 
+from utils import Config # Import Config to get DATA_DIR
 # Local imports
 from utils import (
     setup_gemini,
@@ -30,21 +32,163 @@ if "version_info_printed" not in st.session_state:
     st.session_state.version_info_printed = True
 
 def get_image_as_base64(image_path):
-    """Convert an image to base64 string."""
+    """Convert an image (PNG or SVG) to base64 data URL."""
     with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode('utf-8')
+        base64_string = base64.b64encode(img_file.read()).decode('utf-8')
+        # Determine MIME type based on file extension
+        if image_path.lower().endswith('.png'):
+            mime_type = 'image/png'
+        elif image_path.lower().endswith('.svg'):
+            mime_type = 'image/svg+xml'
+        else:
+            mime_type = 'image/*' # Generic fallback
+        return f"data:{mime_type};base64,{base64_string}"
 
 def main():
-    """
+    """    
     Main entry point for the NCC ABYAS application.
     Handles overall structure, navigation, theme, and routing to different features.
     """
     st.set_page_config(
         page_title="NCC ABYAS",
-        page_icon="🎓",
+        page_icon=os.path.join(Config.DATA_DIR, "logo.svg"), # Use SVG for page icon
         layout="wide"
     )
     
+    # --- Intro Screen Logic ---
+    if "show_intro_screen" not in st.session_state:
+        st.session_state.show_intro_screen = True
+
+    if st.session_state.show_intro_screen:
+        # Extract SVG content from your logo.svg to be embedded in the animation
+        try:
+            with open(os.path.join(Config.DATA_DIR, "logo.svg"), "r", encoding="utf-8") as f_logo:
+                logo_svg_full_content = f_logo.read()
+            # Extract content within the <svg> tags, or use the whole thing if simple
+            match = re.search(r'<svg[^>]*>(.*)</svg>', logo_svg_full_content, re.DOTALL | re.IGNORECASE)
+            if match:
+                actual_logo_inner_svg = match.group(1).strip()
+            else:
+                actual_logo_inner_svg = "<!-- Logo content could not be extracted -->"
+        except FileNotFoundError:
+            actual_logo_inner_svg = "<text x='50' y='50' fill='white'>Error: logo.svg not found in data directory.</text>"
+        except Exception as e:
+            actual_logo_inner_svg = f"<text x='50' y='50' fill='white'>Error loading logo: {str(e)}</text>"
+
+        # Durations from intro.html's JS (in milliseconds)
+        # lineDuration = 1000; lineDelay = 200; rectDuration = 1500; rectDelay = 1200;
+        # remainTimeAfterReveal = 1000;
+        # totalAnimationTime = (rectDelay + rectDuration) + remainTimeAfterReveal; -> (1200+1500) + 1000 = 3700ms
+        total_animation_time_ms = 3700
+
+        intro_animation_html = f"""
+            <style>
+                body {{{{
+                    overflow: hidden; /* Prevent scrolling main content when intro is visible */
+                }}}}
+                .intro-loading-overlay {{{{
+                    position: fixed;
+                    top: 0; left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background: rgba(15, 73, 137, 0.95); /* NCC Blue, semi-transparent, slightly darker */
+                    display: flex; 
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999; /* High z-index to be on top */
+                }}
+                .loading-container-anim {{ /* Renamed to avoid conflict if intro.html is also loaded */
+                    width: 300px; height: 300px; /* Adjust as needed */
+                    display: flex; justify-content: center; align-items: center;
+                    position: relative;
+                }}
+                .logo-svg-animator {{ /* Class for the animator SVG */
+                    overflow: visible; 
+                    transform: scale(0.8); /* Adjust overall size if needed */
+                    width: 100%; height: 100%;
+                }}
+                #reveal-line {{{{
+                    stroke-dasharray: 1024; stroke-dashoffset: 1024;
+                    transform-origin: 512px 512px; /* Center of 1024x1024 viewBox */
+                    animation: drawLine 1s ease-out forwards;
+                    animation-delay: 0.2s;
+                }}
+                #reveal-rect {{{{
+                    transform: rotate(-20deg) scaleX(0);
+                    transform-origin: 512px 512px; /* Center of 1024x1024 viewBox */
+                    animation: revealLogo 1.5s linear forwards;
+                    animation-delay: 1.2s; /* Starts after line drawing */
+                }}
+                .logo-elements-to-reveal {{{{
+                    /* No specific styles needed here unless for positioning within clipPath */
+                }}
+                @keyframes drawLine {{{{
+                    to {{{{
+                        stroke-dashoffset: 0;
+                        transform: rotate(-20deg);
+                    }}}}
+                }}}}
+                @keyframes revealLogo {{{{
+                    0% {{{{ transform: rotate(-20deg) scaleX(0); }}}}
+                    100% {{{{ transform: rotate(-20deg) scaleX(1); }}}}
+                }}}}
+            </style>
+            <div class="intro-loading-overlay">
+                <div class="loading-container-anim">
+                    <svg viewBox="0 0 1024 1024" class="logo-svg-animator">
+                        <defs>
+                            <clipPath id="logoRevealClip">
+                                <rect id="reveal-rect" x="0" y="0" width="1024" height="1024" fill="white" />
+                            </clipPath>
+                        </defs>
+                        <line id="reveal-line" x1="512" y1="0" x2="512" y2="1024" stroke="white" stroke-width="6" />
+                        <g class="logo-elements-to-reveal" clip-path="url(#logoRevealClip)">
+                            <!-- Embed your actual logo.svg content, scaled and centered -->
+                            <!-- Assuming your logo.svg's viewBox is also 0 0 1024 1024 or similar -->
+                            {actual_logo_inner_svg}
+                        </g>
+                    </svg>
+                </div>
+                <div id="hiddenButtonContainer" style="display:none; position:absolute; top:-2000px; left:-2000px;">
+                    <!-- Hidden Streamlit button will be placed here by Python -->
+                </div>
+            </div>
+            <script>
+                setTimeout(function() {{{{
+                    const container = window.parent.document.getElementById('hiddenButtonContainer');
+                    if (container) {{{{
+                        const button = container.querySelector('button');
+                        if (button) {{{{
+                            button.click();
+                        }}}} else {{{{
+                            console.warn('Intro proceed button not found in container.');
+                            // Fallback: attempt to reload, hoping session state handles it.
+                            // This might cause a loop if Python state isn't set correctly.
+                            // window.location.reload(); 
+                        }}}}
+                    }}}} else {{{{
+                        console.warn('Hidden button container not found for intro.');
+                    }}}}
+                }}}}, {total_animation_time_ms});
+            </script>
+        """
+        st.markdown(intro_animation_html, unsafe_allow_html=True)
+
+        # Hidden button to be clicked by JavaScript
+        button_placeholder = st.empty() # Create a placeholder for the button
+        with button_placeholder.container(): # Use the placeholder
+             # This markdown is a trick to inject the button into the hiddenButtonContainer div
+            st.markdown('<div id="hiddenButtonContainer" style="display:none; position:absolute; top:-2000px; left:-2000px;">', unsafe_allow_html=True)
+            def proceed_from_intro():
+                st.session_state.show_intro_screen = False
+                # No need to explicitly call st.rerun() here, on_click handles it.
+            
+            st.button("ProceedHidden", on_click=proceed_from_intro, key="hidden_proceed_button_key_v2")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.stop() # Stop further execution to only show the intro screen
+
     # Initialize Gemini model first
     model, model_error = setup_gemini()
     
@@ -67,12 +211,13 @@ def main():
     
     with header_col1:
         # Get logo as base64
-        logo_base64 = get_image_as_base64("logo.png")
+        logo_path = os.path.join(Config.DATA_DIR, "logo.svg") # Use SVG logo
+        logo_base64_data_url = get_image_as_base64(logo_path)
         
         # Create header with logo
         header_html = f'''
             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <img src="data:image/png;base64,{logo_base64}" style="height: 2rem; width: auto;">
+                <img src="{logo_base64_data_url}" style="height: 2rem; width: auto;">
                 <h1 style="margin:0;font-size:1.25rem">NCC ABYAS</h1>
             </div>
         '''
@@ -108,7 +253,7 @@ def main():
     st.sidebar.markdown("---")
 
     # API cooldown info moved up in sidebar
-    st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} minutes between questions if you hit rate limits.")
+    st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} min. if you hit rate limits.")
 
     st.sidebar.markdown("---") # Separator
 

@@ -638,22 +638,23 @@ def quiz_interface(model, model_error): # Accept model and model_error
     else:
         _display_quiz_results(ss)
 
-    # Display quiz score history for adaptive difficulty calculation visibility
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Quiz Score History")
-    score_history = ss.get(f"{SS_PREFIX}quiz_score_history", [])
-    if score_history:
-        for i, entry in enumerate(reversed(score_history)): # Show most recent first
-            try:
-                timestamp_str = datetime.fromisoformat(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
-            except (TypeError, ValueError):
-                timestamp_str = "Unknown Time"
-            st.sidebar.write(f"**{i+1}.** {timestamp_str} | Score: {entry.get('score', 0):.2f}% | Diff: {entry.get('difficulty', 'N/A')} | Topic: {entry.get('topic', 'N/A')}")
-    else:
-        st.sidebar.info("No quiz history yet. Take a quiz to build your history!")
+    # Removed Quiz Score History display from sidebar as it's in the "History Viewer" tab.
+    # # Display quiz score history for adaptive difficulty calculation visibility
+    # st.sidebar.markdown("---")
+    # st.sidebar.subheader("Quiz Score History")
+    # score_history = ss.get(f"{SS_PREFIX}quiz_score_history", [])
+    # if score_history:
+    #     for i, entry in enumerate(reversed(score_history)): # Show most recent first
+    #         try:
+    #             timestamp_str = datetime.fromisoformat(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
+    #         except (TypeError, ValueError):
+    #             timestamp_str = "Unknown Time"
+    #         st.sidebar.write(f"**{i+1}.** {timestamp_str} | Score: {entry.get('score', 0):.2f}% | Diff: {entry.get('difficulty', 'N/A')} | Topic: {entry.get('topic', 'N/A')}")
+    # else:
+    #     st.sidebar.info("No quiz history yet. Take a quiz to build your history!")
 
-    # Option to clear quiz history
-    if st.sidebar.button("Clear Quiz History", key="clear_quiz_history_sidebar"):
-        clear_quiz_score_history() # Use new dedicated function
-        _reset_quiz_state(ss) # Reset quiz state after clearing history
-        st.rerun()
+    # # Option to clear quiz history
+    # if st.sidebar.button("Clear Quiz History", key="clear_quiz_history_sidebar"):
+    #     clear_quiz_score_history() # Use new dedicated function
+    #     _reset_quiz_state(ss) # Reset quiz state after clearing history
+    #     st.rerun()

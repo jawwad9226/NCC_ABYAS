@@ -290,8 +290,8 @@ def video_guides():
                             st.write(desc)
                         
                     # Show tags if available
-                    if video.tags:
-                        st.write("**Tags:** " + ", ".join(f"`{tag}`" for tag in video.tags))
+                    # if video.tags: # Tags display removed as per user request
+                    #     st.write("**Tags:** " + ", ".join(f"`{tag}`" for tag in video.tags))
                 
                     # Play button
                     if st.button("▶️ Play Video", key=f"play_{video.id}"):
