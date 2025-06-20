@@ -263,49 +263,6 @@ def process_chat_input(prompt: str) -> None:
     
     st.rerun()
 
-def display_chat_history():
-    """Display the chat history view."""
-    st.markdown("### 📜 Chat History")
-    history = read_history("chat") # Use read_history("chat")
-    if history:
-        try:
-            history_data = json.loads(history)
-            history_data.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-            
-            for date, items in groupby(history_data, key=lambda x: x.get('timestamp', '')[:10]):
-                items = list(items)
-                with st.expander(f"📅 {date}", expanded=True):
-                    for item in items:
-                        prompt = item.get('prompt', '')
-                        timestamp = item.get('timestamp', '').split('T')[1][:8]
-                        preview = f"🕒 {timestamp} - {prompt[:50]}..."
-                        
-                        if st.button(
-                            preview,
-                            key=f"conv_{item.get('timestamp', '')}_{st.session_state.widget_keys['chat_input']}"
-                        ):
-                            st.session_state.selected_conversation = item
-                            st.rerun()
-            
-            if st.session_state.selected_conversation:
-                st.markdown("### Selected Conversation")
-                with st.chat_message("user"):  # Corrected from "st.chat_message.user"
-                    st.write(st.session_state.selected_conversation['prompt'])
-                with st.chat_message("assistant"):
-                    st.write(st.session_state.selected_conversation['response'])
-            
-            st.download_button(
-                "⬇️ Download History",
-                data=json.dumps(history_data, indent=2),
-                file_name="chat_history.json",
-                mime="application/json", # Corrected from "application\json"
-                key=f"download_history_{st.session_state.widget_keys['chat_input']}"
-            )
-        except json.JSONDecodeError:
-            st.error("Failed to parse chat history.")
-    else:
-        st.info("No chat history available yet.")
-
 def display_clear_confirmation():
     """Display the clear history confirmation dialog."""
     st.warning("Are you sure you want to clear the chat history?")

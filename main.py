@@ -45,6 +45,131 @@ def get_image_as_base64(image_path):
             mime_type = 'image/*' # Generic fallback
         return f"data:{mime_type};base64,{base64_string}"
 
+def add_floating_chat_button():
+    """Add floating chat button with custom styling"""
+    # Get chat icon as base64
+    chat_icon_path = os.path.join(Config.DATA_DIR, "chat_logo.svg")
+    
+    # Check if chat_logo.svg exists, if not use a fallback
+    if os.path.exists(chat_icon_path):
+        chat_icon_base64 = get_image_as_base64(chat_icon_path)
+    else:
+        # Fallback to a simple chat icon if chat_logo.svg doesn't exist
+        chat_icon_base64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEgMjAuMSAxNCAyMCAxNEg2TDIgMThWNEMyIDIuOSAyLjkgMiA0IDJIMjBDMjAuMSAyIDIxIDIuOSAyMSA0VjEyWiIgZmlsbD0iIzYzNjZGMSIvPgo8L3N2Zz4K"
+    
+    # Add CSS for floating button
+    st.markdown(f"""
+        <style>
+        .floating-chat-btn {{
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 45px;
+            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+            border: none;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }}
+        
+        .floating-chat-btn:hover {{
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+            background: linear-gradient(135deg, #5856EC, #7C3AED);
+        }}
+        
+        .floating-chat-btn.active {{
+            background: linear-gradient(135deg, #10B981, #059669);
+            animation: none;
+        }}
+        
+        .floating-chat-btn img {{
+            width: 28px;
+            height: 28px;
+            filter: brightness(0) invert(1);
+        }}
+        
+        @keyframes pulse {{
+            0% {{
+                box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            }}
+            50% {{
+                box-shadow: 0 4px 25px rgba(99, 102, 241, 0.5);
+            }}
+            100% {{
+                box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            }}
+        }}
+        
+        /* Chat overlay styles */
+        .chat-overlay {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }}
+        
+        .chat-overlay.active {{
+            display: block;
+        }}
+        
+        /* Hide sidebar when chat is active */
+        .chat-active .css-1d391kg {{
+            display: none;
+        }}
+        
+        /* Notification badge for chat */
+        .chat-notification {{
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #EF4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }}
+        </style>
+        
+        <div id="floating-chat-container">
+            <button class="floating-chat-btn {'active' if st.session_state.get('chat_mode_active', False) else ''}" 
+                    onclick="toggleChat()" 
+                    title="Open Chat Assistant">
+                <img src="{chat_icon_base64}" alt="Chat">
+                {f'<div class="chat-notification">!</div>' if st.session_state.get('has_chat_notification', False) else ''}
+            </button>
+        </div>
+        
+        <script>
+        function toggleChat() {{
+            // Find the container of the hidden button and then the button inside it
+            const container = window.parent.document.getElementById('hidden-chat-toggle-container');
+            if (container) {{
+                const button = container.querySelector('button');
+                if (button) {{
+                    button.click();
+                }}
+            }}
+        }}
+        </script>
+    """, unsafe_allow_html=True)
+
 def main():
     """    
     Main entry point for the NCC ABYAS application.
@@ -55,6 +180,12 @@ def main():
         page_icon=os.path.join(Config.DATA_DIR, "logo.svg"), # Use SVG for page icon
         layout="wide"
     )
+    
+    # Initialize session states
+    if "chat_mode_active" not in st.session_state:
+        st.session_state.chat_mode_active = False
+    if "previous_app_mode" not in st.session_state:
+        st.session_state.previous_app_mode = "🎯 Knowledge Quiz"
     
     # Initialize Gemini model first
     model, model_error = setup_gemini()
@@ -106,43 +237,69 @@ def main():
     # Apply theme
     apply_theme(st.session_state.theme_mode)
 
-    # --- Sidebar Navigation ---
-    st.sidebar.header("Navigation")
-
-    # Sidebar Navigation
-    app_mode = st.sidebar.radio(
-        label="Navigation Menu",  # Add proper label for accessibility
-        options=["💬 Chat Assistant", "🎯 Knowledge Quiz", "📚 Syllabus Viewer", "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"],
-        key="app_mode_radio_primary",
-        label_visibility="hidden"  # Hide the label since we have the header
-    )
-
-    st.sidebar.markdown("---")
-
-    # API cooldown info moved up in sidebar
-    st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} min. if you hit rate limits.")
-
-    st.sidebar.markdown("---") # Separator
-
-    # Reset All State Button
-    if st.sidebar.button("♻️ Reset All"):
-        # Clear session state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        # Clear on-disk logs
-        clear_history("chat")
-        clear_history("quiz")
-        clear_history("bookmark") # Assuming you might add this later
+    # This is a hidden button that the floating button's JavaScript will "click"
+    # to communicate back to the Streamlit server.
+    st.markdown('<div id="hidden-chat-toggle-container" style="display:none;">', unsafe_allow_html=True)
+    if st.button("Hidden Chat Toggle", key="hidden_chat_toggle"):
+        st.session_state.chat_mode_active = not st.session_state.get('chat_mode_active', False)
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- Dev Tools Link ---
-    if st.sidebar.button("🛠️ Open Dev Tools", key="open_dev_tools"):
-        js = f'''
-            <script>
-            window.open("http://localhost:8501/dev_tools", "_blank");
-            </script>
-        '''
-        st.markdown(js, unsafe_allow_html=True)
+    # Add floating chat button (always visible unless in chat mode)
+    if not st.session_state.chat_mode_active:
+        add_floating_chat_button()
+
+    # --- Sidebar Navigation (hidden when chat is active) ---
+    if not st.session_state.chat_mode_active:
+        st.sidebar.header("Navigation")
+
+        # Sidebar Navigation (removed Chat Assistant option)
+        app_mode = st.sidebar.radio(
+            label="Navigation Menu",  # Add proper label for accessibility
+            options=["🎯 Knowledge Quiz", "📚 Syllabus Viewer", "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"],
+            key="app_mode_radio_primary",
+            label_visibility="hidden"  # Hide the label since we have the header
+        )
+
+        st.sidebar.markdown("---")
+
+        # API cooldown info moved up in sidebar
+        st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} min. if you hit rate limits.")
+
+        st.sidebar.markdown("---") # Separator
+
+        # Reset All State Button
+        if st.sidebar.button("♻️ Reset All"):
+            # Clear session state
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            # Clear on-disk logs
+            clear_history("chat")
+            clear_history("quiz")
+            clear_history("bookmark") # Assuming you might add this later
+            st.rerun()
+
+        # --- Dev Tools Link ---
+        if st.sidebar.button("🛠️ Open Dev Tools", key="open_dev_tools"):
+            js = f'''
+                <script>
+                window.open("http://localhost:8501/dev_tools", "_blank");
+                </script>
+            '''
+            st.markdown(js, unsafe_allow_html=True)
+            
+        # Store the current app mode for when we return from chat
+        st.session_state.previous_app_mode = app_mode
+    else:
+        # When in chat mode, use the previous app mode or default
+        app_mode = "💬 Chat Assistant"
+        
+        # Add a close button for chat mode
+        if st.button("← Back to " + st.session_state.previous_app_mode.split(" ", 1)[1], key="close_chat"):
+            st.session_state.chat_mode_active = False
+            st.rerun()
+        
+        st.markdown("---")
         
     # Handle dev tools route
     if st.query_params.get("page") == ["dev_tools"]:
@@ -151,51 +308,8 @@ def main():
         display_dev_tools()
         return # Stop further rendering of main page if dev_tools is active
 
-    # --- Helper function for PDF viewer component ---
-    # This function will be moved to syllabus_manager.py
-    # def display_pdf_viewer(file_path: str, height: int = 750, page_number: int = 1):
-    # #     """
-    #     Embeds a PDF file in the Streamlit app using streamlit_pdf_viewer.
-    #     Note: Page navigation is handled by the viewer's built-in controls.
-    #     """
-    #     try:
-    #         if not os.path.exists(file_path):
-    #             st.error(f"🚨 PDF Error: File not found at '{file_path}'.")
-    #             return False
-    #         if not file_path.endswith('.pdf'):
-    #             st.error("🚨 Invalid file type. Only PDF files are supported.")
-    #             return False
-    #
-    #         # Display a note about browser compatibility - This can be shown once above the viewer
-    #         # st.info("💡 PDF navigation is available through the built-in controls. If you experience any issues, you can download the PDF to view it locally.", icon="ℹ️")
-    #        
-    #         # Add a download button for the PDF
-    #         # with open(file_path, "rb") as f:
-    #         #     st.download_button(
-    #         #         label="📥 Download PDF",
-    #         #         data=f.read(),
-    #         #         file_name=os.path.basename(file_path),
-    #         #         mime="application/pdf"
-    #         #     )
-    #        
-    #         # The PDF viewer component
-    #         pdf_viewer(
-    #             file_path,
-    #             height=height,
-    #             width="100%"  # The page navigation is handled by the viewer's built-in controls
-    #         )
-    #         return True
-    #        
-    #     except ImportError:
-    #         st.error("🚨 PDF viewer component (streamlit-pdf-viewer) not installed properly.")
-    #         return False
-    #     except Exception as e:
-    #         st.error(f"🚨 Error displaying PDF: {str(e)}")
-    #         return False
-    # End of display_pdf_viewer function placeholder
-
     # --- Module Routing ---
-    if app_mode == "💬 Chat Assistant":
+    if st.session_state.chat_mode_active or app_mode == "💬 Chat Assistant":
         from chat_interface import chat_interface # Lazy import
         chat_func = partial(get_ncc_response, model, model_error)
         chat_interface()
