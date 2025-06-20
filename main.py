@@ -19,7 +19,7 @@ from utils import (
     read_history, # Use the centralized read_history
     read_history
 )
-from src.utils import (
+from src.utils import ( # type: ignore
     apply_theme,
     get_theme_config
 )
@@ -47,20 +47,17 @@ def get_image_as_base64(image_path):
 
 def add_floating_chat_button():
     """Add floating chat button with custom styling"""
-    # Get chat icon as base64
     chat_icon_path = os.path.join(Config.DATA_DIR, "chat_logo.svg")
-    
-    # Check if chat_logo.svg exists, if not use a fallback
+
     if os.path.exists(chat_icon_path):
         chat_icon_base64 = get_image_as_base64(chat_icon_path)
     else:
-        # Fallback to a simple chat icon if chat_logo.svg doesn't exist
         chat_icon_base64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEgMjAuMSAxNCAyMCAxNEg2TDIgMThWNEMyIDIuOSAyLjkgMiA0IDJIMjBDMjAuMSAyIDIxIDIuOSAyMSA0VjEyWiIgZmlsbD0iIzYzNjZGMSIvPgo8L3N2Zz4K"
-    
-    # Add CSS for floating button
-    st.markdown(f"""
+
+    # Separate static CSS and JS from dynamic HTML to avoid f-string parsing issues.
+    css_style = """
         <style>
-        .floating-chat-btn {{
+        .floating-chat-btn {
             position: fixed;
             bottom: 30px;
             right: 30px;
@@ -77,39 +74,39 @@ def add_floating_chat_button():
             align-items: center;
             justify-content: center;
             animation: pulse 2s infinite;
-        }}
+        }
         
-        .floating-chat-btn:hover {{
+        .floating-chat-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
             background: linear-gradient(135deg, #5856EC, #7C3AED);
-        }}
+        }
         
-        .floating-chat-btn.active {{
+        .floating-chat-btn.active {
             background: linear-gradient(135deg, #10B981, #059669);
             animation: none;
-        }}
+        }
         
-        .floating-chat-btn img {{
+        .floating-chat-btn img {
             width: 28px;
             height: 28px;
             filter: brightness(0) invert(1);
-        }}
+        }
         
-        @keyframes pulse {{
-            0% {{
+        @keyframes pulse {
+            0% {
                 box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-            }}
-            50% {{
+            }
+            50% {
                 box-shadow: 0 4px 25px rgba(99, 102, 241, 0.5);
-            }}
-            100% {{
+            }
+            100% {
                 box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-            }}
-        }}
+            }
+        }
         
         /* Chat overlay styles */
-        .chat-overlay {{
+        .chat-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -118,19 +115,19 @@ def add_floating_chat_button():
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
             display: none;
-        }}
+        }
         
-        .chat-overlay.active {{
+        .chat-overlay.active {
             display: block;
-        }}
+        }
         
         /* Hide sidebar when chat is active */
-        .chat-active .css-1d391kg {{
+        .chat-active .css-1d391kg {
             display: none;
-        }}
+        }
         
         /* Notification badge for chat */
-        .chat-notification {{
+        .chat-notification {
             position: absolute;
             top: -5px;
             right: -5px;
@@ -144,31 +141,37 @@ def add_floating_chat_button():
             align-items: center;
             justify-content: center;
             font-weight: bold;
-        }}
+        }
         </style>
-        
+    """
+
+    active_class = 'active' if st.session_state.get('chat_mode_active', False) else ''
+    notification_badge = f'<div class="chat-notification">!</div>' if st.session_state.get('has_chat_notification', False) else ''
+
+    html_body = f"""
         <div id="floating-chat-container">
-            <button class="floating-chat-btn {'active' if st.session_state.get('chat_mode_active', False) else ''}" 
-                    onclick="toggleChat()" 
+            <button class="floating-chat-btn {active_class}" 
+                    onclick="toggleChat()"
+                    style="pointer-events: auto; cursor: pointer; z-index: 9999;"
                     title="Open Chat Assistant">
-                <img src="{chat_icon_base64}" alt="Chat">
-                {f'<div class="chat-notification">!</div>' if st.session_state.get('has_chat_notification', False) else ''}
+                <img src="{chat_icon_base64}" alt="Chat"/>
+                {notification_badge}
             </button>
         </div>
-        
+    """
+
+    js_script = """
         <script>
-        function toggleChat() {{
-            // Find the container of the hidden button and then the button inside it
-            const container = window.parent.document.getElementById('hidden-chat-toggle-container');
-            if (container) {{
-                const button = container.querySelector('button');
-                if (button) {{
-                    button.click();
-                }}
-            }}
-        }}
+        function toggleChat() {
+            // This method is more reliable for triggering a Streamlit rerun.
+            const url = new URL(window.location);
+            url.searchParams.set('chat_toggle', Date.now()); // Use Date.now() to ensure it's always a new value
+            window.location.href = url.toString(); // Use href for a more explicit navigation/reload
+        }
         </script>
-    """, unsafe_allow_html=True)
+    """
+
+    st.markdown(css_style + html_body + js_script, unsafe_allow_html=True)
 
 def main():
     """    
@@ -237,13 +240,11 @@ def main():
     # Apply theme
     apply_theme(st.session_state.theme_mode)
 
-    # This is a hidden button that the floating button's JavaScript will "click"
-    # to communicate back to the Streamlit server.
-    st.markdown('<div id="hidden-chat-toggle-container" style="display:none;">', unsafe_allow_html=True)
-    if st.button("Hidden Chat Toggle", key="hidden_chat_toggle"):
+    # Check for chat toggle in URL parameters and use the documented clear() method
+    if "chat_toggle" in st.query_params: # Check if the parameter exists
         st.session_state.chat_mode_active = not st.session_state.get('chat_mode_active', False)
+        del st.query_params["chat_toggle"] # Delete only the specific parameter
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # Add floating chat button (always visible unless in chat mode)
     if not st.session_state.chat_mode_active:
