@@ -1,21 +1,19 @@
 import streamlit as st
-from datetime import datetime
-from itertools import groupby
-import time  # For simulating cooldown display
+from datetime import datetime, timedelta
 import os
 import json
-from pathlib import Path
 import uuid
-
+import logging
+from itertools import groupby # Import groupby
 # Import from utils
 from utils import (
     read_history,
-    clear_history,
+    clear_history,  # Assuming you are calling this with clear_history("chat")
+    save_chat_to_file, # Import save_chat_to_file
     setup_gemini,
     get_ncc_response,
     Config,
     API_CALL_COOLDOWN_MINUTES,
-    _load_json_file  # Import the helper function
 )
 
 # Initialize Gemini model
@@ -27,62 +25,6 @@ class ChatConfig:
     MAX_TOKENS_CHAT = 1000
     HISTORY_FILE = os.path.join(Config.DATA_DIR, "chat_history.json")
     TRANSCRIPT_FILE = os.path.join(Config.DATA_DIR, "chat_transcript.txt")
-
-def save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
-    """Save chat interaction to history file and transcript."""
-    try:
-        # Save to JSON history
-        chat_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "prompt": user_prompt,
-            "response": assistant_response
-        }
-        
-        try:
-            with open(ChatConfig.HISTORY_FILE, 'r') as f:
-                history = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            history = []
-            
-        history.append(chat_entry)
-        with open(ChatConfig.HISTORY_FILE, 'w') as f:
-            json.dump(history, f, indent=2)
-            
-        # Save to transcript
-        with open(ChatConfig.TRANSCRIPT_FILE, 'a') as f:
-            f.write(f"\nUser ({chat_entry['timestamp']}):\n{user_prompt}\n")
-            f.write(f"\nAssistant:\n{assistant_response}\n")
-            f.write("\n" + "-"*80 + "\n")
-            
-    except Exception as e:
-        st.error(f"Failed to save chat: {str(e)}")
-        
-def clear_chat_history() -> bool:
-    """Clear chat history files."""
-    try:
-        # Clear JSON history
-        with open(ChatConfig.HISTORY_FILE, 'w') as f:
-            json.dump([], f)
-        
-        # Clear transcript
-        with open(ChatConfig.TRANSCRIPT_FILE, 'w') as f:
-            f.write("")
-            
-        return True
-    except Exception as e:
-        st.error(f"Failed to clear chat history: {str(e)}")
-        return False
-        
-def read_chat_history() -> str:
-    """Read chat history from file."""
-    try:
-        with open(ChatConfig.HISTORY_FILE, 'r') as f:
-            return f.read()
-    except FileNotFoundError:
-        return ""
-    except Exception as e:
-        st.error(f"Failed to read chat history: {str(e)}")
-        return ""
 
 def _check_and_reset_cooldown():
     """Check and reset cooldown if enough time has passed."""
@@ -114,15 +56,10 @@ def chat_interface():
             "clear_chat": str(uuid.uuid4()),
             "confirm_yes": str(uuid.uuid4()),
             "confirm_no": str(uuid.uuid4()),
-            "chat_input": str(uuid.uuid4()),
             "sample_questions": str(uuid.uuid4())
         }
-    if "show_history" not in st.session_state:
-        st.session_state.show_history = False
-    if "selected_conversation" not in st.session_state:
-        st.session_state.selected_conversation = None
-    if "confirm_clear" not in st.session_state:
-        st.session_state.confirm_clear = False
+    # Removed history/clear state management as it's handled in main.py History Viewer
+    
     if "last_interaction_time" not in st.session_state:
         st.session_state.last_interaction_time = None
 
@@ -208,21 +145,12 @@ def chat_interface():
 
     # Main chat container
     main_container = st.container()
+    
+    # Chat input and sample questions are now the primary content here
     with main_container:
-        # Top actions bar
-        col_actions1, col_actions2, col_spacer = st.columns([1, 1, 2])
-        
-        with col_actions1:
-            if st.button(
-                "🕒 View History",
-                key=f"view_history_btn_{st.session_state.widget_keys['clear_chat']}",
-                help="Show or hide your chat history",
-                use_container_width=True
-            ):
-                st.session_state.show_history = not st.session_state.show_history
-        
-        with col_actions2:
-            if st.button(
+        # Clear Chat button (kept here for clearing *current* session, but main history clear is in History Viewer)
+        # Consider if this button should clear session state or file history. Let's keep it for session state.
+        if st.button(
                 "🧹 Clear Chat",
                 key=f"clear_chat_btn_{st.session_state.widget_keys['clear_chat']}",
                 help="Clear all chat messages",
@@ -230,13 +158,16 @@ def chat_interface():
             ):
                 st.session_state.confirm_clear = True
 
+        # Confirmation dialog for clearing current chat session
+        if st.session_state.get("confirm_clear", False):
+            display_clear_confirmation() # Use the local confirmation function
+
         # Chat input
         if st.session_state.cooldown_active and st.session_state.cooldown_time_remaining > 0:
             st.info(f"Please wait {st.session_state.cooldown_time_remaining} seconds before sending another message.")
         
         if prompt := st.chat_input(
             "Type your NCC-related question here...",
-            key=f"chat_input_{st.session_state.widget_keys['chat_input']}",
             disabled=st.session_state.cooldown_active
         ):
             process_chat_input(prompt)
@@ -265,11 +196,6 @@ def chat_interface():
                         process_chat_input(question)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # History view or confirmation dialog
-        if st.session_state.show_history:
-            display_chat_history()
-        elif st.session_state.confirm_clear:
-            display_clear_confirmation()
 
         # Display chat messages
         display_chat_messages()
@@ -332,7 +258,7 @@ def process_chat_input(prompt: str) -> None:
                     "content": response,
                     "timestamp": assistant_timestamp
                 }
-                st.session_state.messages.append(assistant_message)
+                st.session_state.messages.append(assistant_message) # Add to current session messages
                 save_chat_to_file(prompt, response)
     
     st.rerun()
@@ -340,7 +266,7 @@ def process_chat_input(prompt: str) -> None:
 def display_chat_history():
     """Display the chat history view."""
     st.markdown("### 📜 Chat History")
-    history = read_chat_history()
+    history = read_history("chat") # Use read_history("chat")
     if history:
         try:
             history_data = json.loads(history)
@@ -363,7 +289,7 @@ def display_chat_history():
             
             if st.session_state.selected_conversation:
                 st.markdown("### Selected Conversation")
-                with st.chat_message("user"):
+                with st.chat_message("user"):  # Corrected from "st.chat_message.user"
                     st.write(st.session_state.selected_conversation['prompt'])
                 with st.chat_message("assistant"):
                     st.write(st.session_state.selected_conversation['response'])
@@ -372,7 +298,7 @@ def display_chat_history():
                 "⬇️ Download History",
                 data=json.dumps(history_data, indent=2),
                 file_name="chat_history.json",
-                mime="application/json",
+                mime="application/json", # Corrected from "application\json"
                 key=f"download_history_{st.session_state.widget_keys['chat_input']}"
             )
         except json.JSONDecodeError:
@@ -385,9 +311,10 @@ def display_clear_confirmation():
     st.warning("Are you sure you want to clear the chat history?")
     col_yes, col_no = st.columns(2)
     with col_yes:
-        if st.button("Yes", key=f"confirm_yes_{st.session_state.widget_keys['confirm_yes']}"):
-            st.session_state.messages = []
-            clear_chat_history()
+        if st.button("Yes", key=f"confirm_yes_{st.session_state.widget_keys['confirm_yes']}", on_click=lambda: clear_history("chat")):
+            st.session_state.messages = [] # Clear session state messages
+            clear_history("chat") # Use utils.clear_history for file operations
+            # Note: This clear_chat_history is local to chat_interface.py and clears files.
             st.session_state.confirm_clear = False
             st.session_state.show_history = False
             st.success("Chat history cleared!")
@@ -397,6 +324,12 @@ def display_clear_confirmation():
             st.session_state.confirm_clear = False
             st.info("Operation cancelled.")
             st.rerun()
+
+# Moved save_chat_to_file and clear_chat_history to utils.py
+# to centralize file operations.
+# The local clear_chat_history function above is only for the confirmation dialog
+# within the chat tab itself, clearing the *current* session and files.
+# The main History Viewer tab in main.py will use the utils.clear_history function.
 
 def display_chat_messages():
     """Display the chat messages."""

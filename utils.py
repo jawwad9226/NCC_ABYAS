@@ -126,12 +126,13 @@ def _save_json_file(file_path: str, data: Any) -> bool:
         logging.error(f"Error saving to {file_path}: {str(e)}")
         return False
 
-def _save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
+def save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
     """Save chat interaction to history file and transcript."""
     try:
         # Save to JSON history
         history_path = Config.LOG_PATHS['chat']['history']
-        history = _load_json_file(history_path, [])
+        # Load existing history, default to empty list if file doesn't exist or is invalid
+        history = _load_json_file(history_path, default=[])
         history.append({
             "timestamp": datetime.now().isoformat(),
             "prompt": user_prompt,
@@ -146,12 +147,24 @@ def _save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
             with open(transcript_path, 'a', encoding='utf-8') as f:
                 f.write(f"\n[{timestamp}] USER: {user_prompt}\n")
                 f.write(f"[{timestamp}] AI: {assistant_response}\n")
+                f.write("-" * 40 + "\n") # Add separator in transcript
         except Exception as e:
             logging.error(f"Failed to append to chat transcript: {str(e)}")
             
     except Exception as e:
         logging.error(f"Failed to save chat history: {str(e)}")
         logging.debug(f"Failed chat data: Prompt='{user_prompt}', Response='{assistant_response}'")
+
+def save_quiz_log_entry(quiz_data: Dict[str, Any]) -> None:
+    """Save a completed quiz log entry to file."""
+    try:
+        log_path = Config.LOG_PATHS['quiz']['log']
+        logs = _load_json_file(log_path, default=[])
+        logs.append(quiz_data)
+        _save_json_file(log_path, logs)
+    except Exception as e:
+        logging.error(f"Failed to save quiz log entry: {str(e)}")
+
 
 # --- Quiz Score History Functions ---
 def load_quiz_score_history() -> List[Dict[str, Any]]:
@@ -161,7 +174,7 @@ def load_quiz_score_history() -> List[Dict[str, Any]]:
 def append_quiz_score_entry(entry: Dict[str, Any]) -> None:
     """Appends a quiz score entry to the history and saves it to file."""
     try:
-        history = load_quiz_score_history()
+        history = load_quiz_score_history() # Load existing history
         history.append(entry) # entry is a dict
         _save_json_file(Config.QUIZ_SCORE_HISTORY_FILE, history)
     except Exception as e:
@@ -173,6 +186,7 @@ def clear_quiz_score_history() -> bool:
     try:
         scores_path = Config.LOG_PATHS['quiz']['scores']
         if os.path.exists(scores_path):
+            # Overwrite with empty list instead of deleting, to keep file structure, or remove.
             os.remove(scores_path)
         return True
     except Exception as e:
@@ -180,13 +194,13 @@ def clear_quiz_score_history() -> bool:
         return False
 # --- Public API ---
 def clear_history(file_type: str = "chat") -> bool:
-    """Clear history for the specified type.
+    """Clear history files for the specified type.
     
     Args:
         file_type: Type of history to clear ('chat' or 'quiz')
     
     Returns:    
-        bool: True if successful, False otherwise
+        bool: True if successful, False otherwise. Note: This clears files, not session state.
     """
     try:
         # Handle special case for quiz scores first
@@ -202,7 +216,7 @@ def clear_history(file_type: str = "chat") -> bool:
             ]
         elif file_type == "quiz":
             paths_to_clear = [
-                Config.LOG_PATHS['quiz']['log'],
+                Config.LOG_PATHS['quiz']['log'], # This contains the full quiz data
                 Config.LOG_PATHS['quiz']['transcript'],
                 # Config.LOG_PATHS['quiz']['scores'] is handled by clear_quiz_score_history
                 Config.LOG_PATHS['quiz']['bookmarks'] 
@@ -225,40 +239,55 @@ def clear_history(file_type: str = "chat") -> bool:
         logging.error(f"Failed to clear {file_type} history: {str(e)}")
         return False
 
-def read_history(file_type: str = "chat") -> str:
-    """Read history for the specified type and return as formatted string.
+def read_history(file_type: str = "chat") -> Union[List[Dict], str]:
+    """Read history for the specified type and return raw data.
     
     Args:
-        file_type: Type of history to read ('chat' or 'quiz')
+        file_type: Type of history to read ('chat', 'quiz', 'quiz_score', 'bookmark', 'chat_transcript', 'quiz_log')
     
     Returns:
-        Formatted string of history items
+        List[Dict]: List of history items for 'chat', 'quiz', 'bookmark'.
+        str: JSON string for 'quiz_score', or text content for 'chat_transcript', 'quiz_log' (as JSON string).
+        Empty list or string if file not found or error occurs.
     """
     # Special case for quiz scores
     if file_type == "quiz_score":
         score_history = load_quiz_score_history()
-        # Ensure score_history is a list of dicts before dumping
-        if isinstance(score_history, list):
-            return json.dumps(score_history, indent=2)
-        return "[]" # Return empty JSON array string if not a list
-        
-    # Get the appropriate path from LOG_PATHS
-    file_path = None
-    if file_type == "chat":
+        return json.dumps(score_history, indent=2) # Return as JSON string
+
+    # For chat and quiz logs (full data), return the parsed list of dictionaries
+    if file_type in ['chat', 'quiz', 'bookmark']:
+        path_key = 'history' if file_type == 'chat' else 'log' if file_type == 'quiz' else 'data'
+        file_path = Config.LOG_PATHS.get(file_type, {}).get(path_key)
+        if file_path:
+            return _load_json_file(file_path, default=[])
+
+    # For transcript files or specific log files that should be read as text/JSON strings
+    if file_type == "chat_transcript":
+        file_path = Config.LOG_PATHS['chat']['transcript']
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        return ""
+    if file_type == "quiz_log": # This is the detailed quiz log, return as JSON string
         file_path = Config.LOG_PATHS['chat']['history']
-    elif file_type == "quiz":
-        file_path = Config.LOG_PATHS['quiz']['log']
-    elif file_type == "bookmark": # For general bookmarks if needed
-        file_path = Config.LOG_PATHS['bookmark']['data']
-    
-    if not file_path:
+        quiz_log_data = _load_json_file(Config.LOG_PATHS['quiz']['log'], default=[])
+        return json.dumps(quiz_log_data, indent=2)
+
+    logging.warning(f"read_history called with unknown file_type: {file_type}")
+    return [] # Default for unhandled types that expect a list
+
+def export_history_to_text(file_type: str) -> str:
+    """Read history for the specified type and return as a formatted text string."""
+    history_data = read_history(file_type) # This now returns list of dicts or JSON string
+
+    if file_type == "quiz_score" or file_type == "chat_transcript" or file_type == "quiz_log":
+        return history_data if isinstance(history_data, str) else json.dumps(history_data, indent=2)
+
+    if not isinstance(history_data, list):
+        logging.error(f"Expected list for {file_type} history export, but got {type(history_data)}")
         return ""
-        
-    history_data = _load_json_file(file_path, [])
-    if not history_data:
-        return ""
-    
-    # Format history as readable text
+
     formatted_lines = []
     for item in history_data:
         timestamp = item.get("timestamp", "Unknown time")
@@ -269,18 +298,20 @@ def read_history(file_type: str = "chat") -> str:
             formatted_lines.append(f"[{timestamp}] AI: {response}")
             formatted_lines.append("")  # Empty line between conversations
         elif file_type == "quiz":
-            topic = item.get("topic", "Unknown topic")
+            # This case is for the 'quiz' type which refers to quiz_log.json (list of dicts)
+            topic = item.get("topic", "Unknown Topic")
+            difficulty = item.get("difficulty", "N/A")
             questions = item.get("questions", [])
-            formatted_lines.append(f"[{timestamp}] QUIZ: {topic} ({len(questions)} questions)")
+            formatted_lines.append(f"[{timestamp}] QUIZ: {topic} ({difficulty}, {len(questions)} questions)")
             for i, q in enumerate(questions, 1):
                 formatted_lines.append(f"  Q{i}: {q.get('question', 'No question')}")
-                formatted_lines.append(f"  Answer: {q.get('answer', 'No answer')}")
+                options = q.get('options', {})
+                formatted_lines.append(f"    Options: {', '.join([f'{k}) {v}' for k, v in options.items()])}")
+                formatted_lines.append(f"    Correct Answer: {q.get('answer', 'N/A')}")
+                formatted_lines.append(f"    Explanation: {q.get('explanation', 'N/A')}")
             formatted_lines.append("")
         elif file_type == "bookmark":
-            # Assuming bookmarks are stored as a list of dicts with 'title' and 'page'
             formatted_lines.append(json.dumps(item, indent=2))
-            formatted_lines.append("")  # Empty line between quizzes
-    
     return "\n".join(formatted_lines)
 
 def export_flashcards(questions: List[Dict], format: str = "csv") -> Union[str, bytes]:
@@ -361,7 +392,7 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
         # Save the chat interaction to file
         # Assuming 'prompt' is the user's input and 'response_text' is the AI's reply
         if prompt and response_text: # Ensure both are non-empty before saving
-            _save_chat_to_file(user_prompt=prompt, assistant_response=response_text)
+            save_chat_to_file(user_prompt=prompt, assistant_response=response_text)
         return response_text
     except Exception as e:
         error_msg = "Apologies, I'm having trouble processing your request. Please try again in a moment."

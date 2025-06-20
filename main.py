@@ -15,7 +15,8 @@ from utils import (
     setup_gemini,
     get_ncc_response,
     API_CALL_COOLDOWN_MINUTES,
-    clear_history,
+    clear_history, # Use the centralized clear_history
+    read_history, # Use the centralized read_history
     read_history
 )
 from src.utils import (
@@ -55,140 +56,6 @@ def main():
         layout="wide"
     )
     
-    # --- Intro Screen Logic ---
-    if "show_intro_screen" not in st.session_state:
-        st.session_state.show_intro_screen = True
-
-    if st.session_state.show_intro_screen:
-        # Extract SVG content from your logo.svg to be embedded in the animation
-        try:
-            with open(os.path.join(Config.DATA_DIR, "logo.svg"), "r", encoding="utf-8") as f_logo:
-                logo_svg_full_content = f_logo.read()
-            # Extract content within the <svg> tags, or use the whole thing if simple
-            match = re.search(r'<svg[^>]*>(.*)</svg>', logo_svg_full_content, re.DOTALL | re.IGNORECASE)
-            if match:
-                actual_logo_inner_svg = match.group(1).strip()
-            else:
-                actual_logo_inner_svg = "<!-- Logo content could not be extracted -->"
-        except FileNotFoundError:
-            actual_logo_inner_svg = "<text x='50' y='50' fill='white'>Error: logo.svg not found in data directory.</text>"
-        except Exception as e:
-            actual_logo_inner_svg = f"<text x='50' y='50' fill='white'>Error loading logo: {str(e)}</text>"
-
-        # Durations from intro.html's JS (in milliseconds)
-        # lineDuration = 1000; lineDelay = 200; rectDuration = 1500; rectDelay = 1200;
-        # remainTimeAfterReveal = 1000;
-        # totalAnimationTime = (rectDelay + rectDuration) + remainTimeAfterReveal; -> (1200+1500) + 1000 = 3700ms
-        total_animation_time_ms = 3700
-
-        intro_animation_html = f"""
-            <style>
-                body {{{{
-                    overflow: hidden; /* Prevent scrolling main content when intro is visible */
-                }}}}
-                .intro-loading-overlay {{{{
-                    position: fixed;
-                    top: 0; left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    background: rgba(15, 73, 137, 0.95); /* NCC Blue, semi-transparent, slightly darker */
-                    display: flex; 
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 9999; /* High z-index to be on top */
-                }}
-                .loading-container-anim {{ /* Renamed to avoid conflict if intro.html is also loaded */
-                    width: 300px; height: 300px; /* Adjust as needed */
-                    display: flex; justify-content: center; align-items: center;
-                    position: relative;
-                }}
-                .logo-svg-animator {{ /* Class for the animator SVG */
-                    overflow: visible; 
-                    transform: scale(0.8); /* Adjust overall size if needed */
-                    width: 100%; height: 100%;
-                }}
-                #reveal-line {{{{
-                    stroke-dasharray: 1024; stroke-dashoffset: 1024;
-                    transform-origin: 512px 512px; /* Center of 1024x1024 viewBox */
-                    animation: drawLine 1s ease-out forwards;
-                    animation-delay: 0.2s;
-                }}
-                #reveal-rect {{{{
-                    transform: rotate(-20deg) scaleX(0);
-                    transform-origin: 512px 512px; /* Center of 1024x1024 viewBox */
-                    animation: revealLogo 1.5s linear forwards;
-                    animation-delay: 1.2s; /* Starts after line drawing */
-                }}
-                .logo-elements-to-reveal {{{{
-                    /* No specific styles needed here unless for positioning within clipPath */
-                }}
-                @keyframes drawLine {{{{
-                    to {{{{
-                        stroke-dashoffset: 0;
-                        transform: rotate(-20deg);
-                    }}}}
-                }}}}
-                @keyframes revealLogo {{{{
-                    0% {{{{ transform: rotate(-20deg) scaleX(0); }}}}
-                    100% {{{{ transform: rotate(-20deg) scaleX(1); }}}}
-                }}}}
-            </style>
-            <div class="intro-loading-overlay">
-                <div class="loading-container-anim">
-                    <svg viewBox="0 0 1024 1024" class="logo-svg-animator">
-                        <defs>
-                            <clipPath id="logoRevealClip">
-                                <rect id="reveal-rect" x="0" y="0" width="1024" height="1024" fill="white" />
-                            </clipPath>
-                        </defs>
-                        <line id="reveal-line" x1="512" y1="0" x2="512" y2="1024" stroke="white" stroke-width="6" />
-                        <g class="logo-elements-to-reveal" clip-path="url(#logoRevealClip)">
-                            <!-- Embed your actual logo.svg content, scaled and centered -->
-                            <!-- Assuming your logo.svg's viewBox is also 0 0 1024 1024 or similar -->
-                            {actual_logo_inner_svg}
-                        </g>
-                    </svg>
-                </div>
-                <div id="hiddenButtonContainer" style="display:none; position:absolute; top:-2000px; left:-2000px;">
-                    <!-- Hidden Streamlit button will be placed here by Python -->
-                </div>
-            </div>
-            <script>
-                setTimeout(function() {{{{
-                    const container = window.parent.document.getElementById('hiddenButtonContainer');
-                    if (container) {{{{
-                        const button = container.querySelector('button');
-                        if (button) {{{{
-                            button.click();
-                        }}}} else {{{{
-                            console.warn('Intro proceed button not found in container.');
-                            // Fallback: attempt to reload, hoping session state handles it.
-                            // This might cause a loop if Python state isn't set correctly.
-                            // window.location.reload(); 
-                        }}}}
-                    }}}} else {{{{
-                        console.warn('Hidden button container not found for intro.');
-                    }}}}
-                }}}}, {total_animation_time_ms});
-            </script>
-        """
-        st.markdown(intro_animation_html, unsafe_allow_html=True)
-
-        # Hidden button to be clicked by JavaScript
-        button_placeholder = st.empty() # Create a placeholder for the button
-        with button_placeholder.container(): # Use the placeholder
-             # This markdown is a trick to inject the button into the hiddenButtonContainer div
-            st.markdown('<div id="hiddenButtonContainer" style="display:none; position:absolute; top:-2000px; left:-2000px;">', unsafe_allow_html=True)
-            def proceed_from_intro():
-                st.session_state.show_intro_screen = False
-                # No need to explicitly call st.rerun() here, on_click handles it.
-            
-            st.button("ProceedHidden", on_click=proceed_from_intro, key="hidden_proceed_button_key_v2")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        st.stop() # Stop further execution to only show the intro screen
-
     # Initialize Gemini model first
     model, model_error = setup_gemini()
     
@@ -543,6 +410,8 @@ def main():
                     )
             else:
                 st.warning(f"NCC Cadet Handbook PDF ('{ncc_handbook_pdf_path}') not found in the application's root directory. PDF viewer and download are unavailable.")
+    
+
 
 
     elif app_mode == "🎥 Video Guides":
@@ -571,11 +440,12 @@ def main():
         """, unsafe_allow_html=True)
         entry_class = "history-entry" if st.session_state.theme_mode == "Dark" else "history-entry-light"
         history_tabs = st.tabs(["💬 Chat History", "📝 Quiz History"])
+
+        # --- Chat History Tab ---
         with history_tabs[0]:
             st.subheader("Recent Chat Interactions")
-            chat_history_content = read_history("chat")
-            
-            col1, col2 = st.columns([3, 1])
+            chat_history_data = read_history("chat") # Read raw data (list of dicts)
+            col1, col2 = st.columns([3,1]) # Define col1 and col2 here
             with col1:
                 if st.button(
                     "🧹 Clear Chat History",
@@ -584,10 +454,43 @@ def main():
                     use_container_width=True
                 ):
                     st.session_state.confirm_clear_chat = True
+
+            # Confirmation dialog for clearing chat history
+            if st.session_state.get("confirm_clear_chat", False):
+                st.warning("Are you sure you want to clear the chat history? This cannot be undone.")
+                col_yes, col_no = st.columns(2)
+                with col_yes:
+                    if st.button("Yes, Clear Chat History", key="confirm_yes_chat_hist"):
+                        clear_history("chat") # Use the centralized clear_history
+                        st.session_state.confirm_clear_chat = False
+                        st.success("Chat history cleared!")
+                        st.rerun()
+                with col_no:
+                    if st.button("No, Keep Chat History", key="confirm_no_chat_hist"):
+                        st.session_state.confirm_clear_chat = False
+                        st.info("Chat history not cleared.")
+
+            # Display chat history entries
+            if chat_history_data:
+                # Display newest first
+                for i, entry in enumerate(reversed(chat_history_data)):
+                    timestamp = entry.get("timestamp", "Unknown time")
+                    prompt = entry.get("prompt", "No prompt text")
+                    response = entry.get("response", "No response text")
+
+                    # Use expander for each conversation
+                    with st.expander(f"[{timestamp}] User: {prompt[:100]}..."):
+                        st.markdown(f"**User:** {prompt}")
+                        st.markdown(f"**Assistant:** {response}")
+                        # Optional: Add a separator between entries within the expander if needed
+                        # st.markdown("---")
+            else:
+                st.info("No chat history found yet. Start a conversation in the Chat Assistant tab.")
+
             with col2:
                 st.download_button(
                     "⬇️ Download History",
-                    chat_history_content,
+                    read_history("chat_transcript"), # Download the transcript for readability
                     "chat_history.txt",
                     key="download_chat_hist_main",
                     help="Save a copy of your chat history to your computer"
@@ -595,8 +498,8 @@ def main():
 
         with history_tabs[1]:
             st.subheader("Recent Quiz Attempts")
-            quiz_history_content = read_history("quiz")
-            
+            quiz_history_data = read_history("quiz") # Read raw data (list of dicts)
+
             if st.button(
                 "🧹 Clear Quiz History",
                 key="clear_quiz_button",
@@ -605,20 +508,20 @@ def main():
             ):
                 st.session_state.confirm_clear_quiz = True
 
-            if st.download_button(
+            # Download button for quiz log (full questions/answers)
+            st.download_button(
                 "⬇️ Download Quiz History",
-                quiz_history_content,
-                "quiz_history.txt",
+                read_history("quiz_log"), # Use the raw log data
+                "quiz_log.json", # Save as JSON
                 key="download_quiz_hist_main",
                 help="Save a copy of your quiz history to your computer"
-            ):
-                st.success("Quiz history downloaded!")
+            )
             
             if st.session_state.get("confirm_clear_quiz", False):
                 st.warning("Are you sure you want to clear the quiz history? This cannot be undone.")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("Yes, Clear Quiz History", key="confirm_yes_quiz"):
+                    if st.button("Yes, Clear Quiz History", key="confirm_yes_quiz_hist"):
                         clear_history("quiz")
                         st.session_state.confirm_clear_quiz = False
                         st.success("Quiz history cleared!")
@@ -626,35 +529,30 @@ def main():
                 with col2:
                     if st.button("No, Keep Quiz History", key="confirm_no_quiz"):
                         st.session_state.confirm_clear_quiz = False
-                        st.info("Quiz history not cleared.")
-            
-            if quiz_history_content:
-                entries = quiz_history_content.strip().splitlines()
-                display_limit = 25
+                        st.info("Quiz history not cleared.") # This info message might disappear on rerun
 
-                st.markdown(f"Showing last {min(len(entries), display_limit)} quiz records (newest first):")
+            # Display quiz history entries
+            if quiz_history_data:
+                # Display newest first
+                for i, quiz_log_entry in enumerate(reversed(quiz_history_data)):
+                    timestamp = quiz_log_entry.get("timestamp", "Unknown time")
+                    topic = quiz_log_entry.get("topic", "Unknown Topic")
+                    difficulty = quiz_log_entry.get("difficulty", "N/A")
+                    questions = quiz_log_entry.get("questions", [])
 
-                for i, entry_text in enumerate(reversed(entries[-display_limit:])):
-                    if entry_text.strip():
-                        try:
-                            quiz_data = json.loads(entry_text)
-                            # Display JSON nicely, perhaps in an expander
-                            timestamp = quiz_data.get('timestamp', f"Record {len(entries) - i}")
-                            score = quiz_data.get('score_percentage', quiz_data.get('score'))
-                            expander_title = f"Quiz: {timestamp}"
-                            if score is not None:
-                                expander_title += f" - Score: {score}%" if isinstance(score, (int, float)) else f" - Score: {score}"
-                            
-                            with st.expander(expander_title):
-                                st.json(quiz_data)
-                        except json.JSONDecodeError:
-                            st.markdown(f"<div class='{entry_class}'>{entry_text}</div>", unsafe_allow_html=True)
-                
-                if len(entries) > display_limit:
-                    st.caption(f"Older records hidden. Download full history to view all {len(entries)} records.")
+                    expander_title = f"[{timestamp}] Quiz on {topic} ({difficulty}, {len(questions)} Qs)"
 
-                if st.download_button("⬇️ Download Full Quiz History", quiz_history_content, "quiz_history.txt", key="download_full_quiz_hist_main"):
-                    st.success("Quiz history downloaded!")
+                    with st.expander(expander_title):
+                        if questions:
+                            for q_idx, q_data in enumerate(questions):
+                                st.markdown(f"**Q{q_idx + 1}:** {q_data.get('question', 'N/A')}")
+                                options = q_data.get('options', {})
+                                for opt_key, opt_text in options.items():
+                                    st.markdown(f"- {opt_key}) {opt_text}")
+                                st.markdown(f"**Correct Answer:** {q_data.get('answer', 'N/A')}")
+                                st.markdown(f"**Explanation:** {q_data.get('explanation', 'No explanation provided.')}")
+                                if q_idx < len(questions) - 1:
+                                    st.markdown("---") # Separator between questions
             else:
                 st.info("No quiz history found yet. Take a quiz to start.")
 

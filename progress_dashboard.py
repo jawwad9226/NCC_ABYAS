@@ -1,7 +1,6 @@
 import streamlit as st
 from datetime import datetime
 import json
-
 try:
     import pandas as pd
 except ImportError:
@@ -16,10 +15,11 @@ except ImportError:
     # Not stopping, as pandas might still work for basic operations.
 
 def display_progress_dashboard(session_state, quiz_history_raw_string: str):
-    """Display and manage the user's learning progress dashboard."""
-    
+    """Display the user's learning progress dashboard based on quiz history."""
+
     # Developer preview toggle with clear label
     if st.checkbox(
+        # Using a unique key for this checkbox
         "Show Dashboard Preview",
         key="dev_dashboard_preview",
         help="View example charts and statistics (for development)",
@@ -85,10 +85,15 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
 
     # Set up the dataframe for visualization
     try:
-        df = pd.DataFrame([json.loads(line) for line in quiz_history_raw_string.strip().splitlines() if line.strip()])
+        # Load the entire JSON array, not line by line
+        history_list = json.loads(quiz_history_raw_string)
+        df = pd.DataFrame(history_list)
+
         if not df.empty:
+            # Ensure 'timestamp' and 'Score (%)' columns exist before processing
             df['Timestamp'] = pd.to_datetime(df['timestamp'])
             df = df.sort_values('Timestamp')
+            df['Score (%)'] = df['score'] # Use the 'score' column for plotting
     except (json.JSONDecodeError, pd.errors.EmptyDataError):
         df = pd.DataFrame()  # Create empty DataFrame if no valid data
 
@@ -97,7 +102,7 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
         return
 
     # ─── Score Over Time ─────────────────────────────────────
-    st.subheader("📈 Score Over Time")
+    st.subheader("📈 Quiz Score Over Time")
     if not df.empty:
         st.line_chart(df.set_index('Timestamp')[['Score (%)']])
     else:
@@ -105,7 +110,7 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
 
 
     # ─── Difficulty Trend (Distribution of difficulties attempted) ────────────────────────────────────
-    st.subheader("📶 Difficulty Level Distribution (Quizzes Taken)")
+    st.subheader("🏋️ Difficulty Level Distribution (Quizzes Taken)")
     if not df.empty and 'Difficulty' in df.columns:
         difficulty_counts = df['Difficulty'].value_counts().sort_index()
         if not difficulty_counts.empty:
@@ -117,7 +122,7 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
 
 
     # ─── Stats Summary ────────────────────────────────────────
-    st.subheader("📋 Summary")
+    st.subheader("📊 Summary Statistics")
     total_quizzes = len(df)
     average_score_val = df['Score (%)'].mean() if not df.empty else 0
     best_score_val = df['Score (%)'].max() if not df.empty else 0
@@ -132,7 +137,7 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
         st.metric(label="Best Score", value=f"{best_score_val:.2f}%")
 
     # ─── Download CSV of Progress ─────────────────────────────
-    if not df.empty:
+    if not df.empty and 'Score (%)' in df.columns: # Ensure score column exists before offering download
         csv = df.to_csv(index=False)
         st.download_button("⬇️ Download Progress CSV", csv, "quiz_progress.csv", key="download_progress_csv")
     else:
@@ -140,7 +145,7 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
 
 
     # ─── Topic‐Wise Performance ──────────────────────────────
-    st.subheader("📚 Topic Performance")
+    st.subheader("📚 Topic-Wise Performance")
     if not df.empty and 'Topic' in df.columns:
         # Average score per topic
         avg_score_per_topic = df.groupby('Topic')['Score (%)'].mean().sort_values(ascending=False)
@@ -162,7 +167,7 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
 
 
     # ─── Date Filter (if timestamps exist) ───────────────────
-    st.subheader("📆 Quiz Timeline (Filter by Date)")
+    st.subheader("📅 Quiz Timeline (Filter by Date)")
     if not df.empty and 'Timestamp' in df.columns and not df['Timestamp'].dropna().empty:
         try:
             min_date = df['Timestamp'].min().date()

@@ -11,8 +11,8 @@ import google.generativeai as genai
 
 from utils import (
     load_quiz_score_history,  # Changed from read_history
-    append_quiz_score_entry,  # Changed from append_message
-    clear_quiz_score_history, # Changed from clear_history
+    append_quiz_score_entry,
+    clear_quiz_score_history,
     Config, # For accessing paths and API settings
     _is_in_cooldown,
     _cooldown_message
@@ -562,7 +562,7 @@ def _display_quiz_results(ss):
         st.subheader("Review Wrong Answers")
         for wrong_q_info in result['wrong_questions']:
             q_data = wrong_q_info['question'] # Full question dict
-            q_index = wrong_q_info['index']
+            q_index = wrong_q_info['index'] # 0-based index from the original quiz
             user_answered_key = wrong_q_info['user_answer_key'] 
             correct_answer_key = wrong_q_info['correct_answer_key']
 
