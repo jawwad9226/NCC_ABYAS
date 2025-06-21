@@ -3,8 +3,6 @@ import json
 from functools import partial
 from typing import Optional
 import base64
-
-import re # For SVG content manipulation
 # Core streamlit imports
 import streamlit as st
 from streamlit_pdf_viewer import pdf_viewer
@@ -16,7 +14,6 @@ from utils import (
     get_ncc_response,
     API_CALL_COOLDOWN_MINUTES,
     clear_history, # Use the centralized clear_history
-    read_history, # Use the centralized read_history
     read_history
 )
 from src.utils import ( # type: ignore
@@ -45,134 +42,6 @@ def get_image_as_base64(image_path):
             mime_type = 'image/*' # Generic fallback
         return f"data:{mime_type};base64,{base64_string}"
 
-def add_floating_chat_button():
-    """Add floating chat button with custom styling"""
-    chat_icon_path = os.path.join(Config.DATA_DIR, "chat_logo.svg")
-
-    if os.path.exists(chat_icon_path):
-        chat_icon_base64 = get_image_as_base64(chat_icon_path)
-    else:
-        chat_icon_base64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEgMjAuMSAxNCAyMCAxNEg2TDIgMThWNEMyIDIuOSAyLjkgMiA0IDJIMjBDMjAuMSAyIDIxIDIuOSAyMSA0VjEyWiIgZmlsbD0iIzYzNjZGMSIvPgo8L3N2Zz4K"
-
-    # Separate static CSS and JS from dynamic HTML to avoid f-string parsing issues.
-    css_style = """
-        <style>
-        .floating-chat-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 70px;
-            height: 45px;
-            background: linear-gradient(135deg, #6366F1, #8B5CF6);
-            border: none;
-            border-radius: 35px;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-            z-index: 1000;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: pulse 2s infinite;
-        }
-        
-        .floating-chat-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
-            background: linear-gradient(135deg, #5856EC, #7C3AED);
-        }
-        
-        .floating-chat-btn.active {
-            background: linear-gradient(135deg, #10B981, #059669);
-            animation: none;
-        }
-        
-        .floating-chat-btn img {
-            width: 28px;
-            height: 28px;
-            filter: brightness(0) invert(1);
-        }
-        
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-            }
-            50% {
-                box-shadow: 0 4px 25px rgba(99, 102, 241, 0.5);
-            }
-            100% {
-                box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-            }
-        }
-        
-        /* Chat overlay styles */
-        .chat-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            display: none;
-        }
-        
-        .chat-overlay.active {
-            display: block;
-        }
-        
-        /* Hide sidebar when chat is active */
-        .chat-active .css-1d391kg {
-            display: none;
-        }
-        
-        /* Notification badge for chat */
-        .chat-notification {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #EF4444;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-        </style>
-    """
-
-    active_class = 'active' if st.session_state.get('chat_mode_active', False) else ''
-    notification_badge = f'<div class="chat-notification">!</div>' if st.session_state.get('has_chat_notification', False) else ''
-
-    html_body = f"""
-        <div id="floating-chat-container">
-            <button class="floating-chat-btn {active_class}" 
-                    onclick="toggleChat()"
-                    style="pointer-events: auto; cursor: pointer; z-index: 9999;"
-                    title="Open Chat Assistant">
-                <img src="{chat_icon_base64}" alt="Chat"/>
-                {notification_badge}
-            </button>
-        </div>
-    """
-
-    js_script = """
-        <script>
-        function toggleChat() {
-            // This method is more reliable for triggering a Streamlit rerun.
-            const url = new URL(window.location);
-            url.searchParams.set('chat_toggle', Date.now()); // Use Date.now() to ensure it's always a new value
-            window.location.href = url.toString(); // Use href for a more explicit navigation/reload
-        }
-        </script>
-    """
-
-    st.markdown(css_style + html_body + js_script, unsafe_allow_html=True)
-
 def main():
     """    
     Main entry point for the NCC ABYAS application.
@@ -184,6 +53,10 @@ def main():
         layout="wide"
     )
     
+    # Create a placeholder for the button at the top level.
+    # This helps isolate it from the main page's rendering flow.
+    floating_button_placeholder = st.empty()
+
     # Initialize session states
     if "chat_mode_active" not in st.session_state:
         st.session_state.chat_mode_active = False
@@ -235,20 +108,67 @@ def main():
         
         if st.button(theme_icon, help=theme_tooltip, key="theme_toggle", type="secondary"):
             st.session_state.theme_mode = "Light" if current_theme == "Dark" else "Dark"
-            st.rerun()
+            st.experimental_rerun()
 
     # Apply theme
     apply_theme(st.session_state.theme_mode)
 
-    # Check for chat toggle in URL parameters and use the documented clear() method
-    if "chat_toggle" in st.query_params: # Check if the parameter exists
-        st.session_state.chat_mode_active = not st.session_state.get('chat_mode_active', False)
-        del st.query_params["chat_toggle"] # Delete only the specific parameter
-        st.rerun()
-
-    # Add floating chat button (always visible unless in chat mode)
+    # --- Floating Chat Button (Streamlit-native) ---
     if not st.session_state.chat_mode_active:
-        add_floating_chat_button()
+        # We will render the button inside the placeholder we created earlier.
+        with floating_button_placeholder.container():
+            # Use a simple emoji for the button label. Add a notification marker if needed.
+            button_label = "💬"
+            if st.session_state.get('has_chat_notification', False):
+                button_label = "💬❗️" # Simple notification with an emoji
+
+            if st.button(button_label, key="floating_chat_btn", help="Open Chat Assistant"):
+                st.session_state.chat_mode_active = not st.session_state.get('chat_mode_active', False)
+                st.experimental_rerun()
+
+        # Inject the CSS for the button. This is separate from the button's container.
+        # CSS to make the button float and style it like the original design
+        st.markdown("""
+            <style>
+                @keyframes pulse {
+                    0% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
+                    50% { box-shadow: 0 4px 25px rgba(99, 102, 241, 0.5); }
+                    100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
+                }
+                
+                /* Target the button's container div using its unique key */
+                div[aria-label="floating_chat_btn"] {
+                    position: fixed;
+                    bottom: 2rem;
+                    right: 2rem;
+                    z-index: 1000;
+                }
+                
+                /* Style the button itself */
+                div[aria-label="floating_chat_btn"] button {
+                    width: 3.75rem; /* Approx 60px */
+                    height: 3.75rem; /* Approx 60px */
+                    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+                    border: none;
+                    border-radius: 50%; /* Circular shape */
+                    color: white;
+                    font-size: 1.5rem; /* Approx 24px */
+                    line-height: 1;
+                    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+                    transition: all 0.3s ease;
+                    animation: pulse 2s infinite;
+                }
+                
+                div[aria-label="floating_chat_btn"] button:hover {
+                    transform: translateY(-0.2rem);
+                    box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+                    background: linear-gradient(135deg, #5856EC, #7C3AED);
+                }
+            </style>
+        """, unsafe_allow_html=True)
+    else:
+        # When chat mode is active, clear the placeholder to remove the button.
+        floating_button_placeholder.empty()
 
     # --- Sidebar Navigation (hidden when chat is active) ---
     if not st.session_state.chat_mode_active:
@@ -278,7 +198,7 @@ def main():
             clear_history("chat")
             clear_history("quiz")
             clear_history("bookmark") # Assuming you might add this later
-            st.rerun()
+            st.experimental_rerun()
 
         # --- Dev Tools Link ---
         if st.sidebar.button("🛠️ Open Dev Tools", key="open_dev_tools"):
@@ -298,7 +218,7 @@ def main():
         # Add a close button for chat mode
         if st.button("← Back to " + st.session_state.previous_app_mode.split(" ", 1)[1], key="close_chat"):
             st.session_state.chat_mode_active = False
-            st.rerun()
+            st.experimental_rerun()
         
         st.markdown("---")
         
@@ -359,7 +279,7 @@ def main():
                                     if st.button(f"📖 View Page {page_num} in PDF", key=button_key):
                                         st.session_state.pdf_current_page = page_num
                                         st.toast(f"PDF target set to page {page_num}. Switch to the 'View NCC Handbook (PDF)' tab.", icon="📄")
-                                        st.rerun()
+                                        st.experimental_rerun()
                     else:
                         st.info(f"No results found for '{query}' in the syllabus structure.")
                 else:
@@ -378,7 +298,7 @@ def main():
                                                 if st.button(f"📖 View Page {section.page_number} in PDF", key=button_key):
                                                     st.session_state.pdf_current_page = section.page_number
                                                     st.toast(f"PDF target set to page {section.page_number}. Switch to the 'View NCC Handbook (PDF)' tab.", icon="📄")
-                                                    st.rerun()
+                                                    st.experimental_rerun()
                                             with col2:
                                                 bookmark_key = f"bookmark_{chapter.title}_{section.name}"
                                                 if st.button("🔖 Bookmark", key=bookmark_key):
@@ -445,7 +365,7 @@ def main():
                                 button_key = f"toc_btn_main_{item_dict['title'].replace(' ','_').replace('/','_')}_{item_dict['page']}"
                                 if st.button(button_label, use_container_width=True, key=button_key, help=f"{item_dict['title']} (p. {item_dict['page']})"):
                                         st.session_state.pdf_current_page = item_dict['page']
-                                        st.rerun()
+                                        st.experimental_rerun()
                         else:
                             st.info("No table of contents extracted or available.")
                             
@@ -455,7 +375,7 @@ def main():
                                 # Use a single column for linearity
                                 if st.button(f"🔖 {bookmark['title']} (p. {bookmark['page']})", use_container_width=True, key=f"pdf_bookmark_main_{bookmark['title'].replace(' ','_')}_{bookmark['page']}", help=f"{bookmark['title']} (p. {bookmark['page']})"):
                                         st.session_state.pdf_current_page = bookmark['page']
-                                        st.rerun()
+                                        st.experimental_rerun()
                         else:
                             st.info("No bookmarks added yet. Add bookmarks from the syllabus structure view.")
                     
@@ -481,24 +401,24 @@ def main():
                         )
                         if target_page_main != current_page_for_input_main:
                             st.session_state.pdf_current_page = target_page_main
-                            st.rerun()
+                            st.experimental_rerun()
                     
                     with page_controls_cols[1]:
                         if st.button("⏮️", use_container_width=True, help="First Page", key="pdf_first_main"):
                             st.session_state.pdf_current_page = 1
-                            st.rerun()
+                            st.experimental_rerun()
                     with page_controls_cols[2]:
                         if st.button("◀️", use_container_width=True, help="Previous Page", key="pdf_prev_main"):
                             st.session_state.pdf_current_page = max(1, st.session_state.get('pdf_current_page', 1) - 1)
-                            st.rerun()
+                            st.experimental_rerun()
                     with page_controls_cols[3]:
                         if st.button("▶️", use_container_width=True, help="Next Page", key="pdf_next_main"):
                             st.session_state.pdf_current_page = min(total_pages, st.session_state.get('pdf_current_page', 1) + 1)
-                            st.rerun()
+                            st.experimental_rerun()
                     with page_controls_cols[4]:
                         if st.button("⏭️", use_container_width=True, help="Last Page", key="pdf_last_main"):
                             st.session_state.pdf_current_page = total_pages
-                            st.rerun()
+                            st.experimental_rerun()
                     st.markdown("---") 
                 # End of MOVED PDF Navigation Controls
 
@@ -579,7 +499,7 @@ def main():
                         clear_history("chat") # Use the centralized clear_history
                         st.session_state.confirm_clear_chat = False
                         st.success("Chat history cleared!")
-                        st.rerun()
+                        st.experimental_rerun()
                 with col_no:
                     if st.button("No, Keep Chat History", key="confirm_no_chat_hist"):
                         st.session_state.confirm_clear_chat = False
@@ -640,7 +560,7 @@ def main():
                         clear_history("quiz")
                         st.session_state.confirm_clear_quiz = False
                         st.success("Quiz history cleared!")
-                        st.rerun()
+                        st.experimental_rerun()
                 with col2:
                     if st.button("No, Keep Quiz History", key="confirm_no_quiz"):
                         st.session_state.confirm_clear_quiz = False

@@ -261,7 +261,7 @@ def process_chat_input(prompt: str) -> None:
                 st.session_state.messages.append(assistant_message) # Add to current session messages
                 save_chat_to_file(prompt, response)
     
-    st.rerun()
+    st.experimental_rerun()
 
 def display_clear_confirmation():
     """Display the clear history confirmation dialog."""
@@ -275,12 +275,12 @@ def display_clear_confirmation():
             st.session_state.confirm_clear = False
             st.session_state.show_history = False
             st.success("Chat history cleared!")
-            st.rerun()
+            st.experimental_rerun()
     with col_no:
         if st.button("No", key=f"confirm_no_{st.session_state.widget_keys['confirm_no']}"):
             st.session_state.confirm_clear = False
             st.info("Operation cancelled.")
-            st.rerun()
+            st.experimental_rerun()
 
 # Moved save_chat_to_file and clear_chat_history to utils.py
 # to centralize file operations.
