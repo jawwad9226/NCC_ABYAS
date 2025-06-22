@@ -58,7 +58,6 @@ def chat_interface():
             "confirm_no": str(uuid.uuid4()),
             "sample_questions": str(uuid.uuid4())
         }
-    # Removed history/clear state management as it's handled in main.py History Viewer
     
     if "last_interaction_time" not in st.session_state:
         st.session_state.last_interaction_time = None
@@ -148,96 +147,102 @@ def chat_interface():
     
     # Chat input and sample questions are now the primary content here
     with main_container:
-        # Clear Chat button (kept here for clearing *current* session, but main history clear is in History Viewer)
-        # Consider if this button should clear session state or file history. Let's keep it for session state.
-        if st.button(
-                "🧹 Clear Chat",
-                key=f"clear_chat_btn_{st.session_state.widget_keys['clear_chat']}",
-                help="Clear all chat messages",
-                use_container_width=True
-            ):
+        st.title("NCC AI Chat Assistant")
+        
+        # Display app info
+        st.markdown("""
+            Ask me questions about NCC (National Cadet Corps) policies, procedures, and guidelines.
+            I can provide information about training, protocols, and other aspects of NCC operations.
+        """)
+        
+        # Display cooldown message if active
+        if st.session_state.cooldown_active:
+            remaining = st.session_state.cooldown_time_remaining
+            st.warning(f"⏳ API Cooldown active: {remaining} seconds remaining before you can send another message.")
+        
+        # Controls area
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            with st.expander("📝 Sample Questions", expanded=False):
+                st.markdown("""
+                    ### Try asking:
+                    - What are the NCC core values?
+                    - How can I become an NCC cadet?
+                    - What are the ranks in NCC?
+                    - What is the NCC motto?
+                    - Explain the NCC training activities
+                    - What are the eligibility requirements for NCC?
+                """)
+                
+                # Quick question buttons
+                sample_questions = [
+                    "What are the NCC core values?",
+                    "How can I become an NCC cadet?",
+                    "What are the ranks in NCC?",
+                    "What is the NCC motto?"
+                ]
+                
+                # Use columns for better layout of sample question buttons
+                scols = st.columns(2)
+                for i, question in enumerate(sample_questions):
+                    with scols[i % 2]:
+                        if st.button(question, key=f"ask_{question}_{i}"):
+                            # Submit the question to be processed
+                            submit_prompt(question)
+                
+        with col2:
+            # Clear chat button
+            if st.button("🗑️ Clear Chat", key=f"clear_chat_{st.session_state.widget_keys['clear_chat']}"):
                 st.session_state.confirm_clear = True
 
-        # Confirmation dialog for clearing current chat session
+        # Show confirmation dialog for clearing history
         if st.session_state.get("confirm_clear", False):
-            display_clear_confirmation() # Use the local confirmation function
-
-        # Chat input
-        if st.session_state.cooldown_active and st.session_state.cooldown_time_remaining > 0:
-            st.info(f"Please wait {st.session_state.cooldown_time_remaining} seconds before sending another message.")
-        
-        if prompt := st.chat_input(
-            "Type your NCC-related question here...",
-            disabled=st.session_state.cooldown_active
-        ):
-            process_chat_input(prompt)
-
-        # Sample Questions
-        with st.expander("💡 Sample Questions", expanded=False):
-            st.markdown('<div class="sample-questions">', unsafe_allow_html=True)
-            st.write("Click a question to try with the assistant:")
-            sample_questions = [
-                "What is the NCC?",
-                "What are the benefits of joining NCC?",
-                "Tell me about the NCC syllabus.",
-                "What is drill in NCC?",
-                "How can I join the NCC?",
-                "What is weapon training in NCC?"
-            ]
-            cols = st.columns(3)
-            for i, question in enumerate(sample_questions):
-                with cols[i % 3]:
-                    if st.button(
-                        question,
-                        key=f"sample_q_{i}_{st.session_state.widget_keys['sample_questions']}",
-                        help="Click to ask this question",
-                        use_container_width=True
-                    ):
-                        process_chat_input(question)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-
-        # Display chat messages
+            display_clear_confirmation()
+            
+        # Chat input area (new version)
+        if st.chat_input("Ask me about NCC...", key="chat_input", on_submit=submit_prompt):
+            # This branch is mostly handled by on_submit, but we can add feedback here if needed
+            pass
+            
+        # Display messages in reverse order (newest first for better UX)
         display_chat_messages()
-
-def process_chat_input(prompt: str) -> None:
-    """Process a chat input and generate a response."""
-    if not prompt.strip():
-        st.warning("Please enter a valid question.")
+        
+def submit_prompt(prompt):
+    """Handle a submitted prompt."""
+    if not prompt or st.session_state.cooldown_active:
         return
         
-    # Add user message
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Record timestamp for the user message
+    user_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Create user message object
     user_message = {
         "role": "user",
         "content": prompt,
-        "timestamp": timestamp
+        "timestamp": user_timestamp
     }
-    st.session_state.messages.append(user_message)
+    st.session_state.messages.append(user_message) # Add to current session messages
     
-    # Display user message
-    with st.chat_message("user"):
-        st.write(prompt)
-        st.markdown(f'<div class="message-timestamp">{timestamp}</div>', unsafe_allow_html=True)
-    
-    # Get and display assistant response
+    # Send the request to API
     with st.chat_message("assistant"):
+        # Clearly indicate loading state
         with st.spinner("Thinking..."):
+            # Get response from Gemini
             response = get_ncc_response(model, model_error, prompt)
             
-            if not response:
-                st.error("Sorry, I couldn't generate a response. Please try again.")
-                return
-                
-            if response.startswith("Error"):
-                st.error(f"Assistant error: {response}")
-                return
-                
-            if "Please wait" in response and "seconds" in response:
+            # Update state
+            st.session_state.last_interaction_time = datetime.now()
+            
+            # Rate limit handling
+            if "429" in str(response) or "Error: Quota exceeded" in str(response) or "Please wait" in str(response):
                 st.session_state.cooldown_active = True
+                # Try to extract remaining time from error
                 try:
-                    parts = response.split(" ")
-                    time_index = parts.index("wait") + 1
+                    parts = str(response).split("seconds")
+                    time_index = 0
+                    if len(parts) > 1:
+                        time_index = -2 # Index right before "seconds"
                     st.session_state.cooldown_time_remaining = int(parts[time_index])
                 except (ValueError, IndexError):
                     st.session_state.cooldown_time_remaining = 0
@@ -261,7 +266,7 @@ def process_chat_input(prompt: str) -> None:
                 st.session_state.messages.append(assistant_message) # Add to current session messages
                 save_chat_to_file(prompt, response)
     
-    st.experimental_rerun()
+    st.rerun()
 
 def display_clear_confirmation():
     """Display the clear history confirmation dialog."""
@@ -275,12 +280,12 @@ def display_clear_confirmation():
             st.session_state.confirm_clear = False
             st.session_state.show_history = False
             st.success("Chat history cleared!")
-            st.experimental_rerun()
+            st.rerun()
     with col_no:
         if st.button("No", key=f"confirm_no_{st.session_state.widget_keys['confirm_no']}"):
             st.session_state.confirm_clear = False
             st.info("Operation cancelled.")
-            st.experimental_rerun()
+            st.rerun()
 
 # Moved save_chat_to_file and clear_chat_history to utils.py
 # to centralize file operations.

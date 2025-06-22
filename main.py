@@ -53,15 +53,19 @@ def main():
         layout="wide"
     )
     
-    # Create a placeholder for the button at the top level.
-    # This helps isolate it from the main page's rendering flow.
+    # Handle query parameters for chat navigation
+    if st.query_params.get("go_chat"):
+        st.session_state.app_mode = "💬 Chat Assistant"
+        # Clear the query parameter
+        st.query_params.clear()
+        st.rerun()
+    
+    # Create a placeholder for the floating button at the top level.
     floating_button_placeholder = st.empty()
 
-    # Initialize session states
-    if "chat_mode_active" not in st.session_state:
-        st.session_state.chat_mode_active = False
-    if "previous_app_mode" not in st.session_state:
-        st.session_state.previous_app_mode = "🎯 Knowledge Quiz"
+    # Initialize app_mode session state if not exists (single state variable for navigation)
+    if "app_mode" not in st.session_state:
+        st.session_state.app_mode = "🎯 Knowledge Quiz"
     
     # Initialize Gemini model first
     model, model_error = setup_gemini()
@@ -108,120 +112,150 @@ def main():
         
         if st.button(theme_icon, help=theme_tooltip, key="theme_toggle", type="secondary"):
             st.session_state.theme_mode = "Light" if current_theme == "Dark" else "Dark"
-            st.experimental_rerun()
+            st.rerun()
 
     # Apply theme
     apply_theme(st.session_state.theme_mode)
 
-    # --- Floating Chat Button (Streamlit-native) ---
-    if not st.session_state.chat_mode_active:
-        # We will render the button inside the placeholder we created earlier.
+    # --- Floating Chat Button (SVG Version) ---
+    # Only show floating button when not in chat mode
+    if st.session_state.app_mode != "💬 Chat Assistant":
+        # Get chat icon as base64
+        chat_icon_path = os.path.join(Config.DATA_DIR, "chat-icon.svg")
+        chat_icon_base64 = get_image_as_base64(chat_icon_path)
+        
+        # We will render the button inside the placeholder we created earlier
         with floating_button_placeholder.container():
-            # Use a simple emoji for the button label. Add a notification marker if needed.
-            button_label = "💬"
-            if st.session_state.get('has_chat_notification', False):
-                button_label = "💬❗️" # Simple notification with an emoji
+            # Create a clickable area that will use URL query parameters
+            # Add target="_self" to ensure it opens in the same tab
+            st.markdown(f"""
+                <a href="?go_chat=1" id="floating-chat-button" aria-label="Open Chat Assistant" target="_self">
+                    <img src="data:image/svg+xml;base64,{chat_icon_base64.split(',')[1]}" alt="Chat">
+                </a>
+            """, unsafe_allow_html=True)
 
-            if st.button(button_label, key="floating_chat_btn", help="Open Chat Assistant"):
-                st.session_state.chat_mode_active = not st.session_state.get('chat_mode_active', False)
-                st.experimental_rerun()
-
-        # Inject the CSS for the button. This is separate from the button's container.
-        # CSS to make the button float and style it like the original design
-        st.markdown("""
+        # Inject CSS for the floating button with SVG icon
+        st.markdown(f"""
             <style>
-                @keyframes pulse {
-                    0% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
-                    50% { box-shadow: 0 4px 25px rgba(99, 102, 241, 0.5); }
-                    100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
-                }
+                @keyframes pulse {{
+                    0% {{ box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }}
+                    50% {{ box-shadow: 0 4px 25px rgba(99, 102, 241, 0.5); }}
+                    100% {{ box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }}
+                }}
                 
-                /* Target the button's container div using its unique key */
-                div[aria-label="floating_chat_btn"] {
+                /* Floating chat button styling */
+                #floating-chat-button {{
                     position: fixed;
                     bottom: 2rem;
                     right: 2rem;
-                    z-index: 1000;
-                }
-                
-                /* Style the button itself */
-                div[aria-label="floating_chat_btn"] button {
-                    width: 3.75rem; /* Approx 60px */
-                    height: 3.75rem; /* Approx 60px */
+                    z-index: 9999;
+                    width: 3.75rem;
+                    height: 3.75rem;
+                    border-radius: 50%;
                     background: linear-gradient(135deg, #6366F1, #8B5CF6);
-                    border: none;
-                    border-radius: 50%; /* Circular shape */
-                    color: white;
-                    font-size: 1.5rem; /* Approx 24px */
-                    line-height: 1;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                     box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-                    transition: all 0.3s ease;
                     animation: pulse 2s infinite;
-                }
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                    text-decoration: none;
+                }}
                 
-                div[aria-label="floating_chat_btn"] button:hover {
+                #floating-chat-button:hover {{
                     transform: translateY(-0.2rem);
                     box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
                     background: linear-gradient(135deg, #5856EC, #7C3AED);
-                }
+                }}
+                
+                #floating-chat-button img {{
+                    width: 60%;
+                    height: 60%;
+                }}
             </style>
         """, unsafe_allow_html=True)
     else:
-        # When chat mode is active, clear the placeholder to remove the button.
+        # When in chat mode, clear the placeholder to remove the button
         floating_button_placeholder.empty()
 
-    # --- Sidebar Navigation (hidden when chat is active) ---
-    if not st.session_state.chat_mode_active:
-        st.sidebar.header("Navigation")
+    # --- Sidebar Navigation ---
+    st.sidebar.header("Navigation")
 
-        # Sidebar Navigation (removed Chat Assistant option)
-        app_mode = st.sidebar.radio(
-            label="Navigation Menu",  # Add proper label for accessibility
-            options=["🎯 Knowledge Quiz", "📚 Syllabus Viewer", "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"],
-            key="app_mode_radio_primary",
-            label_visibility="hidden"  # Hide the label since we have the header
-        )
+    # Chat Assistant is always available in sidebar regardless of mode
+    navigation_options = ["💬 Chat Assistant", "🎯 Knowledge Quiz", "📚 Syllabus Viewer", 
+                         "🎥 Video Guides", "📁 History Viewer", "📊 Progress Dashboard"]
+    
+    # Find the index of the current app_mode in navigation_options, default to 0 if not found
+    try:
+        current_index = navigation_options.index(st.session_state.app_mode)
+    except ValueError:
+        current_index = 0
+        st.session_state.app_mode = navigation_options[0]
+    
+    app_mode = st.sidebar.radio(
+        label="Navigation Menu",  # Add proper label for accessibility
+        options=navigation_options,
+        index=current_index,  # Select current mode with safe index
+        key="app_mode_radio_primary",
+        label_visibility="hidden"  # Hide the label since we have the header
+    )
+    
+    # Update session state app_mode if changed
+    if app_mode != st.session_state.app_mode:
+        st.session_state.app_mode = app_mode
+        st.rerun()
 
-        st.sidebar.markdown("---")
+    st.sidebar.markdown("---")
 
-        # API cooldown info moved up in sidebar
-        st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} min. if you hit rate limits.")
+    # API cooldown info
+    st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} min. if you hit rate limits.")
 
-        st.sidebar.markdown("---") # Separator
+    st.sidebar.markdown("---") # Separator
 
-        # Reset All State Button
-        if st.sidebar.button("♻️ Reset All"):
-            # Clear session state
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            # Clear on-disk logs
-            clear_history("chat")
-            clear_history("quiz")
-            clear_history("bookmark") # Assuming you might add this later
-            st.experimental_rerun()
+    # Reset All State Button
+    if st.sidebar.button("♻️ Reset All"):
+        # Clear session state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        # Clear on-disk logs
+        clear_history("chat")
+        clear_history("quiz")
+        clear_history("bookmark") # Assuming you might add this later
+        st.rerun()
 
-        # --- Dev Tools Link ---
-        if st.sidebar.button("🛠️ Open Dev Tools", key="open_dev_tools"):
-            js = f'''
-                <script>
-                window.open("http://localhost:8501/dev_tools", "_blank");
-                </script>
-            '''
-            st.markdown(js, unsafe_allow_html=True)
-            
-        # Store the current app mode for when we return from chat
-        st.session_state.previous_app_mode = app_mode
-    else:
-        # When in chat mode, use the previous app mode or default
-        app_mode = "💬 Chat Assistant"
+    # --- Dev Tools Link ---
+    if st.sidebar.button("🛠️ Open Dev Tools", key="open_dev_tools"):
+        js = f'''
+            <script>
+            window.open("http://localhost:8501/dev_tools", "_blank");
+            </script>
+        '''
+        st.markdown(js, unsafe_allow_html=True)
         
-        # Add a close button for chat mode
-        if st.button("← Back to " + st.session_state.previous_app_mode.split(" ", 1)[1], key="close_chat"):
-            st.session_state.chat_mode_active = False
-            st.experimental_rerun()
+    # Add a back button only when in Chat Assistant mode
+    if st.session_state.app_mode == "💬 Chat Assistant":
+        # Get the most recently used non-chat mode or default to Knowledge Quiz
+        previous_modes = [mode for mode in st.session_state.get('previous_modes', ["🎯 Knowledge Quiz"]) if mode != "💬 Chat Assistant"]
+        previous_mode = previous_modes[0] if previous_modes else "🎯 Knowledge Quiz"
+        
+        # Add a back button for returning from chat
+        if st.button(f"← Back to {previous_mode.split(' ', 1)[1]}", key="back_from_chat"):
+            st.session_state.app_mode = previous_mode
+            st.rerun()
         
         st.markdown("---")
-        
+    
+    # Store navigation history (last 3 non-duplicate modes)
+    if "previous_modes" not in st.session_state:
+        st.session_state.previous_modes = [st.session_state.app_mode]
+    elif st.session_state.app_mode != st.session_state.previous_modes[0]:
+        # Add current mode to front of list if it's different
+        st.session_state.previous_modes = [st.session_state.app_mode] + [
+            mode for mode in st.session_state.previous_modes 
+            if mode != st.session_state.app_mode
+        ][:2]  # Keep only last 2 previous modes for a total of 3
+
     # Handle dev tools route
     if st.query_params.get("page") == ["dev_tools"]:
         # Lazy import dev_tools only when the route is accessed
@@ -230,12 +264,12 @@ def main():
         return # Stop further rendering of main page if dev_tools is active
 
     # --- Module Routing ---
-    if st.session_state.chat_mode_active or app_mode == "💬 Chat Assistant":
+    if st.session_state.app_mode == "💬 Chat Assistant":
         from chat_interface import chat_interface # Lazy import
         chat_func = partial(get_ncc_response, model, model_error)
         chat_interface()
 
-    elif app_mode == "🎯 Knowledge Quiz":
+    elif st.session_state.app_mode == "🎯 Knowledge Quiz":
         from quiz_interface import _initialize_quiz_state, quiz_interface # Lazy imports
         _initialize_quiz_state(st.session_state) # Always initialize quiz state first
         if model: # model is from setup_gemini() at the top of main()
@@ -243,10 +277,10 @@ def main():
         else:
             st.error("Model failed to load, Quiz feature is unavailable.")
 
-    elif app_mode == "📚 Syllabus Viewer":
+    elif st.session_state.app_mode == "📚 Syllabus Viewer":
         ncc_handbook_pdf_path = "Ncc-CadetHandbook.pdf" # Define path once
 
-        # Import necessary functions from syllabus_manager, including the new ones we'll add
+        # Import necessary functions from syllabus_manager
         from syllabus_manager import load_syllabus_data, search_syllabus, extract_pdf_metadata, display_pdf_viewer_component
         syllabus_data = load_syllabus_data()
 
@@ -279,7 +313,7 @@ def main():
                                     if st.button(f"📖 View Page {page_num} in PDF", key=button_key):
                                         st.session_state.pdf_current_page = page_num
                                         st.toast(f"PDF target set to page {page_num}. Switch to the 'View NCC Handbook (PDF)' tab.", icon="📄")
-                                        st.experimental_rerun()
+                                        st.rerun()
                     else:
                         st.info(f"No results found for '{query}' in the syllabus structure.")
                 else:
@@ -298,7 +332,7 @@ def main():
                                                 if st.button(f"📖 View Page {section.page_number} in PDF", key=button_key):
                                                     st.session_state.pdf_current_page = section.page_number
                                                     st.toast(f"PDF target set to page {section.page_number}. Switch to the 'View NCC Handbook (PDF)' tab.", icon="📄")
-                                                    st.experimental_rerun()
+                                                    st.rerun()
                                             with col2:
                                                 bookmark_key = f"bookmark_{chapter.title}_{section.name}"
                                                 if st.button("🔖 Bookmark", key=bookmark_key):
@@ -365,7 +399,7 @@ def main():
                                 button_key = f"toc_btn_main_{item_dict['title'].replace(' ','_').replace('/','_')}_{item_dict['page']}"
                                 if st.button(button_label, use_container_width=True, key=button_key, help=f"{item_dict['title']} (p. {item_dict['page']})"):
                                         st.session_state.pdf_current_page = item_dict['page']
-                                        st.experimental_rerun()
+                                        st.rerun()
                         else:
                             st.info("No table of contents extracted or available.")
                             
@@ -375,7 +409,7 @@ def main():
                                 # Use a single column for linearity
                                 if st.button(f"🔖 {bookmark['title']} (p. {bookmark['page']})", use_container_width=True, key=f"pdf_bookmark_main_{bookmark['title'].replace(' ','_')}_{bookmark['page']}", help=f"{bookmark['title']} (p. {bookmark['page']})"):
                                         st.session_state.pdf_current_page = bookmark['page']
-                                        st.experimental_rerun()
+                                        st.rerun()
                         else:
                             st.info("No bookmarks added yet. Add bookmarks from the syllabus structure view.")
                     
@@ -401,24 +435,24 @@ def main():
                         )
                         if target_page_main != current_page_for_input_main:
                             st.session_state.pdf_current_page = target_page_main
-                            st.experimental_rerun()
+                            st.rerun()
                     
                     with page_controls_cols[1]:
                         if st.button("⏮️", use_container_width=True, help="First Page", key="pdf_first_main"):
                             st.session_state.pdf_current_page = 1
-                            st.experimental_rerun()
+                            st.rerun()
                     with page_controls_cols[2]:
                         if st.button("◀️", use_container_width=True, help="Previous Page", key="pdf_prev_main"):
                             st.session_state.pdf_current_page = max(1, st.session_state.get('pdf_current_page', 1) - 1)
-                            st.experimental_rerun()
+                            st.rerun()
                     with page_controls_cols[3]:
                         if st.button("▶️", use_container_width=True, help="Next Page", key="pdf_next_main"):
                             st.session_state.pdf_current_page = min(total_pages, st.session_state.get('pdf_current_page', 1) + 1)
-                            st.experimental_rerun()
+                            st.rerun()
                     with page_controls_cols[4]:
                         if st.button("⏭️", use_container_width=True, help="Last Page", key="pdf_last_main"):
                             st.session_state.pdf_current_page = total_pages
-                            st.experimental_rerun()
+                            st.rerun()
                     st.markdown("---") 
                 # End of MOVED PDF Navigation Controls
 
@@ -449,11 +483,11 @@ def main():
 
 
 
-    elif app_mode == "🎥 Video Guides":
+    elif st.session_state.app_mode == "🎥 Video Guides":
         from video_guides import video_guides as display_video_guides # Lazy import
         display_video_guides()
 
-    elif app_mode == "📁 History Viewer":
+    elif st.session_state.app_mode == "📁 History Viewer":
         # Styling for history entries
         st.markdown("""
         <style>
@@ -499,7 +533,7 @@ def main():
                         clear_history("chat") # Use the centralized clear_history
                         st.session_state.confirm_clear_chat = False
                         st.success("Chat history cleared!")
-                        st.experimental_rerun()
+                        st.rerun()
                 with col_no:
                     if st.button("No, Keep Chat History", key="confirm_no_chat_hist"):
                         st.session_state.confirm_clear_chat = False
@@ -560,7 +594,7 @@ def main():
                         clear_history("quiz")
                         st.session_state.confirm_clear_quiz = False
                         st.success("Quiz history cleared!")
-                        st.experimental_rerun()
+                        st.rerun()
                 with col2:
                     if st.button("No, Keep Quiz History", key="confirm_no_quiz"):
                         st.session_state.confirm_clear_quiz = False
@@ -591,7 +625,7 @@ def main():
             else:
                 st.info("No quiz history found yet. Take a quiz to start.")
 
-    elif app_mode == "📊 Progress Dashboard":
+    elif st.session_state.app_mode == "📊 Progress Dashboard":
         try:
             from progress_dashboard import display_progress_dashboard
             # Pass quiz score history to the dashboard, not the quiz log
