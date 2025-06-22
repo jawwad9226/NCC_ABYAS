@@ -167,12 +167,6 @@ def chat_interface():
             with st.expander("📝 Sample Questions", expanded=False):
                 st.markdown("""
                     ### Try asking:
-                    - What are the NCC core values?
-                    - How can I become an NCC cadet?
-                    - What are the ranks in NCC?
-                    - What is the NCC motto?
-                    - Explain the NCC training activities
-                    - What are the eligibility requirements for NCC?
                 """)
                 
                 # Quick question buttons
