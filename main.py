@@ -180,6 +180,7 @@ def main():
         floating_button_placeholder.empty()
 
     # --- Sidebar Navigation ---
+    # NOTE: Only the default Streamlit sidebar toggle (top-left hamburger) is used. No custom close/hide button is implemented.
     st.sidebar.header("Navigation")
 
     # Chat Assistant is always available in sidebar regardless of mode
