@@ -18,7 +18,6 @@ def show_admin_dashboard():
     st.markdown("---")
     # Only allow admin access
     if st.session_state.get("role") != "admin":
-        st.warning("Unauthorized: Admins only.")
         st.stop()
 
     st.header("User Management")
@@ -30,7 +29,6 @@ def show_admin_dashboard():
         data['uid'] = user.id
         user_list.append(data)
     if not user_list:
-        st.info("No users found.")
         return
 
     # --- Search & Filter ---
@@ -43,9 +41,6 @@ def show_admin_dashboard():
          search_query.lower() in u.get('role','').lower()) and
         (filter_role == "All" or u.get('role') == filter_role)
     )]
-    st.write(f"**Total Users:** {len(filtered_users)}")
-    st.markdown("---")
-
     # --- Bulk Role Update ---
     st.subheader("Bulk Role Update")
     selected_uids = st.multiselect(
@@ -57,7 +52,6 @@ def show_admin_dashboard():
     if st.button("Update Role for Selected Users"):
         for uid in selected_uids:
             set_user_role(uid, new_bulk_role)
-        st.success(f"Updated role for {len(selected_uids)} users to {new_bulk_role}.")
         st.rerun()
 
     # --- Export Users ---
@@ -89,13 +83,11 @@ def show_admin_dashboard():
             new_role = st.selectbox(f"Set Role for {user.get('name')}", ["cadet", "instructor", "admin"], index=["cadet", "instructor", "admin"].index(user.get('role', 'cadet')), key=f"role_{user['uid']}")
             if st.button(f"Update Role for {user.get('name')}", key=f"update_{user['uid']}"):
                 set_user_role(user['uid'], new_role)
-                st.success(f"Role updated for {user.get('name')} to {new_role}")
                 st.rerun()
             # Delete user
             if st.button(f"Delete {user.get('name')}", key=f"delete_{user['uid']}"):
                 if st.confirm(f"Are you sure you want to delete {user.get('name')}? This cannot be undone."):
                     firestore_db.collection("users").document(user['uid']).delete()
-                    st.success(f"Deleted user {user.get('name')}")
                     st.rerun()
 
     # --- Activity Log (simple) ---

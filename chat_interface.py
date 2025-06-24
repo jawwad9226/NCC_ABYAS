@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import os
 import json
 import uuid
-import logging
 from itertools import groupby # Import groupby
 # Import from utils
 from ncc_utils import (
@@ -240,7 +239,6 @@ def submit_prompt(prompt):
                     st.session_state.cooldown_time_remaining = int(parts[time_index])
                 except (ValueError, IndexError):
                     st.session_state.cooldown_time_remaining = 0
-                st.warning(response)
             else:
                 # Successful response
                 st.session_state.cooldown_active = False
@@ -249,7 +247,6 @@ def submit_prompt(prompt):
                 
                 # Display response
                 if response and response.strip():
-                    st.write(response)
                     st.markdown(f'<div class="message-timestamp">{assistant_timestamp}</div>', unsafe_allow_html=True)
                     # Save to session and history
                     assistant_message = {
@@ -259,8 +256,6 @@ def submit_prompt(prompt):
                     }
                     st.session_state.messages.append(assistant_message) # Add to current session messages
                     save_chat_to_file(prompt, response)
-                else:
-                    st.warning("No response generated.")
     
     st.rerun()
 

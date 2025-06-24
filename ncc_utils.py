@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple, Any, Union
 import re
 import streamlit as st
-import logging
 import json
 import csv
 from dataclasses import dataclass
@@ -56,15 +55,6 @@ class Config:
 Config.ensure_data_dir()
 API_CALL_COOLDOWN_MINUTES = Config.API_CALL_COOLDOWN_MINUTES
 
-logging.basicConfig(
-    level=logging.INFO, 
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(Config.LOG_PATHS['app']['log']),
-        logging.StreamHandler()
-    ]
-)
-
 @st.cache_resource
 def setup_gemini() -> Tuple[Optional[genai.GenerativeModel], Optional[str]]:
     try:
@@ -74,14 +64,12 @@ def setup_gemini() -> Tuple[Optional[genai.GenerativeModel], Optional[str]]:
                 "GEMINI_API_KEY environment variable is not set or is using the default value. "
                 "Please set it to your actual Gemini API key."
             )
-            logging.error(error_msg)
             return None, error_msg
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(Config.MODEL_NAME)
         return model, None
     except Exception as e:
         error_msg = f"Failed to initialize Gemini model: {str(e)}"
-        logging.exception(error_msg)
         return None, "Apologies, we're experiencing technical difficulties. Please try again later."
 
 # --- File Operations, Quiz, Chat, and Helpers ---
@@ -250,7 +238,6 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
         return response_text
     except Exception as e:
         error_msg = "Apologies, I'm having trouble processing your request. Please try again in a moment."
-        logging.exception(f"Error in get_ncc_response: {str(e)}")
         return error_msg
 
 def clear_history(file_type: str = "chat") -> bool:
@@ -280,12 +267,10 @@ def clear_history(file_type: str = "chat") -> bool:
             if os.path.exists(path):
                 try:
                     os.remove(path)
-                except Exception as e:
-                    logging.error(f"Failed to clear {path}: {str(e)}")
+                except Exception:
                     success = False
         return success
-    except Exception as e:
-        logging.error(f"Failed to clear {file_type} history: {str(e)}")
+    except Exception:
         return False
 
 def read_history(file_type: str = "chat") -> Union[List[Dict], str]:
@@ -350,8 +335,7 @@ def get_firestore_history(user_id: str, file_type: str) -> list:
         elif file_type == "quiz_score":
             doc = firestore_db.collection("users").document(user_id).collection("progress").document("summary").get()
             return doc.to_dict() or {}
-    except Exception as e:
-        logging.warning(f"Could not fetch Firestore {file_type} history: {e}")
+    except Exception:
         return [] if file_type != "quiz_score" else {}
 
 _original_read_history = read_history
@@ -395,8 +379,7 @@ def clear_quiz_score_history() -> bool:
         if os.path.exists(path):
             os.remove(path)
         return True
-    except Exception as e:
-        logging.error(f"Failed to clear quiz score history: {str(e)}")
+    except Exception:
         return False
 
 def _is_in_cooldown(time_key: str) -> bool:
@@ -434,8 +417,8 @@ def save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
         history.append(entry)
         with open(history_path, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        logging.error(f"Failed to save chat to file: {e}")
+    except Exception:
+        pass
 
 def main():
     """Main entry point of the application."""

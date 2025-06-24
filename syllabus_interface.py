@@ -2,7 +2,6 @@ import streamlit as st
 from syllabus_manager import load_syllabus_data, search_syllabus, extract_pdf_metadata, display_pdf_viewer_component
 from config import NCC_HANDBOOK_PDF
 import os
-import logging
 
 # Custom CSS for light mode
 st.markdown("""
@@ -43,7 +42,6 @@ def show_syllabus_viewer():
                 if query:
                     search_results = search_syllabus(syllabus_data, query)
                     if search_results:
-                        st.write(f"Found {len(search_results)} results for '{query}':")
                         for result in search_results:
                             expander_title = result.get('chapter_title', 'Result')
                             if result.get('section_name'):
@@ -175,7 +173,6 @@ def show_syllabus_viewer():
                                 st.session_state.pdf_current_page = total_pages
                                 st.rerun()
                         st.markdown("---")
-                    st.info("💡 PDF navigation is available through the controls above and the viewer's built-in controls. If you experience any issues, you can download the PDF to view it locally.", icon="ℹ️")
                     if not display_pdf_viewer_component(
                         ncc_handbook_pdf_path, 
                         height=800, 
@@ -192,10 +189,8 @@ def show_syllabus_viewer():
                             use_container_width=True
                         )
                 except Exception as pdf_err:
-                    logging.exception("PDF viewer error:")
                     st.error(f"An error occurred while displaying the PDF: {pdf_err}")
             else:
                 st.warning(f"NCC Cadet Handbook PDF ('{ncc_handbook_pdf_path}') not found in the application's root directory. PDF viewer and download are unavailable.")
     except Exception as e:
-        logging.exception("Syllabus viewer error:")
         st.error(f"An error occurred in the syllabus viewer: {e}")

@@ -26,15 +26,9 @@ def clear_cache_dirs(base_dir='.'):
                 try:
                     shutil.rmtree(dir_path)
                     removed.append(dir_path)
-                except Exception as e:
-                    print(f'Could not remove {dir_path}: {e}')
+                except Exception:
+                    pass
     return removed
 
 if __name__ == '__main__':
-    removed = clear_cache_dirs('.')
-    if removed:
-        print('Removed:')
-        for path in removed:
-            print(f'  {path}')
-    else:
-        print('No cache directories found.')
+    clear_cache_dirs('.')

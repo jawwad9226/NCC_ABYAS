@@ -4,7 +4,6 @@ import time
 import os
 import json
 import re
-import logging
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime # Ensure datetime is imported
 import google.generativeai as genai
@@ -195,11 +194,10 @@ def _parse_ai_quiz_response(response_text: str) -> List[Dict[str, Any]]:
             question_data["timestamp"] = datetime.now().isoformat()
             parsed_questions.append(question_data)
         elif question_data["question"]: # Log if we have a question but other parts are missing
-            logging.warning(f"Skipped partially parsed question block due to missing fields: Q: {question_data['question'][:50]}... Options: {len(question_data['options'])}, Answer: '{question_data['answer']}', Explanation: {not not question_data['explanation']}")
-            logging.debug(f"Problematic block content:\n{block}")
+            pass # All debug and user message calls removed for dev/prod direction
 
     if not parsed_questions and response_text:
-        logging.error(f"Failed to parse any questions from AI response. Raw response:\n{response_text}")
+        pass # All debug and user message calls removed for dev/prod direction
     return parsed_questions
 
 
@@ -299,7 +297,7 @@ def _save_generated_quiz_to_log(topic: str, questions: List[Dict[str, Any]]) -> 
         with open(quiz_log_path, 'w', encoding='utf-8') as f:
             json.dump(history, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        logging.error(f"Failed to save generated quiz to log: {str(e)}")
+        pass # All debug and user message calls removed for dev/prod direction
 
 def _ai_generate_quiz_questions(
     model: Optional[genai.GenerativeModel],
@@ -329,7 +327,6 @@ def _ai_generate_quiz_questions(
             return parsed_questions, None
         return None, "Failed to parse valid quiz questions from AI response. Check logs for raw response. Please try again or rephrase."
     except Exception as e:
-        logging.exception(f"Error in _ai_generate_quiz_questions: {str(e)}")
         return None, "Apologies, an error occurred while generating the quiz. Please try again."
 
 def _display_active_quiz(ss):
@@ -611,7 +608,7 @@ def _display_quiz_results(ss):
                 # if not (user_answered_key in options_in_q): # Only show this if not already highlighted in the list
                 #    st.error(f"Your recorded answer: {user_answer_display_text}")
                 # For now, the highlighting in the loop is the primary indicator.
-                pass # The highlighting within the option list loop should cover displaying the user's wrong answer.
+                pass # The highlighting within the option list should cover displaying the user's wrong answer.
  
             explanation = q_data.get('explanation', 'No explanation available for this question.')
             with st.expander("View Explanation", expanded=True): # Show explanation by default

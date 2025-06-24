@@ -10,7 +10,6 @@ from datetime import datetime
 import requests
 from streamlit_browser_storage.local_storage import LocalStorage
 import streamlit as st
-from utils.logging_utils import log_info, log_warning, log_error
 
 # Load Firebase config
 with open("firebase_config.json") as f:
@@ -92,14 +91,9 @@ def restore_session():
     if "id_token" not in st.session_state:
         storage = LocalStorage(key="id_token")
         token = storage.get("id_token")
-        # log_info(f"auth_manager: token from localStorage: {token}")  # REMOVE for security
         if token:
             st.session_state["id_token"] = token
-    # log_info(f"auth_manager: id_token in session_state: {st.session_state.get('id_token')}")  # REMOVE for security
-    log_info(f"auth_manager: user_id in session_state: {st.session_state.get('user_id')}")
-    # Token-based session restore: check /verify_session on app load
     if not st.session_state.get("user_id") and st.session_state.get("id_token"):
-        log_info(f"Attempting /verify_session with id_token: (redacted)...")
         try:
             resp = requests.get(
                 "http://localhost:5001/verify_session",
@@ -107,15 +101,12 @@ def restore_session():
                 timeout=5
             )
             data = resp.json()
-            log_info(f"/verify_session response: {data}")
             if data.get("success"):
                 st.session_state["user_id"] = data.get("uid")
                 st.session_state["profile"] = data.get("profile")
                 st.session_state["role"] = data.get("profile", {}).get("role", "cadet")
-                log_info(f"Login success, rerunning app.")
                 st.rerun()
-                print("[DEBUG] auth_manager: Called st.rerun() after session restore.")
             else:
-                log_warning(f"/verify_session failed: {data}")
+                pass  # Handle session verification failure silently
         except Exception as e:
-            log_error(f"auth_manager: /verify_session error: {e}")
+            pass  # Handle exception silently

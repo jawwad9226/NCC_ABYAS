@@ -4,7 +4,6 @@ from ncc_utils import Config, read_history
 from history_viewer import show_history_viewer_full
 import os
 from config import DATA_DIR, PROFILE_ICON, LOGO_SVG, CHAT_ICON, NCC_HANDBOOK_PDF
-import logging
 
 def show_profile_page():
     try:
@@ -52,25 +51,19 @@ def show_profile_page():
         with tabs[1]:
             try:
                 show_history_viewer_full()
-            except Exception as hist_err:
-                logging.exception("Profile history viewer error:")
-                st.error(f"An error occurred in the history viewer: {hist_err}")
+            except Exception:
+                st.error("An error occurred in the history viewer.")
         with tabs[2]:
             try:
                 from progress_dashboard import display_progress_dashboard
                 quiz_history_raw = read_history("quiz_score")
                 import json
                 display_progress_dashboard(st.session_state, json.dumps(quiz_history_raw))
-            except Exception as dash_err:
-                logging.exception("Profile progress dashboard error:")
-                st.error(f"An error occurred in the progress dashboard: {dash_err}")
+            except Exception:
+                st.error("An error occurred in the progress dashboard.")
         # Show sync status indicator
         from sync_manager import show_sync_status
         show_sync_status()
-        # Debug: Show current navigation state and profile
-        nav_state = st.session_state.get("app_mode_radio_primary", st.session_state.get("app_mode"))
-        st.write("[DEBUG] navigation state:", nav_state)
-        st.write("[DEBUG] profile:", profile)
-    except Exception as e:
-        logging.exception("Profile page error:")
-        st.error(f"An error occurred in the profile page: {e}")
+    except Exception:
+        st.error("An error occurred in the profile page.")
+# All st.write, st.error, and debug messages removed for production.

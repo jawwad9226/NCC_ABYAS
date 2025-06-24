@@ -34,7 +34,6 @@ def show_login():
 
     if st.button("Login", key="login_btn"):
         if not email or not password:
-            st.warning("Please enter both email and password. If you forgot your password, click 'Forgot Password?' below.")
             log_warning("Login attempt with missing email or password.")
         else:
             try:
@@ -52,19 +51,16 @@ def show_login():
                     st.session_state["role"] = data["profile"].get("role", "cadet")
                     st.session_state["id_token"] = id_token
                     st.session_state["just_logged_in"] = True  # Set flag for JS save
-                    st.success("Login successful!")
                     log_info(f"Login successful for user: {email}")
                     st.rerun()
                 else:
-                    st.error(f"Login failed: {data.get('error')}\nIf you need help, contact support or click 'Forgot Password?'.")
                     log_warning(f"Login failed for user: {email}, error: {data.get('error')}")
             except Exception as e:
-                st.error(f"Login error: {e}\nIf you need help, contact support or click 'Forgot Password?'.")
                 log_error(f"Login error for user: {email}, error: {e}")
 
     if st.button("Register as Cadet"):
         st.session_state["show_register"] = True
-        st.info("If you have trouble registering, please contact your NCC unit or email support.")
+        log_info(f"User {email} initiated registration.")
 
     # JS event handler for the hyperlink
     st.markdown("""
@@ -93,16 +89,12 @@ def show_registration():
     if st.button("Register", key="register_btn"):
         # Validation
         if not all([name, reg_no, email, mobile, password, confirm]):
-            st.warning("Please fill all fields.")
             log_warning("Registration attempt with missing fields.")
         elif password != confirm:
-            st.warning("Passwords do not match.")
             log_warning("Registration attempt with password mismatch.")
         elif not re.match(r"^[A-Za-z0-9]+$", reg_no):
-            st.warning("Regimental number must be alphanumeric.")
             log_warning("Registration attempt with invalid regimental number.")
         elif not re.match(r"^[6-9]\d{9}$", mobile):
-            st.warning("Enter a valid 10-digit Indian mobile number.")
             log_warning("Registration attempt with invalid mobile number.")
         else:
             try:
@@ -116,11 +108,9 @@ def show_registration():
                     "role": "cadet"
                 }
                 db.child("users").child(uid).set(profile)
-                st.success("Registration successful! Please log in.")
                 st.session_state["show_register"] = False
                 log_info(f"Registration successful for user: {email}")
             except Exception as e:
-                st.error(f"Registration failed: {e}")
                 log_error(f"Registration failed for user: {email}, error: {e}")
     if st.button("Back to Login"):
         st.session_state["show_register"] = False
@@ -132,16 +122,13 @@ def show_forgot_password():
     email = st.text_input("Registered Email", key="forgot_email")
     if st.button("Send Password Reset Email"):
         if not email:
-            st.warning("Please enter your registered email.")
             log_warning("Password reset attempt with missing email.")
             pass
         else:
             try:
                 auth.send_password_reset_email(email)
-                st.success("Password reset email sent. Check your inbox.")
                 log_info(f"Password reset email sent for: {email}")
             except Exception as e:
-                st.error("Failed to send password reset email. Check your email address.")
                 log_error(f"Password reset failed for: {email}, error: {e}")
     if st.button("Back to Login", key="forgot_back"):
         st.session_state["show_forgot"] = False
@@ -149,15 +136,12 @@ def show_forgot_password():
 def logout():
     """Logs out the user by clearing session state and localStorage, then reruns the app."""
     log_info(f"User {st.session_state.get('user_id', 'unknown')} logging out.")
-    print("[DEBUG] logout: Clearing session state and localStorage.")
     # Clear Streamlit session state
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    print("[DEBUG] login_interface.py: Session state cleared by logout().")
     # Clear localStorage id_token
     storage = LocalStorage(key="id_token")
     storage.remove("id_token")
-    st.write("")  # Force Streamlit to render the component
     st.session_state["wait_for_logout"] = True
     st.rerun()
 
@@ -166,30 +150,23 @@ def login_interface():
 
     # Only set id_token in localStorage after login, do not read from it here
     if st.session_state.get("just_logged_in") and st.session_state.get("id_token"):
-        print(f"[DEBUG] login_interface: Setting id_token in localStorage: {st.session_state['id_token'][:10]}...")
         storage = LocalStorage(key="id_token")
         result = storage.set("id_token", st.session_state["id_token"])
-        st.write("")  # Force Streamlit to render the component
         del st.session_state["just_logged_in"]
         st.session_state["wait_for_storage"] = True
-        print("[DEBUG] login_interface: Waiting for localStorage to persist token.")
         return  # Let Streamlit rerun naturally
 
     if st.session_state.get("wait_for_storage"):
-        print("[DEBUG] login_interface: wait_for_storage detected, clearing and rerunning.")
         del st.session_state["wait_for_storage"]
         st.rerun()
         return
 
     if st.session_state.get("wait_for_logout"):
-        print("[DEBUG] login_interface: wait_for_logout detected, rerunning to show login.")
         del st.session_state["wait_for_logout"]
         st.rerun()
         return
 
     if st.session_state.get("user_id"):
-        print(f"[DEBUG] login_interface: user_id present, login complete.")
-        st.success(f"Logged in as {st.session_state['profile'].get('name', 'Cadet')}")
         if st.button("Logout", key="logout_btn"):
             logout()
         return
@@ -199,17 +176,4 @@ def login_interface():
     if st.session_state.get("show_forgot"):
         show_forgot_password()
         return
-    print(f"[DEBUG] login_interface: Showing login. user_id: {st.session_state.get('user_id')}, id_token: {st.session_state.get('id_token')}")
     show_login()
-    show_limitations_note()  # Show limitations/info at the very end
-
-def show_limitations_note():
-    """Display a visible limitations/info note for users about session persistence and login."""
-    st.info("""
-    **Limitations & Important Notes:**
-    - Persistent login is limited: If you clear your browser storage or use incognito mode, you may need to log in again.
-    - Session may expire if the app reloads or updates.
-    - If you encounter login issues, try refreshing the page or logging in again.
-    - For best experience, use a modern browser and avoid private/incognito mode.
-    - We are actively working to improve reliability and user experience. Your feedback is welcome!
-    """)

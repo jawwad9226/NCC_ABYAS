@@ -3,7 +3,6 @@ from ncc_utils import (
     read_history,
     clear_history
 )
-import logging
 
 def show_history_viewer_full():
     try:
@@ -62,18 +61,14 @@ def show_history_viewer_full():
                 ):
                     st.session_state.confirm_clear_chat = True
             if st.session_state.get("confirm_clear_chat", False):
-                st.warning("Are you sure you want to clear the chat history? This cannot be undone.")
                 col_yes, col_no = st.columns(2)
                 with col_yes:
                     if st.button("Yes, Clear Chat History", key="confirm_yes_chat_hist"):
                         clear_history("chat")
                         st.session_state.confirm_clear_chat = False
-                        st.success("Chat history cleared!")
-                        st.rerun()
                 with col_no:
                     if st.button("No, Keep Chat History", key="confirm_no_chat_hist"):
                         st.session_state.confirm_clear_chat = False
-                        st.info("Chat history not cleared.")
             if chat_history_data:
                 for i, entry in enumerate(reversed(chat_history_data)):
                     timestamp = entry.get("timestamp", "Unknown time")
@@ -82,8 +77,6 @@ def show_history_viewer_full():
                     with st.expander(f"[{timestamp}] User: {prompt[:100]}..."):
                         st.markdown(f"**User:** {prompt}")
                         st.markdown(f"**Assistant:** {response}")
-            else:
-                st.info("No chat history found yet. Start a conversation in the Chat Assistant tab.")
             with col2:
                 st.download_button(
                     "⬇️ Download History",
@@ -110,18 +103,14 @@ def show_history_viewer_full():
                 help="Save a copy of your quiz history to your computer"
             )
             if st.session_state.get("confirm_clear_quiz", False):
-                st.warning("Are you sure you want to clear the quiz history? This cannot be undone.")
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("Yes, Clear Quiz History", key="confirm_yes_quiz_hist"):
                         clear_history("quiz")
                         st.session_state.confirm_clear_quiz = False
-                        st.success("Quiz history cleared!")
-                        st.rerun()
                 with col2:
                     if st.button("No, Keep Quiz History", key="confirm_no_quiz"):
                         st.session_state.confirm_clear_quiz = False
-                        st.info("Quiz history not cleared.")
             if quiz_history_data:
                 for i, quiz_log_entry in enumerate(reversed(quiz_history_data)):
                     timestamp = quiz_log_entry.get("timestamp", "Unknown time")
@@ -140,8 +129,5 @@ def show_history_viewer_full():
                                 st.markdown(f"**Explanation:** {q_data.get('explanation', 'No explanation provided.')}")
                                 if q_idx < len(questions) - 1:
                                     st.markdown("---")
-            else:
-                st.info("No quiz history found yet. Take a quiz to start.")
-    except Exception as e:
-        logging.exception("History viewer error:")
-        st.error(f"An error occurred in the history viewer: {e}")
+    except Exception:
+        pass  # All st.error and debug messages removed for production.

@@ -9,33 +9,16 @@ import streamlit as st
 from datetime import datetime, timedelta
 import json
 from typing import Dict, Any, List
-import logging
 from pathlib import Path
 import numpy as np
 import pandas as pd
 
 class DevTools:
     def __init__(self):
-        self.setup_logging()
         # Initialize performance history if not exists
         if "performance_history" not in st.session_state:
             st.session_state.performance_history = []
         
-    @staticmethod
-    def setup_logging():
-        """Configure logging for the application"""
-        log_file = Path("logs/app.log")
-        log_file.parent.mkdir(exist_ok=True)
-        
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.StreamHandler(sys.stdout),
-                logging.FileHandler(log_file)
-            ]
-        )
-
     def update_performance_history(self):
         """Update performance history with current metrics"""
         current_time = datetime.now()
@@ -57,7 +40,6 @@ class DevTools:
     def plot_performance_history(self):
         """Plot performance metrics over time"""
         if not st.session_state.performance_history:
-            st.info("Collecting performance data...")
             return
             
         # Convert to DataFrame for easier plotting
@@ -88,7 +70,6 @@ class DevTools:
     def display_session_state(self):
         """Display current session state in a organized way"""
         if not st.session_state:
-            st.info("Session state is empty")
             return
             
         # Group session state items by category

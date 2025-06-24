@@ -4,7 +4,6 @@ import streamlit as st
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass, field
 import re
-import logging
 
 # Assuming utils_youtube.py is in the same directory or Python path
 from utils_youtube import fetch_youtube_videos
@@ -62,7 +61,6 @@ class VideoLibrary:
             file_path = os.path.join(base_dir, "data", "videos.json")
             
             if not os.path.exists(file_path):
-                st.error(f"Video data file not found: {file_path}")
                 self.videos = []
                 self.categories = []
                 return
@@ -78,7 +76,6 @@ class VideoLibrary:
                     continue
                     
                 if not isinstance(video_list, list):
-                    st.warning(f"Expected a list of videos for category '{category}', got {type(video_list)}. Skipping.")
                     continue
 
                 temp_videos_pending_api_fetch: List[Video] = []
@@ -121,7 +118,7 @@ class VideoLibrary:
                             if manual_video.url:
                                 self.videos.append(manual_video)
                     except Exception as e:
-                        st.error(f"Error processing individual video data in category '{category}': {e}. Video data: {video_data}")
+                        pass
 
                 # Batch fetch from YouTube API for current category's videos
                 if self.api_key and temp_videos_pending_api_fetch:
@@ -145,12 +142,11 @@ class VideoLibrary:
                                     # Merge tags: JSON tags (already in shell) + API tags (unique)
                                     video_shell.tags = list(set(video_shell.tags + yt_details.get('tags', [])))
                                 else:
-                                    st.warning(f"Could not fetch details for YouTube video ID: {video_shell.id} in category '{category}'. Using data from videos.json or placeholders.")
+                                    pass
                                 
                                 if video_shell.url:
                                     self.videos.append(video_shell)
                         except Exception as e:
-                            st.error(f"Error fetching video details from YouTube API: {e}")
                             # Add shells as they are if API fails
                             for video_shell in temp_videos_pending_api_fetch:
                                 if video_shell.url:
@@ -163,11 +159,10 @@ class VideoLibrary:
             # Already handled at the top of the try block for file_path
             pass
         except json.JSONDecodeError as e:
-            st.error(f"Error parsing video data: {e}")
+            pass
         except Exception as e:
-            st.error(f"Unexpected error loading video data: {e}")
             import traceback
-            st.error(f"Traceback: {traceback.format_exc()}")
+            pass
 
     def _format_youtube_duration(self, duration_str: str) -> str:
         """Formats ISO 8601 duration string from YouTube API to HH:MM:SS or MM:SS."""
@@ -200,15 +195,7 @@ class VideoLibrary:
 
 def video_guides():
     """Display the video guides section."""
-    st.write("Explore a collection of helpful videos related to NCC topics.")
     
-    if not YOUTUBE_API_KEY:
-        st.info(
-            "Optional: YOUTUBE_API_KEY environment variable is not set. "
-            "YouTube video details (like latest titles, descriptions, durations) "
-            "will not be fetched automatically. The app will rely solely on `videos.json`."
-        )
-
     # Initialize video library
     if 'video_lib' not in st.session_state:
         st.session_state.video_lib = VideoLibrary(api_key=YOUTUBE_API_KEY)
@@ -260,13 +247,11 @@ def video_guides():
                                 if os.path.exists(local_path):
                                     st.image(local_path, use_container_width=True)
                                 else:
-                                    st.warning(f"Local thumbnail not found: {local_path}")
                                     st.image("https://via.placeholder.com/320x180.png?text=Thumbnail+Not+Found", use_container_width=True)
                             else:
                                 # Handle web URLs
                                 st.image(video.thumbnail, use_container_width=True)
                         except Exception as e:
-                            st.error(f"Error loading thumbnail for '{video.title}': {e}")
                             st.image("https://via.placeholder.com/320x180.png?text=Error+Loading+Thumb", use_container_width=True)
                     else:
                         # Placeholder if no thumbnail is specified
@@ -312,8 +297,7 @@ def show_video_guides():
     try:
         video_guides()
     except Exception as e:
-        logging.exception("Video guides error:")
-        st.error(f"An error occurred in the video guides: {e}")
+        pass
 
 def show_video_admin_tab():
     import json, os, re
@@ -359,8 +343,6 @@ def show_video_admin_tab():
                     details = fetch_youtube_videos([youtube_id], api_key)
                     if details:
                         video_data = details[0]
-                        st.success("Fetched video details from YouTube API.")
-                        st.write(video_data)
                         # Add to JSON
                         if category not in videos_data:
                             videos_data[category] = []
@@ -375,15 +357,11 @@ def show_video_admin_tab():
                         })
                         with open(videos_path, "w") as f:
                             json.dump(videos_data, f, indent=2)
-                        st.success(f"Video added to category '{category}'.")
                     else:
-                        st.warning("Could not fetch video details from YouTube API. Please fill details manually below.")
                         manual_mode = True
                 else:
-                    st.warning("YOUTUBE_API_KEY not set on server. Please fill details manually below.")
                     manual_mode = True
             else:
-                st.warning("Invalid YouTube URL or ID. Please fill details manually below.")
                 manual_mode = True
         if fetch and (manual_mode or not url):
             st.info("Manual Entry Mode: Please fill all fields below.")
@@ -404,7 +382,6 @@ def show_video_admin_tab():
                 })
                 with open(videos_path, "w") as f:
                     json.dump(videos_data, f, indent=2)
-                st.success(f"Video added to category '{category}'.")
     st.subheader("Current Videos (by Category)")
     for cat, vids in videos_data.items():
         if cat == "version": continue

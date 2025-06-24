@@ -109,8 +109,3 @@ def validate_all_json_files() -> Dict[str, tuple[bool, Optional[str]]]:
 if __name__ == "__main__":
     # When run directly, validate all files and print results
     results = validate_all_json_files()
-    for file_name, (is_valid, error) in results.items():
-        if is_valid:
-            print(f"✅ {file_name} is valid")
-        else:
-            print(f"❌ {file_name} validation failed: {error}")

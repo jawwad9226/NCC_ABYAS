@@ -191,8 +191,6 @@ def get_syllabus_topics(syllabus_data: Optional[SyllabusData]) -> List[str]:
             # Ensure chapter.title is a string, though dataclass definition should enforce this.
             if isinstance(chapter.title, str):
                  topics.append(chapter.title)
-            else:
-                logging.warning(f"Found a chapter with a non-string title: {chapter}")
     return topics
 
 def search_syllabus(syllabus_data: Optional[SyllabusData], query: str) -> List[Dict]:

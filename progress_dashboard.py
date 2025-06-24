@@ -75,7 +75,6 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
         df = pd.DataFrame()
 
     if df.empty:
-        st.info("No quiz data yet. Take a quiz to see your progress here.")
         return
 
     # --- Summary Cards ---
@@ -101,8 +100,6 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
     if 'Difficulty' in df.columns and not df['Difficulty'].isnull().all():
         difficulty_counts = df['Difficulty'].value_counts().sort_index()
         st.bar_chart(difficulty_counts)
-    else:
-        st.info("No difficulty data available.")
 
     # --- Topic-Wise Performance ---
     st.subheader("📚 Topic-Wise Performance")
@@ -113,8 +110,6 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
         quizzes_per_topic = df['Topic'].value_counts()
         st.write("Number of Quizzes per Topic:")
         st.bar_chart(quizzes_per_topic)
-    else:
-        st.info("Topic performance data is not available or incomplete.")
 
     # --- Date Filter ---
     st.subheader("📅 Quiz Timeline (Filter by Date)")

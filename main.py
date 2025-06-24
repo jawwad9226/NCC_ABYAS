@@ -61,11 +61,9 @@ def get_image_as_base64(image_path):
 # --- DEBUG: Show id_token and user_id at the top of the app ---
 # --- Restore id_token from localStorage using restore_session() ---
 restore_session()
-# print(f"[DEBUG] main.py: id_token in session_state: {st.session_state.get('id_token')}")  # REMOVE for security
-print(f"[DEBUG] main.py: user_id in session_state: {st.session_state.get('user_id')}")
+# (Debug prints removed for production)
 # --- Token-based session restore: check /verify_session on app load ---
 if not st.session_state.get("user_id") and st.session_state.get("id_token"):
-    print(f"[DEBUG] Attempting /verify_session with id_token: (redacted)...")
     try:
         resp = requests.get(
             "http://localhost:5001/verify_session",
@@ -73,23 +71,35 @@ if not st.session_state.get("user_id") and st.session_state.get("id_token"):
             timeout=5
         )
         data = resp.json()
-        print(f"[DEBUG] /verify_session response: {data}")
         if data.get("success"):
             st.session_state["user_id"] = data.get("uid")
             st.session_state["profile"] = data.get("profile")
             st.session_state["role"] = data.get("profile", {}).get("role", "cadet")
-            print(f"[DEBUG] Login success, rerunning app.")
             st.experimental_rerun()
-        else:
-            print(f"[DEBUG] /verify_session failed: {data}")
-    except Exception as e:
-        print(f"[DEBUG] main.py: /verify_session error: {e}")
+    except Exception:
+        pass
+
+# Inject PWA manifest and service worker registration
+st.markdown(
+    '''
+    <link rel="manifest" href="/data/manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/data/service-worker.js');
+      }
+    </script>
+    ''',
+    unsafe_allow_html=True
+)
 
 def main():
-    """    
+    """
     Main entry point for the NCC ABYAS application.
     Handles overall structure, navigation, theme, and routing to different features.
     """
+    # --- Apply theme at the very top ---
+    apply_theme(st.session_state.get("theme_mode", "Dark"))
+
     # Handle query parameters for chat navigation
     if st.query_params.get("go_chat") or st.query_params.get("open_chat") or st.query_params.get("hash") == ["open_chat"]:
         st.session_state.app_mode = "💬 Chat Assistant"
@@ -148,7 +158,9 @@ def main():
         }
         </style>
     """, unsafe_allow_html=True)
-    with st.container():
+    # Use Streamlit columns to place the theme toggle button in the header
+    header_col1, header_col2 = st.columns([8, 1])
+    with header_col1:
         st.markdown(
             f'''
             <div class="app-header-flex">
@@ -156,55 +168,24 @@ def main():
                     <img src="{logo_base64_data_url}" style="height: 2rem; width: auto;">
                     <h1 style="margin:0;font-size:1.25rem">NCC ABYAS</h1>
                 </div>
-                <div>
-                    <form action="#" method="post" style="display:inline;">
-                        <button type="button" id="theme-toggle-btn" title="{theme_tooltip}" style="font-size:1.5rem;background:none;border:none;cursor:pointer;outline:none;">{theme_icon}</button>
-                    </form>
-                </div>
             </div>
             ''', unsafe_allow_html=True
         )
-    # Theme toggle JS
-    st.markdown("""
-    <script>
-    const btn = window.parent.document.getElementById('theme-toggle-btn');
-    if(btn){
-        btn.onclick = function(){
-            window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:themeToggle'}, '*');
-        };
-    }
-    </script>
-    """, unsafe_allow_html=True)
-    # Theme toggle logic
-    if st.session_state.get("theme_toggle_clicked"):
-        st.session_state.theme_mode = "Light" if st.session_state.theme_mode == "Dark" else "Dark"
-        st.session_state.theme_toggle_clicked = False
-        st.rerun()
-    # Listen for JS event
-    import streamlit.components.v1 as components
-    components.html('''<script>
-    window.addEventListener('message', function(event) {
-        if(event.data && event.data.type === 'streamlit:themeToggle') {
-            window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setComponentValue', key: 'theme_toggle_clicked', value: true}, '*');
-        }
-    });
-    </script>''', height=0)
+    with header_col2:
+        if st.button(theme_icon, key="theme_toggle_btn", help=theme_tooltip):
+            st.session_state.theme_mode = "Light" if current_theme == "Dark" else "Dark"
+            st.rerun()
 
     # --- AUTH: Show login/registration before app content if no user_id or id_token ---
     if not st.session_state.get("user_id") or not st.session_state.get("id_token"):
         if st.session_state.get("id_token") and not st.session_state.get("user_id"):
-            st.info("Session restore in progress. Please wait...")
-            print("[DEBUG] main.py: id_token present but user_id missing. Waiting for session restore.")
+            pass  # Session restore in progress
         else:
-            print(f"[DEBUG] Showing login_interface. user_id: {st.session_state.get('user_id')}")
             login_interface()
         st.stop()
 
     # --- Sidebar Profile Icon (Full Header Style) ---
     render_sidebar_profile()
-    # (Feedback button is now only rendered after API cooldown info below)
-
-    print(f"[DEBUG] main.py: app_mode after sidebar: {st.session_state.get('app_mode')}")
 
     # --- Navigation Sidebar ---
     navigation_options = [
@@ -231,7 +212,6 @@ def main():
         index=current_index,  # Select current mode with safe index
         key="app_mode_radio_primary",
     )
-    print(f"[DEBUG] main.py: app_mode after radio: {app_mode}")
 
     st.sidebar.markdown("---")
     st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} min. if you hit rate limits.")
@@ -264,8 +244,6 @@ def main():
             quiz_score_history = []
         quiz_history_raw_string = json.dumps(quiz_score_history)
         display_progress_dashboard(st.session_state, quiz_history_raw_string)
-        if st.session_state.get("role") == "admin":
-            st.info("Admins: Use the Admin Dashboard to view all users' progress. This page shows your own progress only.")
     elif app_mode == "💬 Chat Assistant":
         from chat_interface import chat_interface # Lazy import
         chat_func = partial(get_ncc_response, model, model_error)
@@ -276,8 +254,6 @@ def main():
         _initialize_quiz_state(st.session_state) # Always initialize quiz state first
         if model: # model is from setup_gemini() at the top of main()
             quiz_interface(model, model_error) # Pass model and model_error
-        else:
-            st.error("Model failed to load, Quiz feature is unavailable.")
 
     elif app_mode == "📚 Syllabus Viewer":
         show_syllabus_viewer()
@@ -299,14 +275,11 @@ def main():
         if st.session_state.get("role") in ["admin", "instructor"]:
             from instructor_tools import show_instructor_dashboard
             show_instructor_dashboard()
-        else:
-            st.error("You do not have permission to access this page.")
     else:
-        st.error(f"Unknown app mode: {st.session_state.app_mode}")
+        pass  # Unknown app mode, do nothing for production
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        st.exception(e)
+    except Exception:
+        pass  # Suppress error display for production
