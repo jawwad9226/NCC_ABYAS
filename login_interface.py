@@ -24,7 +24,12 @@ def show_login():
     auth = st.session_state['pyrebase_auth']
     st.title("NCC Cadet Login")
     email = st.text_input("Email", key="login_email")
-    password = st.text_input("Password", type="password", key="login_password")
+    col1, col2 = st.columns([3,1])
+    with col1:
+        password = st.text_input("Password", type="password", key="login_password")
+    with col2:
+        st.markdown('<div style="height:2.2em"></div>', unsafe_allow_html=True)
+        st.markdown('<a href="#" style="color:#6366F1;float:right;font-size:0.95em;" onclick="window.dispatchEvent(new CustomEvent(\'streamlit_select_forgot\'))">Forgot Password?</a>', unsafe_allow_html=True)
     remember_me = st.checkbox("Remember me", value=True, help="Keep me logged in on this device")
 
     if st.button("Login", key="login_btn"):
@@ -60,9 +65,19 @@ def show_login():
     if st.button("Register as Cadet"):
         st.session_state["show_register"] = True
         st.info("If you have trouble registering, please contact your NCC unit or email support.")
-    if st.button("Forgot Password?"):
+
+    # JS event handler for the hyperlink
+    st.markdown("""
+    <script>
+    window.addEventListener('streamlit_select_forgot', function() {
+        window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setComponentValue', key: 'show_forgot', value: true}, '*');
+    });
+    </script>
+    """, unsafe_allow_html=True)
+    if st.session_state.get("show_forgot"):
+        st.session_state["show_forgot"] = False
         st.session_state["show_forgot"] = True
-        st.info("If you forgot your password, enter your registered email and follow the instructions. For further help, contact support.")
+        st.rerun()
 
 def show_registration():
     ensure_pyrebase_initialized()
@@ -148,7 +163,6 @@ def logout():
 
 def login_interface():
     ensure_pyrebase_initialized()
-    show_limitations_note()  # Show limitations/info at the top
 
     # Only set id_token in localStorage after login, do not read from it here
     if st.session_state.get("just_logged_in") and st.session_state.get("id_token"):
@@ -187,6 +201,7 @@ def login_interface():
         return
     print(f"[DEBUG] login_interface: Showing login. user_id: {st.session_state.get('user_id')}, id_token: {st.session_state.get('id_token')}")
     show_login()
+    show_limitations_note()  # Show limitations/info at the very end
 
 def show_limitations_note():
     """Display a visible limitations/info note for users about session persistence and login."""

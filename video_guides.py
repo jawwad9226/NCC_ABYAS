@@ -314,3 +314,100 @@ def show_video_guides():
     except Exception as e:
         logging.exception("Video guides error:")
         st.error(f"An error occurred in the video guides: {e}")
+
+def show_video_admin_tab():
+    import json, os, re
+    st.header("Video Library Admin (Add/Edit Videos)")
+    st.info("Admins and instructors can add new videos to the library. Enter a YouTube link and details will be fetched automatically. If API fails, you can fill details manually.")
+    videos_path = os.path.join("data", "videos.json")
+    # Load current data
+    if os.path.exists(videos_path):
+        with open(videos_path, "r") as f:
+            videos_data = json.load(f)
+    else:
+        videos_data = {"version": "1.0"}
+    categories = [k for k in videos_data.keys() if k != "version"]
+    st.subheader("Add New Video")
+    with st.form("add_video_form"):
+        category = st.selectbox("Category", categories + ["New Category"], key="video_admin_category")
+        if category == "New Category":
+            category = st.text_input("Enter new category name:", key="video_admin_newcat")
+        url = st.text_input("YouTube Video URL", key="video_admin_url")
+        fetch = st.form_submit_button("Fetch & Add Video")
+        video_data = {}
+        manual_mode = False
+        if fetch and url:
+            # Extract YouTube ID
+            youtube_id = None
+            patterns = [
+                r'(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})',
+                r'(?:https?:\/\/)?(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]{11})',
+                r'(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})',
+                r'(?:https?:\/\/)?(?:www\.)?youtube\.com\/v\/([a-zA-Z0-9_-]{11})',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, url)
+                if match:
+                    youtube_id = match.group(1)
+                    break
+            if not youtube_id and re.fullmatch(r'[a-zA-Z0-9_-]{11}', url):
+                youtube_id = url
+            if youtube_id:
+                from utils_youtube import fetch_youtube_videos
+                api_key = os.getenv("YOUTUBE_API_KEY")
+                if api_key:
+                    details = fetch_youtube_videos([youtube_id], api_key)
+                    if details:
+                        video_data = details[0]
+                        st.success("Fetched video details from YouTube API.")
+                        st.write(video_data)
+                        # Add to JSON
+                        if category not in videos_data:
+                            videos_data[category] = []
+                        videos_data[category].append({
+                            "id": video_data["id"],
+                            "title": video_data["title"],
+                            "url": url,
+                            "description": video_data["description"],
+                            "duration": video_data["duration"],
+                            "thumbnail": video_data["thumbnail"],
+                            "tags": video_data.get("tags", [])
+                        })
+                        with open(videos_path, "w") as f:
+                            json.dump(videos_data, f, indent=2)
+                        st.success(f"Video added to category '{category}'.")
+                    else:
+                        st.warning("Could not fetch video details from YouTube API. Please fill details manually below.")
+                        manual_mode = True
+                else:
+                    st.warning("YOUTUBE_API_KEY not set on server. Please fill details manually below.")
+                    manual_mode = True
+            else:
+                st.warning("Invalid YouTube URL or ID. Please fill details manually below.")
+                manual_mode = True
+        if fetch and (manual_mode or not url):
+            st.info("Manual Entry Mode: Please fill all fields below.")
+            title = st.text_input("Video Title (Manual)", key="video_admin_title_manual")
+            description = st.text_area("Description (Manual)", key="video_admin_desc_manual")
+            duration = st.text_input("Duration (e.g. 05:30)", key="video_admin_duration_manual")
+            tags = st.text_input("Tags (comma separated, Manual)", key="video_admin_tags_manual")
+            submit_manual = st.form_submit_button("Add Video (Manual)")
+            if submit_manual and title and url:
+                if category not in videos_data:
+                    videos_data[category] = []
+                videos_data[category].append({
+                    "title": title,
+                    "url": url,
+                    "description": description,
+                    "duration": duration,
+                    "tags": [t.strip() for t in tags.split(",") if t.strip()]
+                })
+                with open(videos_path, "w") as f:
+                    json.dump(videos_data, f, indent=2)
+                st.success(f"Video added to category '{category}'.")
+    st.subheader("Current Videos (by Category)")
+    for cat, vids in videos_data.items():
+        if cat == "version": continue
+        st.markdown(f"### {cat}")
+        for v in vids:
+            st.write(f"- **{v.get('title','Untitled')}** | {v.get('url','')} | {v.get('duration','N/A')}")

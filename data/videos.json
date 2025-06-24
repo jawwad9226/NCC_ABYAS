@@ -6,13 +6,20 @@
       "url": "https://youtu.be/r9GN6zNWpCU?si=oj5Gke3IATW2orWL",
       "title_override": "NCC Special Briefing (Override)",
       "description_override": "This is a custom description that will always be used for this video, overriding any YouTube description.",
-      "tags": ["official", "briefing", "ncc_intro"]
+      "tags": [
+        "official",
+        "briefing",
+        "ncc_intro"
+      ]
     },
     {
       "url": "https://youtu.be/BCiLRTqKUtc?si=BivNe1mMbbHHgzPf",
       "title": "Cadet Life (Initial Title from JSON)",
       "description": "A glimpse into the daily life of an NCC cadet. This description will be used if API fails or if 'description_override' is not present.",
-      "tags": ["cadet_life", "experience"]
+      "tags": [
+        "cadet_life",
+        "experience"
+      ]
     },
     {
       "id": "manual_intro_001",
@@ -21,7 +28,48 @@
       "description": "A manually added video about NCC introduction. Not from YouTube.",
       "duration": "05:30",
       "category": "NCC Basics",
-      "tags": ["introduction", "manual"]
+      "tags": [
+        "introduction",
+        "manual"
+      ]
+    },
+    {
+      "id": "pu7ahy31O84",
+      "title": "NCC\ud83c\uddee\ud83c\uddf3 FULL TRAINING VIDEO PROCESS OF NCC DRILL PARADE  2023 \u0964full video\u0964NCC \ud83c\uddee\ud83c\uddf3ARMY\ud83c\uddee\ud83c\uddf3 TRAINING \u0964",
+      "url": "https://youtu.be/pu7ahy31O84?si=fgKiwOh4O0sc3HzE",
+      "description": "#drill #ncc #trending #youtube #new #rdc #video#ncc_army #army #armytraining #indianarmy #india\n\n\nJOSH OF NCC \ud83c\uddee\ud83c\uddf3 CADETS \u0964NCC TRAINING \u0964VIRAL VIDEO\u0964 NCC TRAINING ARMY TRAINING \u0964UTTAM NAGAR\u0964\u0926\u093e\u090f\u0902 \u092e\u0941\u0921\u093c,\u092c\u093e\u0939\u0947\u0902 \u092e\u0941\u0921\u093c,\u0924\u0947\u091c \u091a\u0932\u0964#drill#ncc#trending#new#viral #army#rdc #new \u0964FULL VIDEO\u0964 UTTAM NAGAR\u09646DBN\u0964#drill #ncc #trending #youtube #new #rdc #video#army \n\n\n*India's fitness & youth icon\nAnkit  Rathore\nJai Hind, Jai Bharat, love u india\nArmy \ud83c\uddee\ud83c\uddf3\ud83c\udf96\ufe0f\ud83c\udf96\ufe0f\ud83c\udf96\ufe0f\u2763\ufe0f\nLove u india\nI am proud to be i am Indian \n\nMy Passion,my fashion and my everything is my indian army and NCC\nJai hind \u2763\ufe0f\nNcc \ud83c\uddee\ud83c\uddf3\nIndia \n6dbn ncc\nNCC-\nYOUTUBE -YOUTH ICON OF INDIA-NCC\nINSTAGRAM -@ncc_youth_icon\nlink- https://instagram.com/ncc_youth_icon?igshid=YmMyMTA2M2Y=\n  \n\nContact information:\nEmail id : aarathoreankit8@gmail.com\nInstagram I'd :\nItz__.ankitrathore__.500\nlink- https://instagram.com/itz__.ankitrathore__.500?igshid=YmMyMTA2M2Y=\n\n\ud83d\udc49any queries  \ud83d\udc47\nDirect Message on my social handles handles\n.How to join ncc\n.What is ncc\n.What is roll of ncc in idian army\n.How to attend ncc camp\n.Ncc kya h \n.Ncc kese le\n.Ncc ka kya roll h Indian army mei\n.Ncc camp kese attend kre\n.Ncc camp m kya hota h \n.ncc ka kya benifit\n.ncc A Certificate exam\n.ncc B certificate exam\n.ncc C certificate exam\n.ncc training by army officers?\n.ncc ATC camp\n.ncc CATC camp\n.Ncc TSC camp\n.ncc RDC camp\n.ncc ARMY ATTACHMENT CAMP\n.ncc PM RELLY camp\n.ncc all camp\n\n\u091c\u092f \u0939\u093f\u0902\u0926 \u2764\ufe0f\n\u091c\u092f \u092d\u093e\u0930\u0924 \ud83c\uddee\ud83c\uddf3\n-\u0905\u0902\u0915\u093f\u0924 \u0930\u093e\u0920\u094c\u0930\u0964",
+      "duration": "PT8M54S",
+      "thumbnail": "https://i.ytimg.com/vi/pu7ahy31O84/hqdefault.jpg",
+      "tags": [
+        "ncc",
+        "ncc drill",
+        "ncc drill status",
+        "ncc drill training",
+        "ncc song",
+        "ncc parade",
+        "ncc video status",
+        "ncc training status",
+        "ncc training video",
+        "ncc training drill",
+        "ncc training girls",
+        "ncc training boys",
+        "ncc tracksuit",
+        "ncc training camp",
+        "army training",
+        "army song",
+        "army",
+        "army status",
+        "army ncc status",
+        "army training video",
+        "army lover",
+        "army training in India",
+        "army full training video",
+        "rdc camp ncc",
+        "rdc drill parade video",
+        "rdc video",
+        "ankit rathore",
+        "youth of India ncc"
+      ]
     }
   ],
   "Drill and Parade": [
@@ -29,12 +77,19 @@
       "id": "oHg5SJYRHA0",
       "url": "https://youtu.be/iXzGjyk1wOw?si=jLygNpVv7QSLkK3I",
       "description": "Basic drill commands and parade formations. This description might be overridden by YouTube if no 'description_override' is set.",
-      "tags": ["drill", "parade", "commands"]
+      "tags": [
+        "drill",
+        "parade",
+        "commands"
+      ]
     },
     {
       "title": "Advanced Drill Techniques",
       "url": "https://youtu.be/7Alqo7zpfxs?si=Cn0zSQvzm3-LiYgw",
-      "tags": ["advanced_drill", "techniques"]
+      "tags": [
+        "advanced_drill",
+        "techniques"
+      ]
     }
   ],
   "Map Reading": [
@@ -43,7 +98,11 @@
       "title": "Introduction to Map Symbols",
       "url": "https://youtu.be/QWTFKMukwFc?si=tWQqYo6rp6BSTtdn",
       "description": "Learn the common symbols found on topographical maps.",
-      "tags": ["map_reading", "symbols", "navigation"]
+      "tags": [
+        "map_reading",
+        "symbols",
+        "navigation"
+      ]
     }
   ],
   "Local Videos (Example)": [
@@ -54,7 +113,11 @@
       "description": "Recording of the drill practice held on 2024-07-15.",
       "duration": "25:17",
       "category": "Local Videos (Example)",
-      "tags": ["local", "drill", "unit_specific"]
+      "tags": [
+        "local",
+        "drill",
+        "unit_specific"
+      ]
     }
   ]
 }

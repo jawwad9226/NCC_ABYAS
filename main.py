@@ -121,37 +121,74 @@ def main():
     """, unsafe_allow_html=True)
 
     # --- Custom Header ---
-    header_col1, header_col2, header_col3 = st.columns([4, 1, 1])
-    
-    with header_col1:
-        # Get logo as base64
-        logo_path = os.path.join(Config.DATA_DIR, "logo.svg") # Use SVG logo
-        logo_base64_data_url = get_image_as_base64(logo_path)
-        
-        # Create header with logo
-        header_html = f'''
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <img src="{logo_base64_data_url}" style="height: 2rem; width: auto;">
-                <h1 style="margin:0;font-size:1.25rem">NCC ABYAS</h1>
+    # Prepare logo and theme variables for header
+    logo_path = os.path.join(Config.DATA_DIR, "logo.svg") # Use SVG logo
+    logo_base64_data_url = get_image_as_base64(logo_path)
+    if "theme_mode" not in st.session_state:
+        st.session_state.theme_mode = "Dark"
+    current_theme = st.session_state.get("theme_mode", "Dark")
+    theme_icon = "☀️" if current_theme == "Dark" else "🌙"
+    theme_tooltip = "Switch to Light Theme" if current_theme == "Dark" else "Switch to Dark Theme"
+    st.markdown("""
+        <style>
+        .app-header-flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 1rem;
+        }
+        @media (max-width: 600px) {
+            .app-header-flex h1 {
+                font-size: 1.1rem !important;
+            }
+            .app-header-flex img {
+                height: 1.5rem !important;
+            }
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    with st.container():
+        st.markdown(
+            f'''
+            <div class="app-header-flex">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="{logo_base64_data_url}" style="height: 2rem; width: auto;">
+                    <h1 style="margin:0;font-size:1.25rem">NCC ABYAS</h1>
+                </div>
+                <div>
+                    <form action="#" method="post" style="display:inline;">
+                        <button type="button" id="theme-toggle-btn" title="{theme_tooltip}" style="font-size:1.5rem;background:none;border:none;cursor:pointer;outline:none;">{theme_icon}</button>
+                    </form>
+                </div>
             </div>
-        '''
-        st.markdown(header_html, unsafe_allow_html=True)
-
-    with header_col3:
-        # Theme toggle button
-        if "theme_mode" not in st.session_state:
-            st.session_state.theme_mode = "Dark"
-        
-        current_theme = st.session_state.get("theme_mode", "Dark")
-        theme_icon = "☀️" if current_theme == "Dark" else "🌙"
-        theme_tooltip = "Switch to Light Theme" if current_theme == "Dark" else "Switch to Dark Theme"
-        
-        if st.button(theme_icon, help=theme_tooltip, key="theme_toggle", type="secondary"):
-            st.session_state.theme_mode = "Light" if current_theme == "Dark" else "Dark"
-            st.rerun()
-
-    # Apply theme
-    apply_theme(st.session_state.theme_mode)
+            ''', unsafe_allow_html=True
+        )
+    # Theme toggle JS
+    st.markdown("""
+    <script>
+    const btn = window.parent.document.getElementById('theme-toggle-btn');
+    if(btn){
+        btn.onclick = function(){
+            window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:themeToggle'}, '*');
+        };
+    }
+    </script>
+    """, unsafe_allow_html=True)
+    # Theme toggle logic
+    if st.session_state.get("theme_toggle_clicked"):
+        st.session_state.theme_mode = "Light" if st.session_state.theme_mode == "Dark" else "Dark"
+        st.session_state.theme_toggle_clicked = False
+        st.rerun()
+    # Listen for JS event
+    import streamlit.components.v1 as components
+    components.html('''<script>
+    window.addEventListener('message', function(event) {
+        if(event.data && event.data.type === 'streamlit:themeToggle') {
+            window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setComponentValue', key: 'theme_toggle_clicked', value: true}, '*');
+        }
+    });
+    </script>''', height=0)
 
     # --- AUTH: Show login/registration before app content if no user_id or id_token ---
     if not st.session_state.get("user_id") or not st.session_state.get("id_token"):
@@ -165,6 +202,8 @@ def main():
 
     # --- Sidebar Profile Icon (Full Header Style) ---
     render_sidebar_profile()
+    # (Feedback button is now only rendered after API cooldown info below)
+
     print(f"[DEBUG] main.py: app_mode after sidebar: {st.session_state.get('app_mode')}")
 
     # --- Navigation Sidebar ---
@@ -173,6 +212,8 @@ def main():
     ]
     if st.session_state.get("role") == "admin":
         navigation_options.append("🛡️ Admin Dashboard")
+    if st.session_state.get("role") in ["admin", "instructor"]:
+        navigation_options.append("👨‍🏫 Instructor Dashboard")
     navigation_options.append("🛠️ Dev Tools")
 
     # On first load, set session state for app_mode
@@ -195,6 +236,14 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.info(f"API Cooldown: Please wait ~{API_CALL_COOLDOWN_MINUTES} min. if you hit rate limits.")
     st.sidebar.markdown("---") # Separator
+    # Feedback button and form directly after API cooldown info
+    if st.sidebar.button("💬 Feedback / Error Report", key="sidebar_feedback_btn"):
+        st.session_state["show_feedback_tab"] = True
+    if st.session_state.get("show_feedback_tab"):
+        from feedback_interface import show_feedback_section
+        st.sidebar.markdown("---")
+        show_feedback_section()
+        st.session_state["show_feedback_tab"] = False
     # Remove all navigation buttons (reset, dev tools, back, etc.)
 
     # --- On login/app start, sync any queued data ---
@@ -207,20 +256,16 @@ def main():
     elif app_mode == "🛡️ Admin Dashboard":
         show_admin_dashboard()
     elif app_mode == "📊 Progress Dashboard":
-        # Cadet: show only their own progress
+        # Show own progress for all users, including admins
+        user_id = st.session_state.get("user_id")
+        from ncc_utils import read_history
+        quiz_score_history = read_history("quiz_score")
+        if not isinstance(quiz_score_history, list):
+            quiz_score_history = []
+        quiz_history_raw_string = json.dumps(quiz_score_history)
+        display_progress_dashboard(st.session_state, quiz_history_raw_string)
         if st.session_state.get("role") == "admin":
-            st.info("Admins: Use the Admin Dashboard to view all users' progress.")
-        else:
-            # Load only the logged-in user's progress
-            user_id = st.session_state.get("user_id")
-            # Use hybrid read_history to get quiz score history (list of attempts)
-            from ncc_utils import read_history
-            quiz_score_history = read_history("quiz_score")
-            # Ensure it's a list for the dashboard
-            if not isinstance(quiz_score_history, list):
-                quiz_score_history = []
-            quiz_history_raw_string = json.dumps(quiz_score_history)
-            display_progress_dashboard(st.session_state, quiz_history_raw_string)
+            st.info("Admins: Use the Admin Dashboard to view all users' progress. This page shows your own progress only.")
     elif app_mode == "💬 Chat Assistant":
         from chat_interface import chat_interface # Lazy import
         chat_func = partial(get_ncc_response, model, model_error)
@@ -250,6 +295,12 @@ def main():
         from dev_tools import dev_tools as display_dev_tools
         display_dev_tools()
         return
+    elif app_mode == "👨‍🏫 Instructor Dashboard":
+        if st.session_state.get("role") in ["admin", "instructor"]:
+            from instructor_tools import show_instructor_dashboard
+            show_instructor_dashboard()
+        else:
+            st.error("You do not have permission to access this page.")
     else:
         st.error(f"Unknown app mode: {st.session_state.app_mode}")
 

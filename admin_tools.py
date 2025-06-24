@@ -7,6 +7,9 @@ import firebase_admin
 from firebase_admin import firestore
 import io
 import csv
+import os
+import re
+import glob
 
 firestore_db = firestore.client()
 
@@ -114,3 +117,25 @@ def show_admin_dashboard():
     st.header("Overall App Stats")
     st.write(f"Total Quizzes Taken: {total_quizzes}")
     st.write(f"Average Score: {avg_score:.2f}%")
+
+    # --- Feedback & Error Reports ---
+    st.header("Feedback & Error Reports")
+    feedback_file = os.path.join("data", "user_feedback.txt")
+    if os.path.exists(feedback_file):
+        with open(feedback_file, "r") as f:
+            feedback_entries = f.read().split("---\n")
+        for entry in reversed(feedback_entries):
+            if entry.strip():
+                st.markdown("---")
+                st.markdown(f"<div style='font-size:1.1em;'><b>Feedback Entry:</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<pre style='white-space:pre-wrap;background:#f3f4f6;border-radius:8px;padding:0.7em 1em;color:#222;border:1.5px solid #6366F1'>{entry.strip()}</pre>", unsafe_allow_html=True)
+                # Show attached images if any
+                img_names = re.findall(r"Attachments: \[(.*?)\]", entry)
+                if img_names:
+                    for img_list in img_names:
+                        for img in eval(img_list):
+                            img_path = os.path.join("data", img)
+                            if os.path.exists(img_path):
+                                st.image(img_path, caption=img, use_column_width=True)
+    else:
+        st.info("No feedback has been submitted yet.")

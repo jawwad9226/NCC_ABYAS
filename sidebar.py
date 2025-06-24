@@ -13,7 +13,8 @@ def render_sidebar_profile():
     st.sidebar.markdown("""
     <style>
     header[data-testid="stSidebarNav"] { display: none; }
-    section[data-testid="stSidebar"] > div { padding-top: 0 !important; }
+    section[data-testid="stSidebar"] > div:first-child { margin-top: 0 !important; padding-top: 0 !important; }
+    section[data-testid="stSidebar"] { padding-top: 0 !important; margin-top: 0 !important; }
     .profile-container { display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem 1rem 1rem; margin: -1rem -1rem 1rem -1rem; border-bottom: 1px solid rgba(99, 102, 241, 0.2); background: rgba(99, 102, 241, 0.05); }
     .profile-icon { position: relative; width: 80px; height: 80px; border-radius: 50%; border: 3px solid #6366F1; background: #EEF2FF; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25); margin-bottom: 0.8rem; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; align-items: center; justify-content: center; }
     .profile-icon img { width: 100%; height: 100%; object-fit: cover; }
@@ -31,3 +32,5 @@ def render_sidebar_profile():
             <div class="profile-role">{profile.get('role','cadet').capitalize()}</div>
         </div>
     ''', unsafe_allow_html=True)
+    # Remove feedback button from here to avoid duplicate key
+    # (Button will be rendered only in main.py at the bottom of the sidebar)

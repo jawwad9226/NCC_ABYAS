@@ -45,6 +45,10 @@ def show_profile_page():
             st.write(f"**Regimental No.:** {profile.get('reg_no', 'N/A')}")
             st.write(f"**Mobile:** {profile.get('mobile', 'N/A')}")
             st.write(f"**Role:** {profile.get('role', 'cadet')}")
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("Logout", key="profile_logout_btn"):
+                from login_interface import logout
+                logout()
         with tabs[1]:
             try:
                 show_history_viewer_full()
