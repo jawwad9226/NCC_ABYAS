@@ -6,14 +6,14 @@ import uuid
 import logging
 from itertools import groupby # Import groupby
 # Import from utils
-from utils import (
-    read_history,
-    clear_history,  # Assuming you are calling this with clear_history("chat")
-    save_chat_to_file, # Import save_chat_to_file
+from ncc_utils import (
     setup_gemini,
     get_ncc_response,
-    Config,
     API_CALL_COOLDOWN_MINUTES,
+    clear_history,
+    read_history,
+    save_chat_to_file,
+    Config
 )
 
 # Initialize Gemini model
@@ -184,7 +184,7 @@ def chat_interface():
                         if st.button(question, key=f"ask_{question}_{i}"):
                             # Submit the question to be processed
                             submit_prompt(question)
-                
+
         with col2:
             # Clear chat button
             if st.button("🗑️ Clear Chat", key=f"clear_chat_{st.session_state.widget_keys['clear_chat']}"):
@@ -195,9 +195,9 @@ def chat_interface():
             display_clear_confirmation()
             
         # Chat input area (new version)
-        if st.chat_input("Ask me about NCC...", key="chat_input", on_submit=submit_prompt):
-            # This branch is mostly handled by on_submit, but we can add feedback here if needed
-            pass
+        chat_input_value = st.chat_input("Ask me about NCC...", key="chat_input")
+        if chat_input_value is not None:
+            submit_prompt(chat_input_value)
             
         # Display messages in reverse order (newest first for better UX)
         display_chat_messages()

@@ -12,6 +12,8 @@ try:
 except ImportError:
     st.warning("NumPy library is not installed. Some calculations might be affected if not pulled in by Pandas.")
 
+from sync_manager import queue_for_sync
+
 def display_progress_dashboard(session_state, quiz_history_raw_string: str):
     """Modern, bug-free progress dashboard with improved visuals and error handling."""
     st.markdown("""
@@ -124,3 +126,9 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
         st.download_button("⬇️ Download Progress CSV", csv, "quiz_progress.csv", key="download_progress_csv")
     else:
         st.button("⬇️ Download Progress CSV", disabled=True, key="download_progress_csv_disabled")
+
+    # After progress summary update, queue for sync
+    progress_summary = {
+        # ...fill with actual summary fields...
+    }
+    queue_for_sync(progress_summary, "progress_summary")

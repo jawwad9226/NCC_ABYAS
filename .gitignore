@@ -1,38 +1,38 @@
 # Environment variables
 .env
+.env.*
 
 # Python bytecode
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*$py.class
 
 # Log files and temporary data
 logs/
+app.log
+
+# Data files (user-generated, not static assets)
 data/chat_history.json
 data/chat_transcript.txt
 data/quiz_log.json
 data/quiz_score_history.json
 data/quiz_transcript.txt
 data/quiz_bookmarks.json
-data/bookmarks.json 
-# app.log in root (if it's an old artifact and logs/app.log is used)
-app.log 
+data/bookmarks.json
 
-# requirements.txt should usually be tracked, remove if you meant to ignore it
-# requirement.txt 
-
-# Other common Python ignores (optional, but good practice)
 # Virtual environment
 venv/
 .venv/
+env/
+.Python
 
 # IDE files
 .idea/
 .vscode/
 
 # Distribution / packaging
-.Python
 build/
 develop-eggs/
 dist/
@@ -58,9 +58,6 @@ MANIFEST
 # pyenv
 .python-version
 
-# dotenv
-.env
-
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -69,3 +66,6 @@ dmypy.json
 # pytest
 .pytest_cache/
 .coverage
+
+# Firebase config
+firebase_config.json

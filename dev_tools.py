@@ -203,5 +203,9 @@ def dev_tools():
             with log_file.open() as f:
                 logs = f.read()
             st.text_area("Application Logs", logs, height=400)
+            if st.button("🧹 Clear Logs", key="clear_logs_button", help="Delete all application logs and refresh view"):
+                log_file.write_text("")
+                st.success("Logs cleared!")
+                st.rerun()
         else:
             st.warning("No log file found")

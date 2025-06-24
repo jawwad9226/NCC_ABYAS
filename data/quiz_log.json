@@ -1,476 +1,8 @@
 [
   {
-    "timestamp": "2025-06-15T18:13:08.096870",
+    "timestamp": "2025-06-24T20:39:12.969533",
     "topic": "NCC General",
-    "questions": [
-      {
-        "question": "What does NCC stand for?",
-        "options": {
-          "A": "National Cadet Corps",
-          "B": "National Civil Corps",
-          "C": "National Community Corps",
-          "D": "National Cadet Committee"
-        },
-        "answer": "A",
-        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
-        "timestamp": "2025-06-15T18:13:08.096185"
-      },
-      {
-        "question": "Which of the following is a primary aim of the NCC?",
-        "options": {
-          "A": "To provide military training for future soldiers.",
-          "B": "To develop character, discipline, and leadership qualities in young citizens.",
-          "C": "To exclusively focus on technical skills development.",
-          "D": "To promote political activism among youth."
-        },
-        "answer": "B",
-        "explanation": "While NCC provides some military-style training, its core aim is character building, discipline, and leadership development in young Indians.",
-        "timestamp": "2025-06-15T18:13:08.096223"
-      },
-      {
-        "question": "What is the age limit for joining the NCC?",
-        "options": {
-          "A": "10-15 years",
-          "B": "15-18 years",
-          "C": "17-21 years",
-          "D": "18-25 years"
-        },
-        "answer": "B",
-        "explanation": "The typical age range for joining the NCC is between 15 and 18 years, though specific age limits may vary slightly depending on the specific wing and state regulations.",
-        "timestamp": "2025-06-15T18:13:08.096241"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T11:17:07.940163",
-    "topic": "NCC General",
-    "questions": [
-      {
-        "question": "What does NCC stand for?",
-        "options": {
-          "A": "National Cadet Corps",
-          "B": "National Civil Corps",
-          "C": "National Community Corps",
-          "D": "National Cadet Committee"
-        },
-        "answer": "A",
-        "explanation": "NCC is the abbreviation for National Cadet Corps.",
-        "timestamp": "2025-06-16T11:17:07.939142"
-      },
-      {
-        "question": "Which of the following is a primary aim of the NCC?",
-        "options": {
-          "A": "To promote tourism",
-          "B": "To develop leadership qualities in young citizens",
-          "C": "To train individuals for specific government jobs",
-          "D": "To organize national-level sporting events"
-        },
-        "answer": "B",
-        "explanation": "The NCC focuses on developing leadership, character, and discipline in young citizens.",
-        "timestamp": "2025-06-16T11:17:07.939196"
-      },
-      {
-        "question": "What is the primary age group eligible to join the NCC?",
-        "options": {
-          "A": "10-14 years",
-          "B": "15-18 years",
-          "C": "18-21 years",
-          "D": "21-25 years"
-        },
-        "answer": "B",
-        "explanation": "While specific age limits might vary slightly based on the country and specific wing, the primary age group for NCC enrollment is generally between 15 and 18 years.",
-        "timestamp": "2025-06-16T11:17:07.939223"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T11:21:59.297985",
-    "topic": "Civil Defence",
-    "questions": [
-      {
-        "question": "What is the primary purpose of Civil Defence?",
-        "options": {
-          "A": "To maintain law and order during peacetime.",
-          "B": "To protect civilians during emergencies and disasters.",
-          "C": "To provide military support during wartime.",
-          "D": "To manage national infrastructure projects."
-        },
-        "answer": "B",
-        "explanation": "Civil Defence focuses on protecting the civilian population from threats such as natural disasters, terrorist attacks, and other emergencies.",
-        "timestamp": "2025-06-16T11:21:59.278709"
-      },
-      {
-        "question": "Which of the following is a key component of Civil Defence preparedness?",
-        "options": {
-          "A": "Advanced military training for civilians.",
-          "B": "Development and implementation of emergency plans.",
-          "C": "Construction of large-scale underground bunkers.",
-          "D": "Stockpiling of advanced weaponry for civilian use."
-        },
-        "answer": "B",
-        "explanation": "Developing and implementing emergency plans, including evacuation procedures and communication strategies, is crucial for effective Civil Defence.",
-        "timestamp": "2025-06-16T11:21:59.278745"
-      },
-      {
-        "question": "What is a common term for a designated safe place where people can seek shelter during an emergency?",
-        "options": {
-          "A": "Emergency Response Centre",
-          "B": "Civil Defence Headquarters",
-          "C": "Public Shelter",
-          "D": "Military Base"
-        },
-        "answer": "C",
-        "explanation": "Public shelters are designated safe locations where people can take refuge during emergencies to protect themselves from immediate danger.",
-        "timestamp": "2025-06-16T11:21:59.278762"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T12:08:12.883453",
-    "topic": "Map Reading",
-    "questions": [
-      {
-        "question": "A map has a scale of 1:50,000.  Two points on the map are 4 centimeters apart. What is the actual distance between these two points in kilometers?",
-        "options": {
-          "A": "2 kilometers",
-          "B": "20 kilometers",
-          "C": "200 kilometers",
-          "D": "2000 kilometers"
-        },
-        "answer": "B",
-        "explanation": "4 cm on the map represents 4 cm * 50,000 = 200,000 cm in reality.  Converting centimeters to kilometers (100,000 cm = 1 km), we get 200,000 cm / 100,000 cm/km = 2 km.",
-        "timestamp": "2025-06-16T12:08:12.864041"
-      },
-      {
-        "question": "You are using a topographic map to plan a hike.  You notice a contour line with a value of 1000 meters and another with a value of 1050 meters, very close together. What does this indicate about the terrain in that area?",
-        "options": {
-          "A": "A gentle, gradual slope",
-          "B": "A steep, cliff-like incline",
-          "C": "A flat, level area",
-          "D": "A valley"
-        },
-        "answer": "B",
-        "explanation": "Closely spaced contour lines indicate a steep slope.  The closer the lines, the steeper the terrain.",
-        "timestamp": "2025-06-16T12:08:12.864117"
-      },
-      {
-        "question": "A map uses a north arrow that is oriented 15 degrees east of true north.  If a feature is shown on the map as being 30 degrees north of east, what is its true bearing?",
-        "options": {
-          "A": "15 degrees north of east",
-          "B": "45 degrees north of east",
-          "C": "30 degrees north of east",
-          "D": "15 degrees north of west"
-        },
-        "answer": "B",
-        "explanation": "The map's north arrow is 15 degrees east of true north.  Therefore, to find the true bearing, you need to adjust the map bearing by adding 15 degrees.  30 degrees (map bearing) + 15 degrees (correction) = 45 degrees north of east (true bearing).",
-        "timestamp": "2025-06-16T12:08:12.864146"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T12:12:28.631787",
-    "topic": "Weapon Training",
-    "questions": [
-      {
-        "question": "You're teaching a student to draw their sidearm from a holster. They consistently draw too slowly and struggle to acquire a proper firing grip.  What's the MOST likely contributing factor to this issue?",
-        "options": {
-          "A": "Insufficient dry-fire practice.",
-          "B": "Overemphasis on weapon retention techniques.",
-          "C": "Lack of understanding of fundamental grip principles.",
-          "D": "Improper holster selection."
-        },
-        "answer": "C",
-        "explanation": "While all options can contribute, a weak understanding of proper grip (high, consistent, and controlled) directly impacts draw speed and accuracy.  A poor grip makes acquiring a stable firing position difficult, slowing the entire process.",
-        "timestamp": "2025-06-16T12:12:28.630753"
-      },
-      {
-        "question": "During a force-on-force scenario, your student fails to effectively utilize cover and concealment, resulting in multiple simulated \"hits.\"  What immediate training adjustment should you prioritize?",
-        "options": {
-          "A": "Increase the speed of the drills.",
-          "B": "Focus on advanced shooting techniques.",
-          "C": "Emphasize tactical movement and positioning relative to cover.",
-          "D": "Introduce more complex threat scenarios."
-        },
-        "answer": "C",
-        "explanation": "The student's failure highlights a lack of understanding of cover and concealment principles.  Before progressing to more advanced techniques or faster drills, the fundamental skill of using cover effectively must be addressed.",
-        "timestamp": "2025-06-16T12:12:28.630816"
-      },
-      {
-        "question": "You observe a student exhibiting flinching during live fire.  They've already mastered basic marksmanship fundamentals. What's the BEST approach to address this issue?",
-        "options": {
-          "A": "Immediately increase the rate of fire.",
-          "B": "Implement snap shooting drills.",
-          "C": "Utilize dry-fire practice focusing on controlled trigger manipulation and breath control.",
-          "D": "Switch to a different firearm."
-        },
-        "answer": "C",
-        "explanation": "Flinching often stems from anticipation of recoil. Dry-fire practice allows for focused work on trigger control and breath control without the distraction of recoil, helping the student build muscle memory and confidence.  The other options could exacerbate the problem.",
-        "timestamp": "2025-06-16T12:12:28.630855"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T12:14:33.146427",
-    "topic": "Weapon Training",
-    "questions": [
-      {
-        "question": "What is the primary goal of weapon safety training?",
-        "options": {
-          "A": "To improve shooting accuracy.",
-          "B": "To minimize the risk of accidents.",
-          "C": "To enhance physical fitness.",
-          "D": "To learn advanced combat techniques."
-        },
-        "answer": "B",
-        "explanation": "Weapon safety training focuses on preventing accidents through proper handling, storage, and use of weapons.",
-        "timestamp": "2025-06-16T12:14:33.145208"
-      },
-      {
-        "question": "What does the term \"zeroing\" refer to in weapon training?",
-        "options": {
-          "A": "Cleaning and maintaining a weapon.",
-          "B": "Adjusting a weapon's sights to accurately hit a target at a specific distance.",
-          "C": "The process of loading ammunition into a weapon.",
-          "D": "The technique of aiming and firing a weapon rapidly."
-        },
-        "answer": "B",
-        "explanation": "Zeroing is the process of adjusting the sights of a firearm to ensure accurate shots at a specific range.",
-        "timestamp": "2025-06-16T12:14:33.145248"
-      },
-      {
-        "question": "Which of the following is a crucial element of proper weapon handling?",
-        "options": {
-          "A": "Ignoring safety rules when in a hurry.",
-          "B": "Keeping your finger on the trigger until ready to fire.",
-          "C": "Treating every weapon as if it were loaded.",
-          "D": "Pointing the weapon at bystanders while practicing."
-        },
-        "answer": "C",
-        "explanation": "Treating every weapon as if it were loaded is a fundamental safety rule to prevent accidental discharges.  This prioritizes safety above all else.",
-        "timestamp": "2025-06-16T12:14:33.145265"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T14:15:19.616992",
-    "topic": "Map Reading",
-    "questions": [
-      {
-        "question": "What is a map legend (or key)?",
-        "options": {
-          "A": "The title of the map",
-          "B": "A list of symbols and their meanings on a map",
-          "C": "The scale of the map",
-          "D": "The north arrow on a map"
-        },
-        "answer": "B",
-        "explanation": "A map legend explains what the different symbols and colors on the map represent.",
-        "timestamp": "2025-06-16T14:15:19.597326"
-      },
-      {
-        "question": "What does a north arrow on a map indicate?",
-        "options": {
-          "A": "The direction of the prevailing wind",
-          "B": "The location of the map's creator",
-          "C": "The direction of true north",
-          "D": "The scale of the map"
-        },
-        "answer": "C",
-        "explanation": "The north arrow shows the orientation of the map and points towards geographic north.",
-        "timestamp": "2025-06-16T14:15:19.597371"
-      },
-      {
-        "question": "What is the scale of a map?",
-        "options": {
-          "A": "The size of the map in centimeters",
-          "B": "The ratio between the distance on the map and the corresponding distance on the ground",
-          "C": "The colors used on the map",
-          "D": "The date the map was created"
-        },
-        "answer": "B",
-        "explanation": "The map scale indicates how much smaller the map representation is compared to the real-world area it depicts.  For example, a scale of 1:100,000 means 1 cm on the map represents 100,000 cm (or 1 km) on the ground.",
-        "timestamp": "2025-06-16T14:15:19.597400"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T16:19:43.075741",
-    "topic": "NCC General",
-    "questions": [
-      {
-        "question": "A NCC cadet is tasked with leading a small group in a navigation exercise using a map and compass.  Which of the following is the MOST crucial skill for successful navigation in this scenario?",
-        "options": {
-          "A": "Knowledge of advanced map symbols related to terrain features.",
-          "B": "Ability to accurately calculate grid references and bearings.",
-          "C": "Understanding of basic map reading principles and compass usage, coupled with practical application.",
-          "D": "Proficiency in using GPS technology for precise location identification."
-        },
-        "answer": "C",
-        "explanation": "While all options are helpful,  basic map reading and compass skills are foundational.  Advanced skills are built upon this base. GPS reliance is discouraged in many NCC exercises to promote fundamental navigational skills.",
-        "timestamp": "2025-06-16T16:19:43.058046"
-      },
-      {
-        "question": "During a community project, a group of NCC cadets encounters a situation requiring them to make a quick, informed decision under pressure.  Which leadership quality is MOST vital in this scenario?",
-        "options": {
-          "A": "Charisma and public speaking ability.",
-          "B": "Detailed planning and meticulous preparation.",
-          "C": "Decisiveness and sound judgment.",
-          "D": "Technical expertise in the specific project task."
-        },
-        "answer": "C",
-        "explanation": "While other qualities are valuable, decisive leadership is crucial in time-sensitive situations.  Quick, informed decisions based on sound judgment are essential for effective action.",
-        "timestamp": "2025-06-16T16:19:43.058083"
-      },
-      {
-        "question": "A cadet is preparing a presentation on the history of the NCC. Which aspect should they emphasize to best highlight the organization's enduring relevance?",
-        "options": {
-          "A": "Detailed accounts of past military campaigns involving NCC cadets.",
-          "B": "A chronological listing of all NCC regulations and amendments.",
-          "C": "The evolution of the NCC's role in national development and youth empowerment.",
-          "D": "A focus on the specific uniforms and insignia used throughout the NCC's history."
-        },
-        "answer": "C",
-        "explanation": "Focusing on the NCC's evolving role in national development and youth empowerment demonstrates its continued importance and relevance in contemporary society.",
-        "timestamp": "2025-06-16T16:19:43.058100"
-      },
-      {
-        "question": "Several cadets are tasked with organizing a fundraising event for a local charity.  Which aspect of teamwork is MOST critical for the success of this event?",
-        "options": {
-          "A": "Individual skill mastery in specific event-planning tasks.",
-          "B": "Effective delegation and coordination of roles and responsibilities.",
-          "C": "Uniformity in opinions and approaches to problem-solving.",
-          "D": "Prior experience in organizing large-scale fundraising events."
-        },
-        "answer": "B",
-        "explanation": "Effective teamwork hinges on proper delegation and coordination.  While individual skills are important, efficient collaboration through well-defined roles is crucial for a successful outcome.",
-        "timestamp": "2025-06-16T16:19:43.058115"
-      },
-      {
-        "question": "An NCC cadet is participating in a field exercise involving obstacle courses and physical challenges.  Which combination of qualities is MOST likely to contribute to their success?",
-        "options": {
-          "A": "Exceptional physical strength and aggressive competitiveness.",
-          "B": "Persistence, problem-solving skills, and physical fitness.",
-          "C": "Advanced knowledge of first aid and emergency procedures.",
-          "D": "Superior leadership skills and the ability to motivate others."
-        },
-        "answer": "B",
-        "explanation": "While strength and leadership are helpful, persistence and problem-solving are key for navigating challenges. Physical fitness is essential for completing the physical tasks.  First aid knowledge is important but not the primary factor for success in the described scenario.",
-        "timestamp": "2025-06-16T16:19:43.058129"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-16T16:54:49.887450",
-    "topic": "Map Reading",
-    "questions": [
-      {
-        "question": "A map depicts a contour interval of 20 meters.  Two contour lines are 4 centimeters apart on the map.  What is the approximate slope of the terrain represented?",
-        "options": {
-          "A": "1:50",
-          "B": "1:100",
-          "C": "1:5",
-          "D": "1:20"
-        },
-        "answer": "A",
-        "explanation": "The contour lines are 4cm apart on the map representing 20m of elevation change.  Converting cm to meters (4cm = 0.04m), the slope is 20m / 0.04m = 500.  Expressed as a ratio, this is approximately 1:50.",
-        "timestamp": "2025-06-16T16:54:49.886518"
-      },
-      {
-        "question": "You are navigating using a topographic map and compass. You identify a prominent peak on the map and take a bearing to it. However, your compass bearing differs significantly from the map bearing.  Which of the following is LEAST likely to be the cause of this discrepancy?",
-        "options": {
-          "A": "Local magnetic declination was not accounted for.",
-          "B": "The map is outdated and the terrain has changed significantly.",
-          "C": "You are experiencing minor atmospheric refraction.",
-          "D": "Your compass is malfunctioning."
-        },
-        "answer": "C",
-        "explanation": "While atmospheric refraction can affect compass readings, its effect is generally minor and less likely to cause a significant discrepancy compared to declination error, map inaccuracy, or compass malfunction.",
-        "timestamp": "2025-06-16T16:54:49.886554"
-      },
-      {
-        "question": "A map uses a scale of 1:50,000.  A river is depicted as 2cm wide on the map.  Which statement is most accurate regarding the actual width of the river?",
-        "options": {
-          "A": "The river is exactly 1km wide.",
-          "B": "The river is approximately 1km wide.",
-          "C": "The river is likely less than 1km wide, but the exact width cannot be determined without further information.",
-          "D": "The river is likely more than 1km wide, but the exact width cannot be determined without further information."
-        },
-        "answer": "B",
-        "explanation": "2cm on the map represents 2cm * 50,000 = 100,000cm in reality. Converting to kilometers, this is 1km.  However, map representations are approximations, so \"approximately\" is the most accurate descriptor.",
-        "timestamp": "2025-06-16T16:54:49.886571"
-      },
-      {
-        "question": "Analyzing a map showing isohyets (lines of equal rainfall), you observe closely spaced isohyets in a particular region. What can you infer about this region?",
-        "options": {
-          "A": "The region experiences uniform rainfall distribution.",
-          "B": "The region experiences minimal rainfall.",
-          "C": "The region experiences a steep rainfall gradient.",
-          "D": "The region experiences consistent, moderate rainfall."
-        },
-        "answer": "C",
-        "explanation": "Closely spaced isohyets indicate a rapid change in rainfall amount over a short distance, signifying a steep rainfall gradient.",
-        "timestamp": "2025-06-16T16:54:49.886586"
-      },
-      {
-        "question": "A map uses UTM coordinates. You are given the coordinates of two points and need to determine the distance between them.  Which method would be MOST accurate for calculating the distance?",
-        "options": {
-          "A": "Using a simple Pythagorean theorem calculation on the easting and northing differences.",
-          "B": "Measuring the distance directly on the map using a ruler and applying the map scale.",
-          "C": "Using a geographic information system (GIS) software with appropriate geodetic calculations.",
-          "D": "Estimating the distance based on the visual representation on the map."
-        },
-        "answer": "C",
-        "explanation": "UTM coordinates are based on a projected coordinate system, and simple Pythagorean calculations will not account for the curvature of the Earth.  GIS software offers the most accurate method for calculating distances using appropriate geodetic calculations that consider the Earth's shape.",
-        "timestamp": "2025-06-16T16:54:49.886600"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-19T11:54:31.520020",
-    "topic": "NCC General",
-    "questions": [
-      {
-        "question": "What does NCC stand for?",
-        "options": {
-          "A": "National Cadet Corps",
-          "B": "National Civil Corps",
-          "C": "National Community Corps",
-          "D": "National Cadet Committee"
-        },
-        "answer": "A",
-        "explanation": "NCC is the abbreviation for National Cadet Corps, a youth development program in India.",
-        "timestamp": "2025-06-19T11:54:31.502031"
-      },
-      {
-        "question": "Which of the following is a primary aim of the NCC?",
-        "options": {
-          "A": "To provide military training for future soldiers.",
-          "B": "To develop character, discipline, and leadership qualities in young citizens.",
-          "C": "To exclusively focus on promoting physical fitness.",
-          "D": "To prepare students for careers in the civil service."
-        },
-        "answer": "B",
-        "explanation": "While NCC provides some military-style training, its primary goal is character development and leadership training for young citizens, contributing to nation-building.",
-        "timestamp": "2025-06-19T11:54:31.502088"
-      },
-      {
-        "question": "What is the age limit for joining the NCC?",
-        "options": {
-          "A": "10-15 years",
-          "B": "15-18 years",
-          "C": "17-21 years",
-          "D": "12-17 years"
-        },
-        "answer": "B",
-        "explanation": "The general age limit for joining the NCC is between 15 and 18 years, although specific age ranges may vary slightly depending on the specific wing and state regulations.",
-        "timestamp": "2025-06-19T11:54:31.502124"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-19T12:16:43.205957",
-    "topic": "NCC General",
-    "questions_generated_count": 5,
+    "questions_generated_count": 7,
     "questions": [
       {
         "question": "What does NCC stand for?",
@@ -482,98 +14,31 @@
         },
         "answer": "A",
         "explanation": "NCC stands for National Cadet Corps.  The other options are not accurate representations of the organization's name.",
-        "timestamp": "2025-06-19T12:16:43.204920"
+        "timestamp": "2025-06-24T20:39:12.969154"
       },
       {
         "question": "Which of the following is NOT a wing of the NCC?",
         "options": {
           "A": "Army Wing",
           "B": "Navy Wing",
-          "C": "Air Wing",
+          "C": "Air Force Wing",
           "D": "Police Wing"
         },
         "answer": "D",
-        "explanation": "The NCC has three wings: Army, Navy, and Air.  A Police Wing is not part of the NCC structure.",
-        "timestamp": "2025-06-19T12:16:43.204975"
+        "explanation": "The NCC has three wings: Army, Navy, and Air Force.  There is no Police Wing within the NCC structure.",
+        "timestamp": "2025-06-24T20:39:12.969209"
       },
       {
         "question": "What is the primary aim of the NCC?",
         "options": {
-          "A": "To train cadets for a specific military career.",
-          "B": "To provide military training only to selected individuals.",
-          "C": "To develop character, discipline, and leadership qualities in youth.",
-          "D": "To solely focus on physical fitness training."
+          "A": "To train cadets for military service only.",
+          "B": "To provide adventure activities for students.",
+          "C": "To develop character, discipline, and leadership qualities in young citizens.",
+          "D": "To promote tourism and travel among youth."
         },
         "answer": "C",
-        "explanation": "The NCC's main goal is to cultivate character, discipline, and leadership skills among young people, not solely to prepare them for a military career. While it involves physical training, that is not its sole focus.",
-        "timestamp": "2025-06-19T12:16:43.205041"
-      },
-      {
-        "question": "The NCC is a voluntary organization. What does \"voluntary\" mean in this context?",
-        "options": {
-          "A": "Cadets are forced to join.",
-          "B": "Participation is optional.",
-          "C": "It's only for students from specific schools.",
-          "D": "It's funded entirely by the cadets themselves."
-        },
-        "answer": "B",
-        "explanation": "\"Voluntary\" means that participation in the NCC is a choice; cadets are not compelled to join.  It's open to eligible students from various schools and is not solely self-funded.",
-        "timestamp": "2025-06-19T12:16:43.205101"
-      },
-      {
-        "question": "What is the highest rank a cadet can achieve in the NCC?",
-        "options": {
-          "A": "Captain",
-          "B": "Lieutenant",
-          "C": "Senior Under Officer (SUO)",
-          "D": "Second Lieutenant"
-        },
-        "answer": "C",
-        "explanation": "Senior Under Officer (SUO) is the highest rank attainable by a cadet within the NCC.  The other ranks are officer ranks in the regular armed forces, not cadet ranks.",
-        "timestamp": "2025-06-19T12:16:43.205150"
-      }
-    ]
-  },
-  {
-    "timestamp": "2025-06-19T12:18:09.012211",
-    "topic": "NCC General",
-    "questions_generated_count": 9,
-    "questions": [
-      {
-        "question": "What does NCC stand for?",
-        "options": {
-          "A": "National Cadet Corps of India",
-          "B": "National Civil Corps",
-          "C": "National Cadet Corps",
-          "D": "Naval Cadet Corps"
-        },
-        "answer": "C",
-        "explanation": "NCC stands for National Cadet Corps.  Options A and D are incorrect as they add unnecessary details or are partially correct. Option B is entirely different.",
-        "timestamp": "2025-06-19T12:18:09.011272"
-      },
-      {
-        "question": "Which of these is NOT a wing of the NCC?",
-        "options": {
-          "A": "Army Wing",
-          "B": "Air Wing",
-          "C": "Navy Wing",
-          "D": "Space Wing"
-        },
-        "answer": "D",
-        "explanation": "The NCC has three wings: Army, Navy, and Air.  There is no Space Wing within the NCC structure.",
-        "timestamp": "2025-06-19T12:18:09.011304"
-      },
-      {
-        "question": "What is the primary aim of the NCC?",
-        "options": {
-          "A": "To provide military training for future soldiers.",
-          "B": "To develop character, discipline, and leadership qualities in young citizens.",
-          "C": "To promote national integration and social service.",
-          "D": "Both B and C"
-        },
-        "answer": "D",
-        "explanation": "The NCC aims to develop character, discipline, and leadership qualities while also promoting national integration and social service.  Option A is too narrow; the NCC's scope is broader than just military training.",
-        "timestamp": "2025-06-19T12:18:09.011330"
+        "explanation": "While NCC involves adventure activities and some military training, its core objective is to cultivate character, discipline, and leadership in young Indians.  It's not solely focused on military service.",
+        "timestamp": "2025-06-24T20:39:12.969237"
       },
       {
         "question": "Who is the Supreme Commander of the NCC?",
@@ -581,71 +46,47 @@
           "A": "The Chief of Army Staff",
           "B": "The President of India",
           "C": "The Prime Minister of India",
-          "D": "The Defence Minister"
+          "D": "The Defence Minister of India"
         },
         "answer": "B",
-        "explanation": "The President of India is the Supreme Commander of the NCC.",
-        "timestamp": "2025-06-19T12:18:09.011348"
+        "explanation": "The President of India holds the supreme command of the NCC.",
+        "timestamp": "2025-06-24T20:39:12.969258"
       },
       {
-        "question": "What is the age limit for joining the NCC?",
+        "question": "What is the primary uniform colour of the NCC Army Wing?",
         "options": {
-          "A": "12-18 years",
-          "B": "15-20 years",
-          "C": "10-17 years",
-          "D": "17-22 years"
+          "A": "Navy Blue",
+          "B": "Dark Green",
+          "C": "Khaki",
+          "D": "Air Force Blue"
         },
-        "answer": "A",
-        "explanation": "The general age limit for joining the NCC is between 12 and 18 years, although specific criteria may vary slightly depending on the state and the wing.",
-        "timestamp": "2025-06-19T12:18:09.011364"
+        "answer": "C",
+        "explanation": "The Army Wing of the NCC primarily uses Khaki as its uniform colour.",
+        "timestamp": "2025-06-24T20:39:12.969274"
       },
       {
         "question": "Which of these activities is commonly undertaken by NCC cadets?",
         "options": {
-          "A": "Playing video games",
-          "B": "Participating in Republic Day parades",
-          "C": "Going on shopping sprees",
-          "D": "Watching movies"
+          "A": "Participating in political rallies.",
+          "B": "Participating in social service camps.",
+          "C": "Engaging in illegal activities.",
+          "D": "Working against national interests."
         },
         "answer": "B",
-        "explanation": "Participating in Republic Day parades is a common and prestigious activity for NCC cadets.  The other options are not related to NCC activities.",
-        "timestamp": "2025-06-19T12:18:09.011383"
+        "explanation": "NCC cadets regularly participate in social service camps as part of their training and commitment to community service.  The other options are incorrect and go against the NCC's values.",
+        "timestamp": "2025-06-24T20:39:12.969296"
       },
       {
         "question": "What is the motto of the NCC?",
         "options": {
-          "A": "Unity and Discipline",
-          "B": "Service Before Self",
-          "C": "Duty Before Self",
-          "D": "Unity and Strength"
-        },
-        "answer": "A",
-        "explanation": "The motto of the NCC is \"Unity and Discipline\".",
-        "timestamp": "2025-06-19T12:18:09.011398"
-      },
-      {
-        "question": "NCC cadets wear uniforms that are similar to:",
-        "options": {
-          "A": "Police uniforms",
-          "B": "Firefighter uniforms",
-          "C": "The Indian Armed Forces uniforms",
-          "D": "Postal service uniforms"
-        },
-        "answer": "C",
-        "explanation": "NCC uniforms are designed to resemble those of the Indian Armed Forces, reflecting the organization's military-style training and discipline.",
-        "timestamp": "2025-06-19T12:18:09.011416"
-      },
-      {
-        "question": "What is a significant social service activity often undertaken by NCC cadets?",
-        "options": {
-          "A": "Organizing political rallies",
-          "B": "Participating in disaster relief operations",
-          "C": "Engaging in commercial activities",
-          "D": "Running personal businesses"
+          "A": "\"Unity and Discipline\"",
+          "B": "\"Service Before Self\"",
+          "C": "\"Discipline and Dedication\"",
+          "D": "\"Unity and Progress\""
         },
         "answer": "B",
-        "explanation": "Disaster relief operations are a key aspect of NCC social service activities, demonstrating their commitment to community welfare.  The other options are not typical NCC activities.",
-        "timestamp": "2025-06-19T12:18:09.011438"
+        "explanation": "The motto of the NCC is \"Service Before Self,\" emphasizing selfless service to the nation.",
+        "timestamp": "2025-06-24T20:39:12.969314"
       }
     ]
   }

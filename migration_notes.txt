@@ -1,0 +1,61 @@
+# NCC ABYAS Project Migration & Architecture Notes
+
+## 1. Current State
+- The project is a modular Streamlit app with Firebase authentication (via Pyrebase and Flask backend for session cookies).
+- All user authentication (login, registration, password reset) is now handled in the frontend using the correct Firebase web config.
+- Admin-only features (role management, user deletion, etc.) are to be handled in the backend for security.
+- The app is ready for demo and further development.
+
+## 2. Streamlit Limitations
+- Session state is in-memory only (lost on server restart, not shared between tabs).
+- No built-in secure cookie/session management.
+- No true user management or role-based access control out of the box.
+- Not ideal for PWA or desktop app packaging.
+
+## 3. Migration Plan (Parallel Development)
+- **Keep the current Streamlit app running for demos and presentations.**
+- **Start a new project in a separate folder/repo** using a modern stack:
+  - Backend: FastAPI (Python, async, great for APIs)
+  - Frontend: Next.js (React, SSR, PWA support)
+  - Auth: Firebase Auth (web SDK for frontend, Admin SDK for backend)
+- **Migrate features one by one:**
+  - Profile, quiz, chat, video, admin, etc.
+  - Run both apps side-by-side until the new one is ready.
+- **Switch to the new app when stable.**
+
+## 4. Why FastAPI + Next.js?
+- Full control over authentication, sessions, and cookies.
+- Modern UI/UX, PWA and desktop support (via Electron/Tauri).
+- Scalable, secure, and easy to deploy.
+
+## 5. Migration Steps
+1. Scaffold FastAPI backend and Next.js frontend in a new directory.
+2. Build REST APIs for all core features in FastAPI.
+3. Build frontend pages/components in Next.js, consuming those APIs.
+4. Integrate Firebase Auth for secure login/session.
+5. Add PWA support and desktop packaging as needed.
+6. Test, polish, and deploy.
+
+## 6. Admin Management (for future)
+- All admin actions (user management, content moderation, analytics) should be handled via secure backend endpoints.
+- Role checks must be enforced on the backend.
+- Admin dashboard in the frontend should only be visible to admin users, but backend must always verify roles.
+
+## 7. General Recommendations
+- Never expose service account credentials in the frontend.
+- Use HTTPS in production for all cookies and auth flows.
+- Keep frontend and backend configs separate.
+- Use environment variables for secrets in production.
+
+## 8. Monitoring & Logging
+- All critical user actions and errors are logged to `logs/app.log`.
+- Log rotation is enabled in `utils/logging_utils.py` to prevent logs from growing indefinitely.
+- For production, consider using external log monitoring (e.g., Loggly, Papertrail, or cloud provider logging).
+
+## 9. User Support
+- Users are encouraged to use the in-app feedback form for issues or suggestions.
+- For login or registration problems, use the 'Forgot Password?' link or contact your NCC unit/support email.
+
+---
+
+**This file documents the migration plan, architecture decisions, and best practices for the NCC ABYAS project. Share this with any future developer or AI assistant for full context.**

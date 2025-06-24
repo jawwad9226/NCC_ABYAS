@@ -9,14 +9,19 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime # Ensure datetime is imported
 import google.generativeai as genai
 
-from utils import (
-    load_quiz_score_history,  # Changed from read_history
-    append_quiz_score_entry,
+from ncc_utils import (
+    load_quiz_score_history,
+    append_quiz_score_entry
+)
+
+from core_utils import (
     clear_quiz_score_history,
     Config, # For accessing paths and API settings
     _is_in_cooldown,
     _cooldown_message
 )
+
+from sync_manager import queue_for_sync
 
 # QUIZ_DATA is removed as we will use AI to generate questions.
 # If you need a fallback or a static quiz mode, this could be reinstated.
@@ -296,9 +301,13 @@ def _save_generated_quiz_to_log(topic: str, questions: List[Dict[str, Any]]) -> 
     except Exception as e:
         logging.error(f"Failed to save generated quiz to log: {str(e)}")
 
-def _ai_generate_quiz_questions(model: Optional[genai.GenerativeModel], model_error: Optional[str],
-                                topic: str, num_questions_requested: int, difficulty: str
-                               ) -> Tuple[Optional[List[Dict]], Optional[str]]:
+def _ai_generate_quiz_questions(
+    model: Optional[genai.GenerativeModel],
+    model_error: Optional[str],
+    topic: str,
+    num_questions_requested: int,
+    difficulty: str
+) -> Tuple[Optional[List[Dict]], Optional[str]]:
     """Internal function to generate quiz questions using the AI model."""
     if model_error or not model:
         return None, f"Model error: {model_error or 'Model not initialized'}"
@@ -505,6 +514,15 @@ def _calculate_results(ss):
         "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"],
         "topic": ss[f"{SS_PREFIX}current_quiz_topic"]
     })
+
+    # After quiz completion, queue summary for sync
+    quiz_metadata = {
+        "topic": ss[f"{SS_PREFIX}current_quiz_topic"],
+        "score": score_percentage,
+        "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"],
+        "timestamp": datetime.now().isoformat(),
+    }
+    queue_for_sync(quiz_metadata, "quiz_metadata")
 
 def _display_quiz_results(ss):
     """Displays the quiz results."""

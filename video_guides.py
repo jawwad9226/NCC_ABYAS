@@ -4,6 +4,7 @@ import streamlit as st
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass, field
 import re
+import logging
 
 # Assuming utils_youtube.py is in the same directory or Python path
 from utils_youtube import fetch_youtube_videos
@@ -307,3 +308,9 @@ def video_guides():
     The `st.video()` function can play local files if their paths are provided.
     Currently, this feature fetches online video details if a YouTube API key is set.
     """)
+def show_video_guides():
+    try:
+        video_guides()
+    except Exception as e:
+        logging.exception("Video guides error:")
+        st.error(f"An error occurred in the video guides: {e}")
