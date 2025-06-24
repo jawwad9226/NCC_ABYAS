@@ -17,11 +17,33 @@ def show_history_viewer_full():
             background-color: #1E1E1E;
         }
         .history-entry-light {
-            border: 1px solid #DCDCDC;
+            border: 1.5px solid #6366F1;
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 12px;
             background-color: #F9F9F9;
+            color: #222 !important;
+        }
+        /* Light mode overrides for info/warning/metric/download */
+        body[data-theme="light"] .stAlert, 
+        body[data-theme="light"] .stDownloadButton button, 
+        body[data-theme="light"] .stButton button, 
+        body[data-theme="light"] .stMetric {
+            color: #222 !important;
+            background: #f3f4f6 !important;
+            border: 1.5px solid #6366F1 !important;
+        }
+        body[data-theme="light"] .stAlert {
+            background: #fef9c3 !important;
+            border-color: #fde047 !important;
+        }
+        body[data-theme="light"] .stAlert[data-testid="stInfo"] {
+            background: #e0e7ff !important;
+            border-color: #6366F1 !important;
+        }
+        body[data-theme="light"] .stAlert[data-testid="stWarning"] {
+            background: #fef3c7 !important;
+            border-color: #f59e42 !important;
         }
         </style>
         """, unsafe_allow_html=True)

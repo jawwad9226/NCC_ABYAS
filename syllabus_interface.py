@@ -4,6 +4,33 @@ from config import NCC_HANDBOOK_PDF
 import os
 import logging
 
+# Custom CSS for light mode
+st.markdown("""
+        <style>
+        /* Light mode overrides for info/warning/metric/download */
+        body[data-theme="light"] .stAlert, 
+        body[data-theme="light"] .stDownloadButton button, 
+        body[data-theme="light"] .stButton button, 
+        body[data-theme="light"] .stMetric {
+            color: #222 !important;
+            background: #f3f4f6 !important;
+            border: 1.5px solid #6366F1 !important;
+        }
+        body[data-theme="light"] .stAlert {
+            background: #fef9c3 !important;
+            border-color: #fde047 !important;
+        }
+        body[data-theme="light"] .stAlert[data-testid="stInfo"] {
+            background: #e0e7ff !important;
+            border-color: #6366F1 !important;
+        }
+        body[data-theme="light"] .stAlert[data-testid="stWarning"] {
+            background: #fef3c7 !important;
+            border-color: #f59e42 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
 def show_syllabus_viewer():
     try:
         ncc_handbook_pdf_path = NCC_HANDBOOK_PDF

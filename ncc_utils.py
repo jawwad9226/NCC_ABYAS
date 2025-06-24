@@ -411,18 +411,16 @@ def _cooldown_message(action: str = "this action") -> str:
     return f"You are doing {action} too frequently. Please wait a few moments before trying again."
 
 def save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
-    """Appends a chat interaction (prompt and response) to the chat history file."""
+    """Appends a chat interaction (prompt and response) to the chat history file as a single entry."""
     try:
+        if not user_prompt or not user_prompt.strip() or not assistant_response or not assistant_response.strip():
+            # Do not save empty prompts or responses
+            return
         history_path = Config.LOG_PATHS['chat']['history']
         entry = {
             "timestamp": datetime.now().isoformat(),
-            "role": "user",
-            "content": user_prompt
-        }
-        response_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "role": "assistant",
-            "content": assistant_response
+            "prompt": user_prompt,
+            "response": assistant_response
         }
         # Load existing history or start new
         if os.path.exists(history_path):
@@ -434,7 +432,6 @@ def save_chat_to_file(user_prompt: str, assistant_response: str) -> None:
         else:
             history = []
         history.append(entry)
-        history.append(response_entry)
         with open(history_path, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=4)
     except Exception as e:

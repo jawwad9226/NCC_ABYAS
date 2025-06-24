@@ -204,9 +204,9 @@ def chat_interface():
         
 def submit_prompt(prompt):
     """Handle a submitted prompt."""
-    if not prompt or st.session_state.cooldown_active:
+    if not prompt or not prompt.strip() or st.session_state.cooldown_active:
         return
-        
+    
     # Record timestamp for the user message
     user_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
@@ -248,17 +248,19 @@ def submit_prompt(prompt):
                 assistant_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 # Display response
-                st.write(response)
-                st.markdown(f'<div class="message-timestamp">{assistant_timestamp}</div>', unsafe_allow_html=True)
-                
-                # Save to session and history
-                assistant_message = {
-                    "role": "assistant",
-                    "content": response,
-                    "timestamp": assistant_timestamp
-                }
-                st.session_state.messages.append(assistant_message) # Add to current session messages
-                save_chat_to_file(prompt, response)
+                if response and response.strip():
+                    st.write(response)
+                    st.markdown(f'<div class="message-timestamp">{assistant_timestamp}</div>', unsafe_allow_html=True)
+                    # Save to session and history
+                    assistant_message = {
+                        "role": "assistant",
+                        "content": response,
+                        "timestamp": assistant_timestamp
+                    }
+                    st.session_state.messages.append(assistant_message) # Add to current session messages
+                    save_chat_to_file(prompt, response)
+                else:
+                    st.warning("No response generated.")
     
     st.rerun()
 

@@ -61,11 +61,11 @@ def get_image_as_base64(image_path):
 # --- DEBUG: Show id_token and user_id at the top of the app ---
 # --- Restore id_token from localStorage using restore_session() ---
 restore_session()
-print(f"[DEBUG] main.py: id_token in session_state: {st.session_state.get('id_token')}")
+# print(f"[DEBUG] main.py: id_token in session_state: {st.session_state.get('id_token')}")  # REMOVE for security
 print(f"[DEBUG] main.py: user_id in session_state: {st.session_state.get('user_id')}")
 # --- Token-based session restore: check /verify_session on app load ---
 if not st.session_state.get("user_id") and st.session_state.get("id_token"):
-    print(f"[DEBUG] Attempting /verify_session with id_token: {st.session_state['id_token'][:10]}...")
+    print(f"[DEBUG] Attempting /verify_session with id_token: (redacted)...")
     try:
         resp = requests.get(
             "http://localhost:5001/verify_session",
@@ -159,7 +159,7 @@ def main():
             st.info("Session restore in progress. Please wait...")
             print("[DEBUG] main.py: id_token present but user_id missing. Waiting for session restore.")
         else:
-            print(f"[DEBUG] Showing login_interface. user_id: {st.session_state.get('user_id')}, id_token: {st.session_state.get('id_token')}")
+            print(f"[DEBUG] Showing login_interface. user_id: {st.session_state.get('user_id')}")
             login_interface()
         st.stop()
 
@@ -213,12 +213,13 @@ def main():
         else:
             # Load only the logged-in user's progress
             user_id = st.session_state.get("user_id")
-            # Fetch progress summary from Firestore (or local if hybrid)
-            # For now, just pass empty string or fetch from Firestore as needed
-            from firebase_admin import firestore
-            firestore_db = firestore.client()
-            progress_doc = firestore_db.collection("users").document(user_id).collection("progress").document("summary").get()
-            quiz_history_raw_string = json.dumps(progress_doc.to_dict() or {})
+            # Use hybrid read_history to get quiz score history (list of attempts)
+            from ncc_utils import read_history
+            quiz_score_history = read_history("quiz_score")
+            # Ensure it's a list for the dashboard
+            if not isinstance(quiz_score_history, list):
+                quiz_score_history = []
+            quiz_history_raw_string = json.dumps(quiz_score_history)
             display_progress_dashboard(st.session_state, quiz_history_raw_string)
     elif app_mode == "💬 Chat Assistant":
         from chat_interface import chat_interface # Lazy import

@@ -36,6 +36,27 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
             box-shadow: 0 2px 8px rgba(99,102,241,0.08);
             padding: 1.2rem 0.5rem 1.2rem 0.5rem;
         }
+        /* Light mode overrides for info/warning/metric/download */
+        body[data-theme="light"] .stAlert, 
+        body[data-theme="light"] .stDownloadButton button, 
+        body[data-theme="light"] .stButton button, 
+        body[data-theme="light"] .stMetric {
+            color: #222 !important;
+            background: #f3f4f6 !important;
+            border: 1.5px solid #6366F1 !important;
+        }
+        body[data-theme="light"] .stAlert {
+            background: #fef9c3 !important;
+            border-color: #fde047 !important;
+        }
+        body[data-theme="light"] .stAlert[data-testid="stInfo"] {
+            background: #e0e7ff !important;
+            border-color: #6366F1 !important;
+        }
+        body[data-theme="light"] .stAlert[data-testid="stWarning"] {
+            background: #fef3c7 !important;
+            border-color: #f59e42 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 

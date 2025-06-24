@@ -92,14 +92,14 @@ def restore_session():
     if "id_token" not in st.session_state:
         storage = LocalStorage(key="id_token")
         token = storage.get("id_token")
-        log_info(f"auth_manager: token from localStorage: {token}")
+        # log_info(f"auth_manager: token from localStorage: {token}")  # REMOVE for security
         if token:
             st.session_state["id_token"] = token
-    log_info(f"auth_manager: id_token in session_state: {st.session_state.get('id_token')}")
+    # log_info(f"auth_manager: id_token in session_state: {st.session_state.get('id_token')}")  # REMOVE for security
     log_info(f"auth_manager: user_id in session_state: {st.session_state.get('user_id')}")
     # Token-based session restore: check /verify_session on app load
     if not st.session_state.get("user_id") and st.session_state.get("id_token"):
-        log_info(f"Attempting /verify_session with id_token: {st.session_state['id_token'][:10]}...")
+        log_info(f"Attempting /verify_session with id_token: (redacted)...")
         try:
             resp = requests.get(
                 "http://localhost:5001/verify_session",
