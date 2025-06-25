@@ -11,9 +11,13 @@ import requests
 from streamlit_browser_storage.local_storage import LocalStorage
 import streamlit as st
 
-# Load Firebase config
-with open("firebase_config.json") as f:
-    firebase_config = json.load(f)
+# Load Firebase config from environment variable if available, else fallback to file (for local dev)
+FIREBASE_CONFIG_JSON = os.environ.get("FIREBASE_CONFIG_JSON")
+if FIREBASE_CONFIG_JSON:
+    firebase_config = json.loads(FIREBASE_CONFIG_JSON)
+else:
+    with open("firebase_config.json") as f:
+        firebase_config = json.load(f)
 
 # Initialize pyrebase (for user auth)
 firebase = pyrebase.initialize_app(firebase_config)
@@ -21,10 +25,14 @@ auth = firebase.auth()
 db = firebase.database()  # Not used, but required by pyrebase
 
 # Initialize firebase_admin (for Firestore) with service account config
-with open("firebase_config.json") as f:
-    firebase_config = json.load(f)
-    cred = credentials.Certificate(firebase_config)
+if FIREBASE_CONFIG_JSON:
+    cred = credentials.Certificate(json.loads(FIREBASE_CONFIG_JSON))
     firebase_admin.initialize_app(cred)
+else:
+    with open("firebase_config.json") as f:
+        firebase_config = json.load(f)
+        cred = credentials.Certificate(firebase_config)
+        firebase_admin.initialize_app(cred)
 firestore_db = firestore.client()
 
 # --- Registration ---

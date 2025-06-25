@@ -5,8 +5,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
-# Firebase config
-FIREBASE_CONFIG_PATH = os.path.join(BASE_DIR, "firebase_config.json")
+# Firebase config path is now only used for local development. In production, use FIREBASE_CONFIG_JSON env variable.
+# FIREBASE_CONFIG_PATH = os.path.join(BASE_DIR, "firebase_config.json")
 
 # PDF and static assets
 NCC_HANDBOOK_PDF = os.path.join(BASE_DIR, "Ncc-CadetHandbook.pdf")
