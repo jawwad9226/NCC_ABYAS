@@ -113,6 +113,8 @@ def register_profile():
         log_error(f"Failed to create Firestore profile for {email}: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# If running locally, use Flask's built-in server. For production (Railway), use Gunicorn:
+#   gunicorn backend_auth:app --bind 0.0.0.0:$PORT
 if __name__ == '__main__':
     import os
     import sys
