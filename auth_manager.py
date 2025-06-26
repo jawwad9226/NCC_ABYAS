@@ -107,7 +107,7 @@ def restore_session():
     if not st.session_state.get("user_id") and st.session_state.get("id_token"):
         try:
             resp = requests.get(
-                "http://localhost:5001/verify_session",
+                "https://nccabyas.up.railway.app/verify_session",
                 headers={"Authorization": f"Bearer {st.session_state['id_token']}"},
                 timeout=5
             )

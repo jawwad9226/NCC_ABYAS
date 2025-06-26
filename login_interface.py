@@ -48,7 +48,7 @@ def show_login():
                 user = auth.sign_in_with_email_and_password(email, password)
                 id_token = user['idToken']
                 resp = requests.post(
-                    "http://localhost:5001/login",
+                    "https://nccabyas.up.railway.app/login",
                     json={"idToken": id_token, "email": email, "password": password},
                     timeout=10
                 )
@@ -158,7 +158,7 @@ def show_registration():
                 db.child("users").child(uid).set(profile)
                 # --- Create Firestore profile via backend ---
                 resp = requests.post(
-                    "http://localhost:5001/register_profile",
+                    "https://nccabyas.up.railway.app/register_profile",
                     json={
                         "uid": uid,
                         "name": name,
