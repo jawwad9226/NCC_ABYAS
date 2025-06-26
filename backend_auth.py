@@ -114,7 +114,9 @@ def register_profile():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
+    import os
     import sys
+    port = int(os.environ.get("PORT", 5001))
     if not os.environ.get('WERKZEUG_RUN_MAIN'):
         print("\033[93m[WARNING] You are running the backend without HTTPS. For production, use a WSGI server (gunicorn/uwsgi) behind HTTPS.\033[0m", file=sys.stderr)
-    app.run(host='0.0.0.0', port=5001, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
