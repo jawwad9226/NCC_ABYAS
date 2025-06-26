@@ -69,3 +69,4 @@ dmypy.json
 
 # Firebase config
 firebase_config.json
+firebase_service_account.json

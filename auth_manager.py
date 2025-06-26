@@ -14,6 +14,7 @@ import streamlit as st
 # Load Firebase config from environment variable if available, else fallback to file (for local dev)
 FIREBASE_CONFIG_JSON = os.environ.get("FIREBASE_CONFIG_JSON")
 SERVICE_ACCOUNT_PATH = "firebase_service_account.json"
+SERVICE_ACCOUNT_JSON = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
 if FIREBASE_CONFIG_JSON:
     firebase_config = json.loads(FIREBASE_CONFIG_JSON)
 else:
@@ -26,12 +27,15 @@ auth = firebase.auth()
 db = firebase.database()  # Not used, but required by pyrebase
 
 # Initialize firebase_admin (for Firestore) with service account config
-if FIREBASE_CONFIG_JSON:
-    cred = credentials.Certificate(json.loads(FIREBASE_CONFIG_JSON))
-    firebase_admin.initialize_app(cred)
+if SERVICE_ACCOUNT_JSON:
+    import json
+    cred = credentials.Certificate(json.loads(SERVICE_ACCOUNT_JSON))
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
 else:
     cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
-    firebase_admin.initialize_app(cred)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
 firestore_db = firestore.client()
 
 # --- Registration ---
