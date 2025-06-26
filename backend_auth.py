@@ -1,3 +1,6 @@
+import sys
+print("=== Starting backend_auth.py ===", file=sys.stderr)
+
 try:
     from flask import Flask, request, jsonify
     from auth_manager import login_user, get_user_profile
@@ -7,8 +10,8 @@ try:
     import os
 
     app = Flask(__name__)
+    print("=== Flask app created successfully ===", file=sys.stderr)
 except Exception as e:
-    import sys
     print(f"FATAL ERROR during startup: {e}", file=sys.stderr)
     import traceback
     traceback.print_exc()
