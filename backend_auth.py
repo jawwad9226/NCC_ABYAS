@@ -1,11 +1,18 @@
-from flask import Flask, request, jsonify
-from auth_manager import login_user, get_user_profile
-from firebase_admin import auth as admin_auth
-from utils.logging_utils import log_info, log_warning, log_error
-from ncc_utils import read_history
-import os
+try:
+    from flask import Flask, request, jsonify
+    from auth_manager import login_user, get_user_profile
+    from firebase_admin import auth as admin_auth
+    from utils.logging_utils import log_info, log_warning, log_error
+    from ncc_utils import read_history
+    import os
 
-app = Flask(__name__)
+    app = Flask(__name__)
+except Exception as e:
+    import sys
+    print(f"FATAL ERROR during startup: {e}", file=sys.stderr)
+    import traceback
+    traceback.print_exc()
+    raise
 
 @app.route('/login', methods=['POST'])
 def login():
