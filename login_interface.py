@@ -170,9 +170,30 @@ def show_registration():
                 )
                 data = resp.json()
                 if data.get("success"):
-                    st.session_state["show_register"] = False
-                    st.session_state["reg_success"] = "Registration successful! Please login."
-                    log_info(f"Registration successful for user: {email}")
+                    # --- Automatic login after successful registration ---
+                    try:
+                        user = auth.sign_in_with_email_and_password(email, password)
+                        id_token = user['idToken']
+                        login_resp = requests.post(
+                            "https://nccabyas.up.railway.app/login",
+                            json={"idToken": id_token, "email": email, "password": password},
+                            timeout=10
+                        )
+                        login_data = login_resp.json()
+                        if login_data.get("success"):
+                            st.session_state["user_id"] = user.get("localId")
+                            st.session_state["profile"] = login_data["profile"]
+                            st.session_state["role"] = login_data["profile"].get("role", "cadet")
+                            st.session_state["id_token"] = id_token
+                            st.session_state["login_success"] = "Registration and login successful!"
+                            log_info(f"Auto-login after registration for user: {email}")
+                            st.rerun()
+                        else:
+                            st.session_state["reg_success"] = "Registration successful! Please login. (Auto-login failed)"
+                            log_warning(f"Auto-login failed after registration for user: {email}, error: {login_data.get('error')}")
+                    except Exception as e:
+                        st.session_state["reg_success"] = "Registration successful! Please login. (Auto-login error)"
+                        log_error(f"Auto-login error after registration for user: {email}, error: {e}")
                 else:
                     st.session_state["reg_error"] = f"Registration failed (profile): {data.get('error', 'Unknown error')}"
                     log_error(f"Registration failed for user: {email}, error: {data.get('error')}")

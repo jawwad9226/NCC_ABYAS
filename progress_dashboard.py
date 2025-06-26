@@ -110,6 +110,29 @@ def display_progress_dashboard(session_state, quiz_history_raw_string: str):
         quizzes_per_topic = df['Topic'].value_counts()
         st.write("Number of Quizzes per Topic:")
         st.bar_chart(quizzes_per_topic)
+        # Pie chart for topic distribution
+        st.write("Topic Distribution:")
+        st.pyplot(quizzes_per_topic.plot.pie(autopct='%1.1f%%', figsize=(5, 5), ylabel=''))
+        # Best and worst topic
+        if not avg_score_per_topic.empty:
+            best_topic = avg_score_per_topic.idxmax()
+            worst_topic = avg_score_per_topic.idxmin()
+            st.success(f"Best Topic: {best_topic} ({avg_score_per_topic.max():.2f}%)")
+            st.warning(f"Needs Improvement: {worst_topic} ({avg_score_per_topic.min():.2f}%)")
+        # Most and least attempted topic
+        if not quizzes_per_topic.empty:
+            most_attempted = quizzes_per_topic.idxmax()
+            least_attempted = quizzes_per_topic.idxmin()
+            st.info(f"Most Attempted Topic: {most_attempted} ({quizzes_per_topic.max()} times)")
+            st.info(f"Least Attempted Topic: {least_attempted} ({quizzes_per_topic.min()} times)")
+        # Table of all quiz attempts
+        st.write("All Quiz Attempts:")
+        display_cols = ['Timestamp', 'Topic', 'Score (%)']
+        if 'Difficulty' in df.columns:
+            display_cols.append('Difficulty')
+        st.dataframe(df[display_cols].sort_values('Timestamp', ascending=False).reset_index(drop=True))
+    else:
+        st.info("No topic-wise data available.")
 
     # --- Date Filter ---
     st.subheader("📅 Quiz Timeline (Filter by Date)")

@@ -14,6 +14,28 @@ from streamlit_pdf_viewer import pdf_viewer
 import streamlit_browser_storage as stbs
 from streamlit_browser_storage.local_storage import LocalStorage
 
+# --- Inject sidebar width CSS at the very top for consistency ---
+st.markdown("""
+<style>
+/* Desktop: wider sidebar for readability */
+@media (min-width: 600px) {
+    section[data-testid="stSidebar"] {
+        min-width: 300px !important;
+        width: 320px !important;
+        max-width: 350px !important;
+    }
+}
+/* Mobile/PWA: allow sidebar to be narrower */
+@media (max-width: 599px) {
+    section[data-testid="stSidebar"] {
+        min-width: 60vw !important;
+        width: 70vw !important;
+        max-width: 90vw !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
 from core_utils import Config
 from utils.logging_utils import log_info, log_warning, log_error
 # Local imports
@@ -304,27 +326,6 @@ def main():
         # ...existing code for making API request...
         st.session_state["api_cooldown_active"] = True
         st.session_state["api_cooldown_last_time"] = datetime.now()
-
-    st.markdown("""
-    <style>
-    /* Desktop: wider sidebar for readability */
-    @media (min-width: 600px) {
-        section[data-testid="stSidebar"] {
-            min-width: 300px !important;
-            width: 320px !important;
-            max-width: 350px !important;
-        }
-    }
-    /* Mobile/PWA: allow sidebar to be narrower */
-    @media (max-width: 599px) {
-        section[data-testid="stSidebar"] {
-            min-width: 60vw !important;
-            width: 70vw !important;
-            max-width: 90vw !important;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     try:
