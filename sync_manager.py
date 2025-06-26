@@ -38,6 +38,9 @@ def sync_to_cloud():
     synced = 0
     new_queue = []
     for item in queue:
+        # Skip and remove empty data items
+        if not item.get("data"):
+            continue
         try:
             if item["type"] == "quiz_metadata":
                 firestore_db.collection("users").document(user_id).collection("quiz_metadata").add(item["data"])

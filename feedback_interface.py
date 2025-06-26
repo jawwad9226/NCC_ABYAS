@@ -6,8 +6,14 @@ def show_feedback_section():
     with st.sidebar.expander("💬 Feedback & Error Reporting", expanded=True):
         feedback = st.text_area("Your feedback or error report", key="feedback_text")
         uploaded_files = st.file_uploader("Attach images/screenshots (optional)", type=["png", "jpg", "jpeg", "gif"], accept_multiple_files=True, key="feedback_files")
+        max_size_mb = 5
+        oversize_files = [file for file in uploaded_files if file.size > max_size_mb * 1024 * 1024]
+        if oversize_files:
+            st.error(f"Each image must be less than {max_size_mb} MB. Please remove or resize: {[file.name for file in oversize_files]}")
         if st.button("Submit Feedback", key="submit_feedback_btn"):
-            if feedback.strip() or uploaded_files:
+            if oversize_files:
+                st.error(f"Cannot submit. Please remove or resize files over {max_size_mb} MB.")
+            elif feedback.strip() or uploaded_files:
                 # Save feedback to a file or send to backend (here: append to local file)
                 with open("data/user_feedback.txt", "a") as f:
                     import time

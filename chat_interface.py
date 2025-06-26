@@ -25,19 +25,20 @@ class ChatConfig:
     HISTORY_FILE = os.path.join(Config.DATA_DIR, "chat_history.json")
     TRANSCRIPT_FILE = os.path.join(Config.DATA_DIR, "chat_transcript.txt")
 
-def _check_and_reset_cooldown():
-    """Check and reset cooldown if enough time has passed."""
-    if st.session_state.get("cooldown_active", False):
+API_COOLDOWN_SECONDS = 10
+CHAT_COOLDOWN_SECONDS = 30
+
+def _check_and_reset_cooldown(cooldown_key, cooldown_seconds):
+    if st.session_state.get(f"{cooldown_key}_active", False):
         current_time = datetime.now()
-        last_time = st.session_state.get("last_interaction_time")
+        last_time = st.session_state.get(f"{cooldown_key}_last_time")
         if last_time:
             time_diff = (current_time - last_time).total_seconds()
-            cooldown_seconds = 60 * API_CALL_COOLDOWN_MINUTES
             time_remaining = max(0, cooldown_seconds - time_diff)
-            st.session_state.cooldown_time_remaining = int(time_remaining)
+            st.session_state[f"{cooldown_key}_time_remaining"] = int(time_remaining)
             if time_remaining <= 0:
-                st.session_state.cooldown_active = False
-                st.session_state.cooldown_time_remaining = 0
+                st.session_state[f"{cooldown_key}_active"] = False
+                st.session_state[f"{cooldown_key}_time_remaining"] = 0
 
 
 def chat_interface():
@@ -62,7 +63,7 @@ def chat_interface():
         st.session_state.last_interaction_time = None
 
     # Reset cooldown if enough time has passed
-    _check_and_reset_cooldown()
+    _check_and_reset_cooldown("chat", CHAT_COOLDOWN_SECONDS)
 
     # Add styles
     st.markdown("""
@@ -158,6 +159,9 @@ def chat_interface():
         if st.session_state.cooldown_active:
             remaining = st.session_state.cooldown_time_remaining
             st.warning(f"⏳ API Cooldown active: {remaining} seconds remaining before you can send another message.")
+        if st.session_state.get("chat_active", False):
+            remaining = st.session_state.get("chat_time_remaining", 0)
+            st.warning(f"⏳ Chat Cooldown active: {remaining} seconds remaining before you can send another message.")
         
         # Controls area
         col1, col2 = st.columns([3, 1])
@@ -196,8 +200,13 @@ def chat_interface():
         # Chat input area (new version)
         chat_input_value = st.chat_input("Ask me about NCC...", key="chat_input")
         if chat_input_value is not None:
-            submit_prompt(chat_input_value)
-            
+            if st.session_state.get("chat_active", False):
+                st.warning(f"⏳ Please wait {st.session_state['chat_time_remaining']} seconds before sending another chat message.")
+            else:
+                submit_prompt(chat_input_value)
+                st.session_state["chat_active"] = True
+                st.session_state["chat_last_time"] = datetime.now()
+
         # Display messages in reverse order (newest first for better UX)
         display_chat_messages()
         

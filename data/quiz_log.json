@@ -89,5 +89,72 @@
         "timestamp": "2025-06-24T20:39:12.969314"
       }
     ]
+  },
+  {
+    "timestamp": "2025-06-26T07:20:41.688446",
+    "topic": "NCC General",
+    "questions_generated_count": 5,
+    "questions": [
+      {
+        "question": "What does NCC stand for?",
+        "options": {
+          "A": "National Cadet Corps of India",
+          "B": "National Civil Corps",
+          "C": "National Cadet Council",
+          "D": "National Community Corps"
+        },
+        "answer": "A",
+        "explanation": "NCC stands for National Cadet Corps.  The other options are not the correct full form of the organization.",
+        "timestamp": "2025-06-26T07:20:41.687621"
+      },
+      {
+        "question": "Which of the following is a primary aim of the NCC?",
+        "options": {
+          "A": "To train cadets for immediate deployment in the armed forces.",
+          "B": "To promote discipline, leadership, and character development among youth.",
+          "C": "To solely focus on military training techniques.",
+          "D": "To provide only technical skills training for employment."
+        },
+        "answer": "B",
+        "explanation": "While NCC provides exposure to military life and skills, its primary aim is character building and leadership development, not solely military training or job skills.",
+        "timestamp": "2025-06-26T07:20:41.687665"
+      },
+      {
+        "question": "In which year was the NCC established in India?",
+        "options": {
+          "A": "1948",
+          "B": "1950",
+          "C": "1962",
+          "D": "1971"
+        },
+        "answer": "A",
+        "explanation": "The NCC was established in India in 1948. The other options are incorrect years.",
+        "timestamp": "2025-06-26T07:20:41.687683"
+      },
+      {
+        "question": "Which of these is NOT a wing of the NCC?",
+        "options": {
+          "A": "Army Wing",
+          "B": "Navy Wing",
+          "C": "Air Wing",
+          "D": "Space Wing"
+        },
+        "answer": "D",
+        "explanation": "The NCC has Army, Navy, and Air Wings.  There is no Space Wing within the NCC.",
+        "timestamp": "2025-06-26T07:20:41.687701"
+      },
+      {
+        "question": "What is the primary colour of the NCC uniform trousers?",
+        "options": {
+          "A": "Khaki",
+          "B": "Navy Blue",
+          "C": "Black",
+          "D": "Olive Green"
+        },
+        "answer": "A",
+        "explanation": "The NCC uniform trousers are primarily khaki in colour, although variations might exist depending on the wing and specific occasion.  The other options are incorrect colours for the standard NCC trousers.",
+        "timestamp": "2025-06-26T07:20:41.687720"
+      }
+    ]
   }
 ]

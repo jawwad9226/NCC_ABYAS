@@ -8,6 +8,7 @@ import base64
 import subprocess
 import socket
 import time
+from datetime import datetime
 # Core streamlit imports
 from streamlit_pdf_viewer import pdf_viewer
 import streamlit_browser_storage as stbs
@@ -75,7 +76,7 @@ if not st.session_state.get("user_id") and st.session_state.get("id_token"):
             st.session_state["user_id"] = data.get("uid")
             st.session_state["profile"] = data.get("profile")
             st.session_state["role"] = data.get("profile", {}).get("role", "cadet")
-            st.experimental_rerun()
+            st.rerun()
     except Exception:
         pass
 
@@ -92,6 +93,21 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+API_COOLDOWN_SECONDS = 10
+
+def _check_and_reset_api_cooldown():
+    if st.session_state.get("api_cooldown_active", False):
+        current_time = datetime.now()
+        last_time = st.session_state.get("api_cooldown_last_time")
+        if last_time:
+            time_diff = (current_time - last_time).total_seconds()
+            time_remaining = max(0, API_COOLDOWN_SECONDS - time_diff)
+            st.session_state["api_cooldown_time_remaining"] = int(time_remaining)
+            if time_remaining <= 0:
+                st.session_state["api_cooldown_active"] = False
+                st.session_state["api_cooldown_time_remaining"] = 0
+
+# --- Main app logic ---
 def main():
     """
     Main entry point for the NCC ABYAS application.
@@ -225,6 +241,7 @@ def main():
         show_feedback_section()
         st.session_state["show_feedback_tab"] = False
     # Remove all navigation buttons (reset, dev tools, back, etc.)
+    st.sidebar.markdown("<small>By using this app, you agree to our <a href='https://yourdomain.com/privacy' target='_blank'>Privacy Policy</a> and <a href='https://yourdomain.com/terms' target='_blank'>Terms of Service</a>." , unsafe_allow_html=True)
 
     # --- On login/app start, sync any queued data ---
     sync_to_cloud()
@@ -277,6 +294,37 @@ def main():
             show_instructor_dashboard()
     else:
         pass  # Unknown app mode, do nothing for production
+
+    # --- API Request Flow Example ---
+    # Before making an API request (e.g., in quiz_interface, main, or any API call):
+    _check_and_reset_api_cooldown()
+    if st.session_state.get("api_cooldown_active", False):
+        st.warning(f"⏳ API Cooldown active: {st.session_state['api_cooldown_time_remaining']} seconds remaining before you can make another request.")
+    else:
+        # ...existing code for making API request...
+        st.session_state["api_cooldown_active"] = True
+        st.session_state["api_cooldown_last_time"] = datetime.now()
+
+    st.markdown("""
+    <style>
+    /* Desktop: wider sidebar for readability */
+    @media (min-width: 600px) {
+        section[data-testid="stSidebar"] {
+            min-width: 300px !important;
+            width: 320px !important;
+            max-width: 350px !important;
+        }
+    }
+    /* Mobile/PWA: allow sidebar to be narrower */
+    @media (max-width: 599px) {
+        section[data-testid="stSidebar"] {
+            min-width: 60vw !important;
+            width: 70vw !important;
+            max-width: 90vw !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     try:

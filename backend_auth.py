@@ -3,6 +3,7 @@ from auth_manager import login_user, get_user_profile
 from firebase_admin import auth as admin_auth
 from utils.logging_utils import log_info, log_warning, log_error
 from ncc_utils import read_history
+import os
 
 app = Flask(__name__)
 
@@ -83,5 +84,37 @@ def verify_session():
         log_warning(f"Token verification failed: {str(e)}")
         return jsonify({'success': False, 'error': 'Invalid or expired token'}), 401
 
+@app.route('/register_profile', methods=['POST'])
+def register_profile():
+    data = request.json
+    uid = data.get('uid')
+    name = data.get('name')
+    reg_no = data.get('reg_no')
+    email = data.get('email')
+    mobile = data.get('mobile')
+    if not all([uid, name, reg_no, email, mobile]):
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+    try:
+        from datetime import datetime
+        from firebase_admin import firestore
+        firestore_db = firestore.client()
+        profile = {
+            "name": name,
+            "reg_no": reg_no,
+            "email": email,
+            "mobile": mobile,
+            "role": "cadet",
+            "created_at": datetime.utcnow().isoformat(),
+            "last_login": datetime.utcnow().isoformat()
+        }
+        firestore_db.collection("users").document(uid).set(profile)
+        return jsonify({'success': True})
+    except Exception as e:
+        log_error(f"Failed to create Firestore profile for {email}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    import sys
+    if not os.environ.get('WERKZEUG_RUN_MAIN'):
+        print("\033[93m[WARNING] You are running the backend without HTTPS. For production, use a WSGI server (gunicorn/uwsgi) behind HTTPS.\033[0m", file=sys.stderr)
+    app.run(host='0.0.0.0', port=5001, debug=False)

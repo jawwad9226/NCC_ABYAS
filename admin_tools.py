@@ -3,6 +3,7 @@ Admin dashboard and user management for NCC Cadet Platform.
 """
 import streamlit as st
 from auth_manager import get_user_profile, set_user_role
+from firebase_admin import auth as admin_auth
 import firebase_admin
 from firebase_admin import firestore
 import io
@@ -85,10 +86,48 @@ def show_admin_dashboard():
                 set_user_role(user['uid'], new_role)
                 st.rerun()
             # Delete user
-            if st.button(f"Delete {user.get('name')}", key=f"delete_{user['uid']}"):
-                if st.confirm(f"Are you sure you want to delete {user.get('name')}? This cannot be undone."):
-                    firestore_db.collection("users").document(user['uid']).delete()
-                    st.rerun()
+            def delete_user_and_data(user_uid):
+                """Delete user from Firebase Auth and all Firestore data (including subcollections)."""
+                # Delete from Firebase Auth
+                try:
+                    admin_auth.delete_user(user_uid)
+                except Exception as e:
+                    return False, f"Failed to delete user from Auth: {e}"
+                # Delete all subcollections in Firestore
+                try:
+                    user_doc_ref = firestore_db.collection("users").document(user_uid)
+                    # List subcollections and delete all docs in each
+                    for subcol in user_doc_ref.collections():
+                        for doc in subcol.stream():
+                            doc.reference.delete()
+                    # Delete the user document itself
+                    user_doc_ref.delete()
+                except Exception as e:
+                    return False, f"Failed to delete user data from Firestore: {e}"
+                return True, None
+
+            # Delete user (two-step confirmation)
+            confirm_key = f"confirm_delete_{user['uid']}"
+            if st.session_state.get(confirm_key):
+                st.warning(f"Are you sure you want to delete {user.get('name')}? This cannot be undone.")
+                col_yes, col_no = st.columns(2)
+                with col_yes:
+                    if st.button(f"Yes, Delete {user.get('name')}", key=f"yes_delete_{user['uid']}"):
+                        success, err = delete_user_and_data(user['uid'])
+                        if success:
+                            st.success(f"User {user.get('name')} deleted successfully.")
+                            st.session_state.pop(confirm_key)
+                            st.rerun()
+                        else:
+                            st.error(err)
+                            st.session_state.pop(confirm_key)
+                with col_no:
+                    if st.button("Cancel", key=f"cancel_delete_{user['uid']}"):
+                        st.session_state.pop(confirm_key)
+                        st.info("Delete cancelled.")
+            else:
+                if st.button(f"Delete {user.get('name')}", key=f"delete_{user['uid']}"):
+                    st.session_state[confirm_key] = True
 
     # --- Activity Log (simple) ---
     st.subheader("Recent Admin Actions (This Session)")
