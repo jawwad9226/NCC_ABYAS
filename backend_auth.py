@@ -57,9 +57,17 @@ def login():
         log_warning(f"Failed login attempt for {email}: {result['error']}")
         return jsonify({'success': False, 'error': result['error']}), 401
 
+@app.route('/health', methods=['GET'])
+def health():
+    import sys
+    print('=== /health endpoint called ===', file=sys.stderr)
+    return 'OK', 200
+
 # Token-based session verification endpoint
 @app.route('/verify_session', methods=['GET'])
 def verify_session():
+    import sys
+    print('=== /verify_session endpoint called ===', file=sys.stderr)
     auth_header = request.headers.get('Authorization', None)
     if not auth_header or not auth_header.startswith('Bearer '):
         log_warning("Missing or invalid Authorization header in /verify_session")
