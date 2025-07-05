@@ -14,6 +14,18 @@ from ncc_utils import (
     save_chat_to_file,
     Config
 )
+from security import SecurityValidator, RateLimiter, secure_chat_input
+from mobile_ui import show_loading_state, create_card
+from error_handling import ErrorHandler, handle_api_error, with_error_boundary
+# Import chat enhancements
+from chat_enhancements import (
+    ChatEnhancements, 
+    show_chat_search_interface, 
+    show_conversation_export_interface, 
+    add_chat_enhancements_css
+)
+# Import gamification
+from gamification import award_xp, show_xp_notification
 
 # Initialize Gemini model
 model, model_error = setup_gemini()
@@ -41,6 +53,7 @@ def _check_and_reset_cooldown(cooldown_key, cooldown_seconds):
                 st.session_state[f"{cooldown_key}_time_remaining"] = 0
 
 
+@with_error_boundary
 def chat_interface():
     """Main chat interface function with proper widget key management"""
     
@@ -65,7 +78,8 @@ def chat_interface():
     # Reset cooldown if enough time has passed
     _check_and_reset_cooldown("chat", CHAT_COOLDOWN_SECONDS)
 
-    # Add styles
+    # Add styles and enhanced CSS
+    add_chat_enhancements_css()
     st.markdown("""
         <style>
         /* Chat container styles */
@@ -164,7 +178,7 @@ def chat_interface():
             st.warning(f"⏳ Chat Cooldown active: {remaining} seconds remaining before you can send another message.")
         
         # Controls area
-        col1, col2 = st.columns([3, 1])
+        col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
         
         with col1:
             with st.expander("📝 Sample Questions", expanded=False):
@@ -192,11 +206,27 @@ def chat_interface():
             # Clear chat button
             if st.button("🗑️ Clear Chat", key=f"clear_chat_{st.session_state.widget_keys['clear_chat']}"):
                 st.session_state.confirm_clear = True
+                
+        with col3:
+            # Search button
+            if st.button("🔍 Search", key="show_search"):
+                st.session_state.show_search_interface = not st.session_state.get('show_search_interface', False)
+                
+        with col4:
+            # Export button
+            if st.button("📤 Export", key="show_export"):
+                st.session_state.show_export_interface = not st.session_state.get('show_export_interface', False)
+        
+        # Show search interface if toggled
+        if st.session_state.get('show_search_interface', False):
+            with st.expander("🔍 Search Conversations", expanded=True):
+                show_chat_search_interface()
+        
+        # Show export interface if toggled
+        if st.session_state.get('show_export_interface', False):
+            with st.expander("📤 Export Conversation", expanded=True):
+                show_conversation_export_interface()
 
-        # Show confirmation dialog for clearing history
-        if st.session_state.get("confirm_clear", False):
-            display_clear_confirmation()
-            
         # Chat input area (new version)
         chat_input_value = st.chat_input("Ask me about NCC...", key="chat_input")
         if chat_input_value is not None:
@@ -215,23 +245,42 @@ def submit_prompt(prompt):
     if not prompt or not prompt.strip() or st.session_state.cooldown_active:
         return
     
+    # Security validation
+    validation_result = secure_chat_input(prompt)
+    if not validation_result['valid']:
+        ErrorHandler.show_warning(f"Message validation failed: {validation_result['error']}")
+        return
+    
+    # Use sanitized input
+    clean_prompt = validation_result['message']
+    
     # Record timestamp for the user message
     user_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     # Create user message object
     user_message = {
         "role": "user",
-        "content": prompt,
+        "content": clean_prompt,
         "timestamp": user_timestamp
     }
     st.session_state.messages.append(user_message) # Add to current session messages
     
+    # Award XP for asking a question
+    award_xp("chat_message", {"message_length": len(clean_prompt)})
+    
     # Send the request to API
     with st.chat_message("assistant"):
-        # Clearly indicate loading state
-        with st.spinner("Thinking..."):
+        # Enhanced loading state with mobile-friendly spinner
+        placeholder = st.empty()
+        with placeholder.container():
+            show_loading_state("AI is thinking about your question...")
+        
+        try:
             # Get response from Gemini
-            response = get_ncc_response(model, model_error, prompt)
+            response = get_ncc_response(model, model_error, clean_prompt)
+            
+            # Clear loading state
+            placeholder.empty()
             
             # Update state
             st.session_state.last_interaction_time = datetime.now()
@@ -264,7 +313,15 @@ def submit_prompt(prompt):
                         "timestamp": assistant_timestamp
                     }
                     st.session_state.messages.append(assistant_message) # Add to current session messages
-                    save_chat_to_file(prompt, response)
+                    save_chat_to_file(clean_prompt, response)
+                    
+                    # Award XP for valid interactions
+                    award_xp(10) # Award 10 XP for each valid interaction
+                    show_xp_notification() # Show XP notification
+        except Exception as e:
+            placeholder.empty()
+            handle_api_error(e, "Chat response generation")
+            return
     
     st.rerun()
 
@@ -294,10 +351,18 @@ def display_clear_confirmation():
 # The main History Viewer tab in main.py will use the utils.clear_history function.
 
 def display_chat_messages():
-    """Display the chat messages."""
+    """Display the chat messages with enhanced formatting."""
     for message in reversed(st.session_state.messages):
         with st.chat_message(message["role"]):
-            st.write(message['content'])
+            content = message.get('content', '')
+            
+            # Apply rich formatting for assistant messages
+            if message["role"] == "assistant":
+                formatted_content = ChatEnhancements.format_message_content(content)
+                st.markdown(formatted_content, unsafe_allow_html=True)
+            else:
+                st.write(content)
+            
             timestamp = message.get('timestamp', '')
             if timestamp:
                 st.markdown(f'<div class="message-timestamp">{timestamp}</div>', unsafe_allow_html=True)

@@ -21,6 +21,16 @@ from core_utils import (
 )
 
 from sync_manager import queue_for_sync
+from security import SecurityValidator, secure_quiz_input
+from mobile_ui import show_loading_state, create_quiz_question_card
+# Import quiz analytics
+from quiz_analytics import (
+    show_quiz_analytics_dashboard, 
+    show_detailed_quiz_history, 
+    create_quiz_performance_summary
+)
+# Import gamification
+from gamification import award_xp, show_xp_notification
 
 # QUIZ_DATA is removed as we will use AI to generate questions.
 # If you need a fallback or a static quiz mode, this could be reinstated.
@@ -355,9 +365,11 @@ def _display_active_quiz(ss):
     question = questions[current_q_index] # Get current question
 
     # Display current question and bookmark button in columns
-    col_q_text, col_bookmark_btn = st.columns([4, 1]) # Adjust ratio as needed
-    with col_q_text:
-        st.markdown(f"**Q{current_q_index + 1}: {question['question']}**")
+    # Enhanced mobile-friendly question display
+    create_quiz_question_card(question['question'], current_q_index + 1)
+    
+    # Bookmark button
+    col_bookmark_btn = st.columns([1])[0]
     with col_bookmark_btn:
         # Bookmark button - MOVED OUTSIDE THE FORM & ENHANCED
         is_bookmarked = question in ss.get(f"{SS_PREFIX}quiz_bookmarks", [])
@@ -402,6 +414,9 @@ def _display_active_quiz(ss):
     
     # Use a form to capture user's answer
     with st.form(key=f"question_form_{current_q_index}"):
+        # Add CSS class for mobile-friendly radio buttons
+        st.markdown('<div class="quiz-options">', unsafe_allow_html=True)
+        
         # User answer selection with proper label
         user_selected_text = st.radio(
             "Answer Options",  # More descriptive than "Select your answer:"
@@ -411,6 +426,8 @@ def _display_active_quiz(ss):
             help="Select the correct answer from the options below",
             label_visibility="visible" 
         )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # Navigation buttons with clear labels
         col_next_btn, col_abandon_btn = st.columns(2)
@@ -511,6 +528,15 @@ def _calculate_results(ss):
         "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"],
         "topic": ss[f"{SS_PREFIX}current_quiz_topic"]
     })
+    
+    # Award XP for quiz completion
+    base_xp = 50  # Base XP for completing a quiz
+    if score_percentage == 100:
+        award_xp("quiz_perfect", {"score": score_percentage, "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"]})
+        show_xp_notification(100, "perfect quiz score! 🎯")
+    else:
+        award_xp("quiz_completed", {"score": score_percentage, "difficulty": ss[f"{SS_PREFIX}current_quiz_difficulty"]})
+        show_xp_notification(base_xp, f"completing the quiz ({score_percentage:.1f}%)")
 
     # After quiz completion, queue summary for sync
     quiz_metadata = {
@@ -638,20 +664,33 @@ def _display_quiz_results(ss):
 
 # Main function for the quiz interface
 def quiz_interface(model, model_error): # Accept model and model_error
-    st.write("Test your knowledge about NCC topics!")
-
+    # Create tabs for different quiz features
+    tab1, tab2, tab3 = st.tabs(["📝 Take Quiz", "📊 Analytics", "📚 History"])
+    
     # Use a common session state object for brevity and clarity
     ss = st.session_state
 
     # Initialize quiz state if not already done
     _initialize_quiz_state(ss)
-
-    if not ss[f"{SS_PREFIX}quiz_active"]:
-        _display_quiz_creation_form(ss, model, model_error) # Pass model and model_error
-    elif not ss[f"{SS_PREFIX}quiz_submitted"]:
-        _display_active_quiz(ss)
-    else:
-        _display_quiz_results(ss)
+    
+    with tab1:
+        st.write("Test your knowledge about NCC topics!")
+        
+        # Show performance summary at the top
+        create_quiz_performance_summary()
+        
+        if not ss[f"{SS_PREFIX}quiz_active"]:
+            _display_quiz_creation_form(ss, model, model_error) # Pass model and model_error
+        elif not ss[f"{SS_PREFIX}quiz_submitted"]:
+            _display_active_quiz(ss)
+        else:
+            _display_quiz_results(ss)
+    
+    with tab2:
+        show_quiz_analytics_dashboard()
+    
+    with tab3:
+        show_detailed_quiz_history()
 
     # Removed Quiz Score History display from sidebar as it's in the "History Viewer" tab.
     # # Display quiz score history for adaptive difficulty calculation visibility

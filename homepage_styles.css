@@ -1,0 +1,53 @@
+/* Homepage specific CSS overrides for Streamlit */
+
+/* Hide Streamlit default elements on homepage */
+.homepage-container .main .block-container {
+    padding-top: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Custom button styling for homepage */
+.homepage-container .stButton > button {
+    width: 100%;
+    height: auto;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    transition: all 0.3s ease;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.homepage-container .stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-color: #6366F1;
+}
+
+/* Hide default streamlit padding for full-width header */
+.homepage-container .main > div:first-child {
+    padding-top: 0 !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .homepage-container .main .block-container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .tab-navigation {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* Ensure proper spacing with sidebar */
+@media (min-width: 769px) {
+    .homepage-container {
+        margin-left: 0;
+    }
+}

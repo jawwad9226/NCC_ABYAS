@@ -11,6 +11,7 @@ import json
 import csv
 from dataclasses import dataclass
 from pathlib import Path
+import hashlib
 
 # --- Configuration ---
 @dataclass
@@ -203,8 +204,50 @@ def is_api_call_due(last_call_time: Optional[datetime]) -> bool:
     # ...existing code for checking if API call is due...
     pass
 
+def get_cache_key(prompt: str) -> str:
+    """Generate a cache key for the prompt"""
+    return hashlib.md5(prompt.lower().strip().encode()).hexdigest()
+
+def get_cached_response(prompt: str) -> Optional[str]:
+    """Get cached response if available and not expired"""
+    if 'api_cache' not in st.session_state:
+        st.session_state.api_cache = {}
+    
+    cache_key = get_cache_key(prompt)
+    cache_entry = st.session_state.api_cache.get(cache_key)
+    
+    if cache_entry:
+        # Check if cache is still valid (1 hour expiry)
+        cache_time = datetime.fromisoformat(cache_entry['timestamp'])
+        if datetime.now() - cache_time < timedelta(hours=1):
+            return cache_entry['response']
+        else:
+            # Remove expired entry
+            del st.session_state.api_cache[cache_key]
+    
+    return None
+
+def cache_response(prompt: str, response: str):
+    """Cache the API response"""
+    if 'api_cache' not in st.session_state:
+        st.session_state.api_cache = {}
+    
+    cache_key = get_cache_key(prompt)
+    st.session_state.api_cache[cache_key] = {
+        'response': response,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    # Keep cache size manageable (max 100 entries)
+    if len(st.session_state.api_cache) > 100:
+        # Remove oldest entries
+        cache_items = list(st.session_state.api_cache.items())
+        cache_items.sort(key=lambda x: x[1]['timestamp'])
+        # Keep most recent 80 entries
+        st.session_state.api_cache = dict(cache_items[-80:])
+
 def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], prompt: str) -> str:
-    """Generate a response from the Gemini model.
+    """Generate a response from the Gemini model with caching.
     Args:
         model: Initialized Gemini model instance
         model_error: Error message if model initialization failed
@@ -218,6 +261,11 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
     if not prompt or not prompt.strip():
         return "Please provide a valid question or prompt."
 
+    # Check cache first
+    cached_response = get_cached_response(prompt)
+    if cached_response:
+        return cached_response
+
     # Cooldown logic (if needed, implement your own or use session state)
     # if _is_in_cooldown("last_api_call_time"):
     #     return _cooldown_message("chat")
@@ -230,8 +278,11 @@ def get_ncc_response(model: genai.GenerativeModel, model_error: Optional[str], p
                 max_output_tokens=Config.MAX_TOKENS_CHAT
             )
         )
-        # Optionally update last_api_call_time here
         response_text = response.text.strip()
+        
+        # Cache the response
+        cache_response(prompt, response_text)
+        
         # Save the chat interaction to file if needed
         # if prompt and response_text:
         #     save_chat_to_file(user_prompt=prompt, assistant_response=response_text)

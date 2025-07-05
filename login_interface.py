@@ -10,6 +10,8 @@ import time
 from streamlit_browser_storage.local_storage import LocalStorage
 from feedback_interface import show_feedback_section
 from utils.logging_utils import log_info, log_warning, log_error
+from security import SecurityValidator, RateLimiter, secure_chat_input, secure_login_input
+from error_handling import ErrorHandler, handle_api_error, FormValidator
 
 def ensure_pyrebase_initialized():
     if 'pyrebase_auth' not in st.session_state:
@@ -44,12 +46,24 @@ def show_login():
             st.session_state["login_error"] = "Please enter both email and password."
             st.rerun()
         else:
+            # Security validation
+            validation_result = secure_login_input(email, password)
+            if not validation_result['valid']:
+                ErrorHandler.show_warning(f"Login validation failed: {validation_result['error']}")
+                log_warning(f"Login validation failed for {email}: {validation_result['error']}")
+                st.rerun()
+                return
+            
+            # Use sanitized inputs
+            clean_email = validation_result['email']
+            clean_password = validation_result['password']
+            
             try:
-                user = auth.sign_in_with_email_and_password(email, password)
+                user = auth.sign_in_with_email_and_password(clean_email, clean_password)
                 id_token = user['idToken']
                 resp = requests.post(
                     "https://nccabyas.up.railway.app/login",
-                    json={"idToken": id_token, "email": email, "password": password},
+                    json={"idToken": id_token, "email": clean_email, "password": clean_password},
                     timeout=10
                 )
                 data = resp.json()
@@ -60,15 +74,15 @@ def show_login():
                     st.session_state["id_token"] = id_token
                     st.session_state["just_logged_in"] = True
                     st.session_state["login_success"] = "Login successful!"
-                    log_info(f"Login successful for user: {email}")
+                    log_info(f"Login successful for user: {clean_email}")
                     st.rerun()
                 else:
                     st.session_state["login_error"] = f"Login failed: {data.get('error', 'Unknown error')}"
-                    log_warning(f"Login failed for user: {email}, error: {data.get('error')}")
+                    log_warning(f"Login failed for user: {clean_email}, error: {data.get('error')}")
                     st.rerun()
             except Exception as e:
                 st.session_state["login_error"] = f"Login error: {e}"
-                log_error(f"Login error for user: {email}, error: {e}")
+                log_error(f"Login error for user: {clean_email}, error: {e}")
                 st.rerun()
 
     if st.button("Register as Cadet"):
@@ -120,39 +134,48 @@ def show_registration():
         st.success(reg_success)
 
     if st.button("Register", key="register_btn"):
-        # Validation
-        reg_no_upper = reg_no.upper() if reg_no else reg_no
-        # Check for unique reg_no and mobile
-        existing_users = db.child("users").get().val() or {}
-        reg_no_exists = any(u.get("reg_no", "").upper() == reg_no_upper for u in existing_users.values())
-        mobile_exists = any(u.get("mobile", "") == mobile for u in existing_users.values())
-        if not all([name, reg_no, email, mobile, password, confirm]):
-            st.session_state["reg_error"] = "All fields are required."
+        # Security validation first
+        from security import secure_registration_input
+        validation_result = secure_registration_input(name, email, mobile, reg_no, password)
+        
+        if not validation_result['valid']:
+            st.session_state["reg_error"] = validation_result['error']
             st.rerun()
-        elif password != confirm:
+            return
+        
+        # Use sanitized inputs
+        clean_name = validation_result['name']
+        clean_email = validation_result['email'] 
+        clean_mobile = validation_result['mobile']
+        clean_reg_no = validation_result['reg_no']
+        clean_password = validation_result['password']
+        
+        # Additional validation
+        if password != confirm:
             st.session_state["reg_error"] = "Passwords do not match."
             st.rerun()
-        elif not re.match(r"^[A-Z0-9]+$", reg_no_upper):
-            st.session_state["reg_error"] = "Regimental number must be all uppercase letters and numbers."
-            st.rerun()
-        elif reg_no_exists:
+            return
+            
+        # Check for unique reg_no and mobile
+        existing_users = db.child("users").get().val() or {}
+        reg_no_exists = any(u.get("reg_no", "").upper() == clean_reg_no.upper() for u in existing_users.values())
+        mobile_exists = any(u.get("mobile", "") == clean_mobile for u in existing_users.values())
+        
+        if reg_no_exists:
             st.session_state["reg_error"] = "This regimental number is already registered."
-            st.rerun()
-        elif not re.match(r"^[6-9]\d{9}$", mobile):
-            st.session_state["reg_error"] = "Invalid mobile number."
             st.rerun()
         elif mobile_exists:
             st.session_state["reg_error"] = "This mobile number is already registered."
             st.rerun()
         else:
             try:
-                user = auth.create_user_with_email_and_password(email, password)
+                user = auth.create_user_with_email_and_password(clean_email, clean_password)
                 uid = user['localId']
                 profile = {
-                    "name": name,
-                    "reg_no": reg_no_upper,
-                    "email": email,
-                    "mobile": mobile,
+                    "name": clean_name,
+                    "reg_no": clean_reg_no.upper(),
+                    "email": clean_email,
+                    "mobile": clean_mobile,
                     "role": "cadet"
                 }
                 db.child("users").child(uid).set(profile)
@@ -161,10 +184,10 @@ def show_registration():
                     "https://nccabyas.up.railway.app/register_profile",
                     json={
                         "uid": uid,
-                        "name": name,
-                        "reg_no": reg_no_upper,
-                        "email": email,
-                        "mobile": mobile
+                        "name": clean_name,
+                        "reg_no": clean_reg_no.upper(),
+                        "email": clean_email,
+                        "mobile": clean_mobile
                     },
                     timeout=10
                 )
@@ -172,11 +195,11 @@ def show_registration():
                 if data.get("success"):
                     # --- Automatic login after successful registration ---
                     try:
-                        user = auth.sign_in_with_email_and_password(email, password)
+                        user = auth.sign_in_with_email_and_password(clean_email, clean_password)
                         id_token = user['idToken']
                         login_resp = requests.post(
                             "https://nccabyas.up.railway.app/login",
-                            json={"idToken": id_token, "email": email, "password": password},
+                            json={"idToken": id_token, "email": clean_email, "password": clean_password},
                             timeout=10
                         )
                         login_data = login_resp.json()

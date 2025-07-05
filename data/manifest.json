@@ -1,16 +1,72 @@
 {
-  "name": "NCC AI Assistant",
-  "short_name": "NCC Assistant",
-  "start_url": ".",
+  "name": "NCC ABYAS - AI Assistant",
+  "short_name": "NCC ABYAS",
+  "description": "AI-powered learning platform for NCC cadets with adaptive quizzes, video guides, and chat assistance",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#1A1B1E",
+  "orientation": "portrait-primary",
+  "background_color": "#1F2937",
   "theme_color": "#6366F1",
-  "description": "AI-powered assistant for NCC cadets.",
+  "scope": "/",
+  "lang": "en-IN",
+  "categories": ["education", "productivity"],
+  "screenshots": [
+    {
+      "src": "/data/screenshot-mobile.png",
+      "sizes": "640x1136",
+      "type": "image/png",
+      "platform": "narrow"
+    },
+    {
+      "src": "/data/screenshot-desktop.png", 
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide"
+    }
+  ],
   "icons": [
     {
-      "src": "/data/logo.svg",
+      "src": "/data/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/data/icon-512.png",
+      "sizes": "512x512", 
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/data/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Take Quiz",
+      "short_name": "Quiz",
+      "description": "Start an adaptive knowledge quiz",
+      "url": "/?mode=quiz",
+      "icons": [{"src": "/data/quiz-icon.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Chat Assistant", 
+      "short_name": "Chat",
+      "description": "Ask NCC-related questions",
+      "url": "/?mode=chat",
+      "icons": [{"src": "/data/chat-icon.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Video Guides",
+      "short_name": "Videos", 
+      "description": "Watch training videos",
+      "url": "/?mode=videos",
+      "icons": [{"src": "/data/video-icon.png", "sizes": "96x96"}]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

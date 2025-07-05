@@ -23,7 +23,6 @@ def login():
     email = data.get('email')
     password = data.get('password')
     result = login_user(email, password)
-    debug_info = {}
     if result['success']:
         id_token = data.get('idToken')
         try:
@@ -32,72 +31,32 @@ def login():
         except Exception as e:
             log_warning(f"Invalid ID token for {email}: {str(e)}")
             return jsonify({'success': False, 'error': 'Invalid ID token'}), 401
-        # Hybrid storage debug: check where data exists
-        chat_local = read_history("chat")
-        quiz_local = read_history("quiz")
-        quiz_score_local = read_history("quiz_score")
-        debug_info['chat_local_count'] = len(chat_local) if isinstance(chat_local, list) else 0
-        debug_info['quiz_local_count'] = len(quiz_local) if isinstance(quiz_local, list) else 0
-        debug_info['quiz_score_local'] = bool(quiz_score_local)
-        # Try to fetch cloud data (Firestore)
-        try:
-            from firebase_admin import firestore
-            firestore_db = firestore.client()
-            chat_cloud = firestore_db.collection("users").document(uid).collection("chat_history").stream()
-            quiz_cloud = firestore_db.collection("users").document(uid).collection("quiz_history").stream()
-            quiz_score_cloud = firestore_db.collection("users").document(uid).collection("progress").document("summary").get()
-            debug_info['chat_cloud_count'] = len([doc for doc in chat_cloud])
-            debug_info['quiz_cloud_count'] = len([doc for doc in quiz_cloud])
-            debug_info['quiz_score_cloud'] = quiz_score_cloud.exists
-        except Exception as e:
-            debug_info['cloud_error'] = str(e)
-        log_info(f"User {email} logged in successfully. Hybrid debug: {debug_info}")
-        return jsonify({'success': True, 'profile': result['profile'], 'idToken': id_token, 'hybrid_debug': debug_info})
+        
+        log_info(f"User {email} logged in successfully")
+        return jsonify({'success': True, 'profile': result['profile'], 'idToken': id_token})
     else:
         log_warning(f"Failed login attempt for {email}: {result['error']}")
         return jsonify({'success': False, 'error': result['error']}), 401
 
 @app.route('/health', methods=['GET'])
 def health():
-    import sys
-    print('=== /health endpoint called ===', file=sys.stderr)
     return 'OK', 200
 
 # Token-based session verification endpoint
 @app.route('/verify_session', methods=['GET'])
 def verify_session():
-    import sys
-    print('=== /verify_session endpoint called ===', file=sys.stderr)
     auth_header = request.headers.get('Authorization', None)
     if not auth_header or not auth_header.startswith('Bearer '):
         log_warning("Missing or invalid Authorization header in /verify_session")
         return jsonify({'success': False, 'error': 'Missing or invalid Authorization header'}), 401
     id_token = auth_header.split(' ')[1]
-    debug_info = {}
     try:
         decoded_token = admin_auth.verify_id_token(id_token)
         uid = decoded_token.get('uid')
         profile = get_user_profile(uid)
-        # Hybrid storage debug: check where data exists
-        chat_local = read_history("chat")
-        quiz_local = read_history("quiz")
-        quiz_score_local = read_history("quiz_score")
-        debug_info['chat_local_count'] = len(chat_local) if isinstance(chat_local, list) else 0
-        debug_info['quiz_local_count'] = len(quiz_local) if isinstance(quiz_local, list) else 0
-        debug_info['quiz_score_local'] = bool(quiz_score_local)
-        try:
-            from firebase_admin import firestore
-            firestore_db = firestore.client()
-            chat_cloud = firestore_db.collection("users").document(uid).collection("chat_history").stream()
-            quiz_cloud = firestore_db.collection("users").document(uid).collection("quiz_history").stream()
-            quiz_score_cloud = firestore_db.collection("users").document(uid).collection("progress").document("summary").get()
-            debug_info['chat_cloud_count'] = len([doc for doc in chat_cloud])
-            debug_info['quiz_cloud_count'] = len([doc for doc in quiz_cloud])
-            debug_info['quiz_score_cloud'] = quiz_score_cloud.exists
-        except Exception as e:
-            debug_info['cloud_error'] = str(e)
-        log_info(f"Session verified for user: {uid}. Hybrid debug: {debug_info}")
-        return jsonify({'success': True, 'profile': profile, 'uid': uid, 'hybrid_debug': debug_info})
+        
+        log_info(f"Session verified for user: {uid}")
+        return jsonify({'success': True, 'profile': profile, 'uid': uid})
     except Exception as e:
         log_warning(f"Token verification failed: {str(e)}")
         return jsonify({'success': False, 'error': 'Invalid or expired token'}), 401
