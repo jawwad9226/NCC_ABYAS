@@ -89,6 +89,10 @@ Contributions are welcome! Please submit a Pull Request or open an Issue.
 
 MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🏅 Patent/Ownership Statement
+
+This project and all original intellectual property are invented and owned by **Shaikh Jawwad Ahmad**. See [PATENT_OWNERSHIP_STATEMENT.md](PATENT_OWNERSHIP_STATEMENT.md) for the formal declaration and details.
+
 ## 🙏 Acknowledgments
 
 - National Cadet Corps (NCC)
